@@ -26,7 +26,7 @@ input,select{font-family:inherit;font-size:16px}
 .login-box p{font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.4}
 .login-box input{width:100%;padding:14px;border:2px solid var(--border);border-radius:10px;font-size:16px;margin-bottom:12px;outline:none;transition:border-color .15s;background:var(--bg);color:var(--text)}
 .login-box input:focus{border-color:var(--accent)}
-.login-box button{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:17px;font-weight:700;margin-top:4px}
+.login-box button{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:17px;font-weight:700;margin-top:4px;touch-action:manipulation}
 .login-box button:active{background:#2563eb}
 .login-box button:disabled{opacity:.5}
 .login-box .login-hint{font-size:12px;color:var(--muted);margin-top:8px}
@@ -80,18 +80,22 @@ input,select{font-family:inherit;font-size:16px}
 .item-price{font-size:13px;color:var(--muted);margin-top:4px}
 .item-card:active .item-price{color:rgba(255,255,255,.7)}
 /* Calendar */
-.cal-scroll{flex:1;overflow:auto;padding:6px;background:var(--card);-webkit-overflow-scrolling:touch}
+.cal-scroll{flex:1;overflow:auto;padding:6px 6px 0;background:var(--card);-webkit-overflow-scrolling:touch}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;padding:6px 0;background:var(--card)}
+.cal-nav button{background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:18px;cursor:pointer;padding:4px 12px;border-radius:4px}
+.cal-nav span{font-weight:700;font-size:14px}
 .cal-grid{display:table;border-collapse:collapse;width:100%;min-width:600px;font-size:13px}
 .cal-row{display:table-row}
-.cal-room-col{display:table-cell;padding:4px 6px;border:1px solid var(--border);font-weight:700;font-size:12px;white-space:nowrap;min-width:70px;text-align:center;vertical-align:middle}
-.cal-date-col{display:table-cell;padding:3px 4px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:600;color:var(--muted);min-width:50px;vertical-align:middle}
+.cal-room-col{display:table-cell;padding:4px 6px;border:1px solid var(--border);font-weight:700;font-size:11px;white-space:nowrap;min-width:65px;text-align:center;vertical-align:middle}
+.cal-date-col{display:table-cell;padding:3px 4px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:600;color:var(--muted);min-width:100px;vertical-align:middle}
 .cal-cell{display:table-cell;padding:3px 4px;border:1px solid var(--border);text-align:center;font-size:11px;cursor:pointer;vertical-align:middle;transition:background .15s}
 .cal-cell:active{opacity:.7}
 .cal-free{background:transparent;color:var(--muted)}
-.cal-occ-confirmed{background:rgba(59,130,246,.25);color:#60a5fa}
-.cal-occ-checked_in{background:rgba(34,197,94,.25);color:#4ade80}
+.cal-occ-confirmed{background:transparent;color:#60a5fa}
+.cal-occ-checked_in{background:transparent;color:#4ade80}
 .cal-today{font-weight:700;border-color:var(--accent)!important}
-.cal-guest-name{font-size:10px;display:block;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.cal-guest-name{font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.cal-occ-line{font-size:10px;display:block;color:var(--muted);opacity:.8;text-align:right}
 /* Dashboard */
 .dash-scroll{flex:1;overflow-y:auto;padding:12px;background:var(--card);-webkit-overflow-scrolling:touch}
 .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;margin-bottom:12px}
@@ -112,7 +116,7 @@ input,select{font-family:inherit;font-size:16px}
 .dash-guest:active{background:var(--hover-bg)}
 .dash-guest-name{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;min-width:0}
 .dash-guest-meta{font-size:11px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dash-guest-room{font-size:11px;color:var(--muted);flex-shrink:0}
+.dash-guest-room{font-size:11px;color:var(--muted);margin-left:auto;text-align:right}
 .dash-empty{padding:16px 0;text-align:center;color:var(--muted);font-size:13px}
 /* Occupancy grid (Next 7 Days) */
 .dash-occ-table{display:table;width:100%;border-collapse:collapse;font-size:10px;overflow-x:auto}
@@ -137,6 +141,16 @@ input,select{font-family:inherit;font-size:16px}
 .dash-notes-text{display:table-cell;padding:4px 8px;border:1px solid var(--border);color:var(--text)}
 .dash-notes-empty{padding:16px 0;text-align:center;color:var(--muted);font-size:13px}
 .dash-card-footer{padding:10px 14px;border-top:1px solid var(--border)}
+/* Bread scroll (matching standalone dashboard) */
+.bread-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.bread-scroll::-webkit-scrollbar{height:4px}
+.bread-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.bread-day{flex:0 0 150px;scroll-snap-align:start;background:rgba(0,0,0,.2);border-radius:8px;padding:8px 10px}
+.bread-day.today{border:2px solid var(--accent)}
+.bd-date{font-weight:600;font-size:13px;margin-bottom:4px}
+.bd-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;border-bottom:1px solid var(--border)}
+.bd-empty{color:var(--muted);font-size:12px;font-style:italic}
+.bd-scroll-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:6px}
 /* Status labels */
 .dash-label{display:inline-block;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;line-height:1.4;flex-shrink:0;text-align:center;min-width:32px}
 .label-in{background:rgba(34,197,94,.2);color:#4ade80}
@@ -158,6 +172,36 @@ input,select{font-family:inherit;font-size:16px}
 .mt-item .mt-date{font-size:11px;color:var(--muted);flex-shrink:0}
 .mt-item .mt-del{background:none;border:none;font-size:18px;color:var(--red);cursor:pointer;padding:4px;line-height:1;flex-shrink:0}
 .mt-empty{color:var(--muted);text-align:center;padding:30px 0;font-size:14px}
+/* Finances */
+.fin-scroll{flex:1;overflow-y:auto;padding:10px;background:var(--card);-webkit-overflow-scrolling:touch}
+.fin-nav{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-shrink:0}
+.fin-nav button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:18px;font-weight:700;min-height:40px;min-width:44px}
+.fin-nav button:active{background:#2563eb}
+.fin-nav span{font-size:16px;font-weight:700;color:var(--text);flex:1;text-align:center}
+.fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.fin-card{border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--bg)}
+.fin-card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+.fin-card-amount{font-size:22px;font-weight:800;color:var(--text)}
+.fin-card-amount.green{color:var(--green)}
+.fin-card-amount.orange{color:var(--orange)}
+.fin-card-amount.blue{color:#60a5fa}
+.fin-card-amount.pink{color:#f472b6}
+.fin-card-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.fin-section-title{font-size:14px;font-weight:700;color:var(--text);margin:14px 0 8px}
+.fin-table{width:100%;border-collapse:collapse;font-size:13px}
+.fin-table th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase}
+.fin-table td{padding:6px 8px;border-bottom:1px solid var(--border)}
+.fin-table tr:last-child td{border-bottom:none}
+.fin-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.fin-table .tot{font-weight:700;color:var(--text)}
+.fin-change-up{color:var(--green)}
+.fin-change-down{color:var(--red)}
+.fin-row-label{font-size:13px;color:var(--muted);margin-bottom:2px}
+.fin-row-amount{font-size:20px;font-weight:800}
+.fin-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:8px;font-size:13px}
+.fin-breakdown .bd-item{display:flex;justify-content:space-between}
+.fin-breakdown .bd-label{color:var(--muted)}
+.fin-breakdown .bd-val{font-weight:600}
 /* Main layout */
 .main{display:flex;flex:1;min-height:0}
 .left-panel{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
@@ -175,8 +219,8 @@ input,select{font-family:inherit;font-size:16px}
 /* Responsive */
 @media(max-width:768px){
   .main{flex-direction:column}
-  .left-panel{flex:none;height:50vh}
-  .ticket-panel{width:100%;border-left:none;border-top:2px solid var(--border);flex:1}
+  .left-panel{flex:1;min-height:0}
+  .ticket-panel{width:100%;border-left:none;border-top:2px solid var(--border);flex:0 0 auto;max-height:50vh}
   .hamburger{display:inline-flex}
   .header > .view-btn{display:none}
   .header .gs-input{display:none}
@@ -272,6 +316,7 @@ input,select{font-family:inherit;font-size:16px}
     <button class="view-btn active" data-view="dash" id="view-dash">Dash</button>
     <button class="view-btn" data-view="list" id="view-list">List</button>
     <button class="view-btn" data-view="cal" id="view-cal">Cal</button>
+    <button class="view-btn" data-view="fin" id="view-fin">Fin</button>
     <button class="view-btn" data-view="maint" id="view-maint">Maint</button>
     <button class="hamburger" id="hamburger">☰</button>
     <button class="btn-qb-hdr" id="qb-open" title="Quick booking">+</button>
@@ -285,6 +330,7 @@ input,select{font-family:inherit;font-size:16px}
       <button class="view-btn active" data-view="dash" id="hm-view-dash">📊 Dash</button>
       <button class="view-btn" data-view="list" id="hm-view-list">📋 List</button>
       <button class="view-btn" data-view="cal" id="hm-view-cal">📅 Calendar</button>
+      <button class="view-btn" data-view="fin" id="hm-view-fin">💰 Fin</button>
       <button class="view-btn" data-view="maint" id="hm-view-maint">🔧 Maintenance</button>
       <span class="hm-user" id="hm-user"></span>
       <button class="hm-logout" id="hm-logout">Sign Out</button>
@@ -302,8 +348,21 @@ input,select{font-family:inherit;font-size:16px}
       <div class="bookings-row" id="booking-cards"></div>
       <div class="catalog-scroll" id="item-grid"></div>
       <div id="dash-view" class="dash-scroll" style="display:none"></div>
+      <div id="cal-nav" class="cal-nav" style="display:none">
+        <button id="cal-prev">‹</button>
+        <span id="cal-nav-label">May 2026</span>
+        <button id="cal-next">›</button>
+      </div>
       <div id="cal-view" class="cal-scroll" style="display:none"></div>
       <div id="maint-view" class="maint-scroll" style="display:none"></div>
+      <div id="fin-view" class="fin-scroll" style="display:none">
+        <div class="fin-nav">
+          <button id="fin-prev">‹</button>
+          <span id="fin-nav-label">May 2026</span>
+          <button id="fin-next">›</button>
+        </div>
+        <div id="fin-content"></div>
+      </div>
     </div>
 
     <div class="ticket-panel" id="ticket-panel" style="display:none">
@@ -473,9 +532,13 @@ var state = {
     activeBooking: null,
     tempIdCounter: 0,
     viewMode: 'dash',
+    calDate: '',
     calRooms: [],
     calOccupancy: [],
     calDailyNotes: [],
+    finYear: 0,
+    finMonth: 0,
+    finData: null,
     maintNotes: [],
     dailyNotes: [],
     occupancy: [],
@@ -525,11 +588,25 @@ function doLogin(){
         return;
     }
 
+    // Safety timeout: re-enable button after 20s if fetch hangs
+    var safetyTimer=setTimeout(function(){
+        btn.disabled=false;
+        btn.textContent='Sign In';
+        errEl.textContent='Request timed out. Check your connection.';
+        errEl.style.display='block';
+    },20000);
+
+    var controller=new AbortController();
+    var timeoutTimer=setTimeout(function(){controller.abort();},15000);
+
     fetch(REST_BASE+'ticket-auth',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({username:username,password:password}),
+        signal:controller.signal,
     }).then(function(r){
+        clearTimeout(safetyTimer);
+        clearTimeout(timeoutTimer);
         if(r.status===401){
             throw new Error('Invalid username or password.');
         }
@@ -548,8 +625,14 @@ function doLogin(){
         hideLogin();
         fetchData();
     }).catch(function(err){
-        removeAuth();
-        errEl.textContent=err.message||'Connection failed. Check your network.';
+        clearTimeout(safetyTimer);
+        clearTimeout(timeoutTimer);
+        if(err.name==='AbortError'){
+            errEl.textContent='Request timed out. Check your connection and try again.';
+        }else{
+            removeAuth();
+            errEl.textContent=err.message||'Connection failed. Check your network.';
+        }
         errEl.style.display='block';
         btn.disabled=false;
         btn.textContent='Sign In';
@@ -650,7 +733,7 @@ function fetchData(){
             state.bookingRooms=data.booking_rooms||[];
             state.roomNights=data.room_nights||[];
             state.ticketItems=(data.items||[]).map(function(item){
-                return {id:item.id,name:item.item_name,qty:parseInt(item.quantity,10),price:parseFloat(item.unit_price)};
+                return {id:item.id,name:item.item_name,qty:parseInt(item.quantity,10),price:parseFloat(item.unit_price),stay_date:item.stay_date||null};
             });
         }else{
             state.savedItems=[];state.bookingRooms=[];state.roomNights=[];state.ticketItems=[];
@@ -661,6 +744,132 @@ function fetchData(){
         if(err.message==='unauthorized') return;
         showError(err.message||'Failed to load data.');
     });
+}
+
+function goFinMonth(delta){
+    state.finMonth+=delta;
+    if(state.finMonth<1){state.finMonth=12;state.finYear--;}
+    if(state.finMonth>12){state.finMonth=1;state.finYear++;}
+    fetchFinances();
+}
+
+function fetchFinances(){
+    var y=state.finYear||parseInt(state.date.slice(0,4),10);
+    var m=state.finMonth||parseInt(state.date.slice(5,7),10);
+    state.finYear=y;state.finMonth=m;
+    return apiGet('ticket-finances?year='+y+'&month='+m+'&_='+Date.now()).then(function(data){
+        state.finData=data;
+        document.getElementById('fin-nav-label').textContent=data.month.label;
+        renderFinances();
+    }).catch(function(err){
+        if(err.message==='unauthorized') return;
+        document.getElementById('fin-content').innerHTML='<div class="mt-empty">Failed to load finances.</div>';
+    });
+}
+
+function renderFinances(){
+    var d=state.finData;
+    if(!d){fetchFinances();return;}
+    var m=d.month, t=d.trimester, yl=d.yearly;
+    var root=document.getElementById('fin-content');
+
+    var cards=[
+        el('div',{className:'fin-card'},[
+            el('div',{className:'fin-card-title'},['Total Income']),
+            el('div',{className:'fin-card-amount green'},[m.total_income.toFixed(2)+'\u20AC']),
+            el('div',{className:'fin-card-sub'},[m.label]),
+        ]),
+        el('div',{className:'fin-card'},[
+            el('div',{className:'fin-card-title'},['Taxe de S\u00e9jour']),
+            el('div',{className:'fin-card-amount orange'},[m.taxe_sejour.toFixed(2)+'\u20AC']),
+            el('div',{className:'fin-card-sub'},[m.label]),
+        ]),
+        el('div',{className:'fin-card'},[
+            el('div',{className:'fin-card-title'},['Paid']),
+            el('div',{className:'fin-card-amount green'},[m.paid.toFixed(2)+'\u20AC']),
+            el('div',{className:'fin-card-sub'},['Pending: '+m.pending.toFixed(2)+'\u20AC']),
+        ]),
+        el('div',{className:'fin-card'},[
+            el('div',{className:'fin-card-title'},['Occupancy']),
+            el('div',{className:'fin-card-amount blue'},[m.occupancy_pct+'%']),
+            el('div',{className:'fin-card-sub'},[m.occupied_nights+' / '+m.total_nights+' nights \u00B7 ADR '+m.adr.toFixed(2)+'\u20AC']),
+        ]),
+    ];
+
+    var breakdown=el('div',{className:'fin-card',style:'grid-column:1/-1'},[
+        el('div',{className:'fin-card-title'},['Revenue Breakdown']),
+        el('div',{className:'fin-breakdown'},[
+            el('div',{className:'bd-item'},[el('span',{className:'bd-label'},['Room revenue']),el('span',{className:'bd-val'},[m.room_revenue.toFixed(2)+'\u20AC'])]),
+            el('div',{className:'bd-item'},[el('span',{className:'bd-label'},['Extras']),el('span',{className:'bd-val'},[m.extras_revenue.toFixed(2)+'\u20AC'])]),
+            el('div',{className:'bd-item'},[el('span',{className:'bd-label'},['Items (dinner, etc.)']),el('span',{className:'bd-val'},[m.items_revenue.toFixed(2)+'\u20AC'])]),
+            el('div',{className:'bd-item'},[el('span',{className:'bd-label'},['Taxe de s\u00e9jour']),el('span',{className:'bd-val'},[m.taxe_sejour.toFixed(2)+'\u20AC'])]),
+            el('div',{className:'bd-item',style:'border-top:1px solid var(--border);padding-top:4px;margin-top:4px;font-weight:700'},[el('span',{className:'bd-label'},['Total']),el('span',{className:'bd-val'},[m.total_income.toFixed(2)+'\u20AC'])]),
+        ]),
+    ]);
+
+    // Trimester card
+    var triChangeCls=t.change_pct>=0?'fin-change-up':'fin-change-down';
+    var triArrow=t.change_pct>=0?'\u25B2 ':'\u25BC ';
+    var triCard=el('div',{className:'fin-card',style:'grid-column:1/-1'},[
+        el('div',{className:'fin-card-title'},['Trimester — '+t.label]),
+        el('div',{style:'display:flex;gap:24px;align-items:baseline;flex-wrap:wrap'},[
+            el('div',{},[
+                el('div',{className:'fin-row-label'},['This year']),
+                el('div',{className:'fin-row-amount green'},[t.income.toFixed(2)+'\u20AC']),
+            ]),
+            el('div',{},[
+                el('div',{className:'fin-row-label'},['Last year']),
+                el('div',{className:'fin-row-amount',style:'color:var(--muted)'},[t.last_year.toFixed(2)+'\u20AC']),
+            ]),
+            el('div',{},[
+                el('div',{className:'fin-row-label'},['Change']),
+                el('div',{className:'fin-row-amount '+triChangeCls},[triArrow+Math.abs(t.change_pct)+'%']),
+            ]),
+        ]),
+    ]);
+
+    // Year-to-date table
+    var yrRows=yl.map(function(ym){
+        var months=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var isCur=ym.month===m.month;
+        return el('tr',{className:isCur?'':'',style:isCur?'font-weight:700;color:var(--text)':''},[
+            el('td',{},[months[ym.month]]),
+            el('td',{className:'num'},[ym.room_revenue.toFixed(2)]),
+            el('td',{className:'num'},[ym.extras_revenue.toFixed(2)]),
+            el('td',{className:'num'},[ym.items_revenue.toFixed(2)]),
+            el('td',{className:'num'},[ym.taxe_sejour.toFixed(2)]),
+            el('td',{className:'num'},[ym.total.toFixed(2)]),
+        ]);
+    });
+
+    var yrTotal=yl.reduce(function(s,ym){return s+ym.total;},0);
+    yrRows.push(el('tr',{style:'font-weight:700;border-top:2px solid var(--border)'},[
+        el('td',{},['Total']),
+        el('td',{className:'num'},['']),
+        el('td',{className:'num'},['']),
+        el('td',{className:'num'},['']),
+        el('td',{className:'num'},['']),
+        el('td',{className:'num'},[yrTotal.toFixed(2)+'\u20AC']),
+    ]));
+
+    var yrCard=el('div',{className:'fin-card',style:'grid-column:1/-1'},[
+        el('div',{className:'fin-card-title'},['Year '+state.finYear+' \u2014 Monthly Breakdown']),
+        el('table',{className:'fin-table'},[
+            el('thead',{},[el('tr',{},[
+                el('th',{},['Month']),
+                el('th',{className:'num'},['Room']),
+                el('th',{className:'num'},['Extras']),
+                el('th',{className:'num'},['Items']),
+                el('th',{className:'num'},['Tax']),
+                el('th',{className:'num'},['Total']),
+            ])]),
+            el('tbody',{},yrRows),
+        ]),
+    ]);
+
+    root.innerHTML='';
+    var grid=el('div',{className:'fin-grid'},[].concat(cards,[breakdown,triCard,yrCard]));
+    root.appendChild(grid);
 }
 
 function setViewMode(mode){
@@ -674,7 +883,7 @@ function setViewMode(mode){
 /* ---- Dashboard ---- */
 function renderDashboard(){
     var root=document.getElementById('dash-view');
-    var todayStr=today();
+    var todayStr=state.date;
 
     function roomLabel(b){
         var rooms=state.roomsByBooking[b.id]||[];
@@ -684,11 +893,7 @@ function renderDashboard(){
         return ((b.first_name||'')+' '+(b.last_name||'')).trim()||'#'+b.id;
     }
     function statusLabel(b){
-        if(b.status_code==='checked_out') return {text:'Out',cls:'label-out'};
-        if(b.status_code==='checked_in'){
-            if(b.check_out_date===todayStr) return {text:'Out',cls:'label-out'};
-            return {text:'In',cls:'label-in'};
-        }
+        if(b.check_out_date===todayStr) return {text:'Out',cls:'label-out'};
         if(b.check_in_date===todayStr) return {text:'In',cls:'label-in'};
         return {text:'Stay',cls:'label-stay'};
     }
@@ -737,15 +942,12 @@ function renderDashboard(){
             var rooms=state.roomsByBooking[b.id]||[];
             var roomLabels=rooms.map(function(r){return r.room_code;}).join(', ');
             var name=guestName(b);
-            var meta='#'+b.id+(b.total_amount?' \u00B7 '+parseFloat(b.total_amount).toFixed(2)+'\u20AC':'');
             var row=el('div',{
                 className:'dash-guest',
                 onClick:function(){selectBooking(parseInt(b.id,10));}
             },[
                 el('span',{className:'dash-label '+sl.cls},[sl.text]),
-                el('div',{className:'dash-guest-name'},[name]),
-                channelBadge(b),
-                el('div',{className:'dash-guest-meta'},[meta]),
+                el('div',{className:'dash-guest-name'},[name+(parseInt(b.dinner_count,10)>0?' \uD83C\uDF7D\u00D7'+b.dinner_count:'')]),
                 roomLabels?el('div',{className:'dash-guest-room'},[roomLabels]):null,
             ]);
             guestList.appendChild(row);
@@ -813,43 +1015,79 @@ function renderDashboard(){
         occBody.appendChild(occTable);
     }
 
-    // Card 3: Bread Order (yesterday)
+    // Card 3: Bread Order (matching standalone dashboard)
     var breadCard=el('div',{className:'dash-card'});
     breadCard.appendChild(el('div',{className:'dash-card-header'},['Bread Order']));
     var breadBody=el('div',{className:'dash-card-body'});
     breadCard.appendChild(breadBody);
     grid.appendChild(breadCard);
 
-    var yesterday=new Date(todayStr);
-    yesterday.setDate(yesterday.getDate()-1);
-    var yStr=yesterday.getFullYear()+'-'+String(yesterday.getMonth()+1).padStart(2,'0')+'-'+String(yesterday.getDate()).padStart(2,'0');
-
-    var yTotal=0;
+    // Aggregate guest counts per day from occupancy
+    var guestByDate={};
     state.occupancy.forEach(function(o){
-        if(o.stay_date===yStr){
-            yTotal+=parseInt(o.guest_count,10)||0;
+        if(!guestByDate[o.stay_date]){
+            guestByDate[o.stay_date]={adults:0,children:0,total:0};
         }
+        guestByDate[o.stay_date].adults+=parseInt(o.adults,10)||0;
+        guestByDate[o.stay_date].children+=parseInt(o.children,10)||0;
+        guestByDate[o.stay_date].total+=parseInt(o.guest_count,10)||0;
     });
 
-    if(yTotal===0){
-        breadBody.appendChild(el('div',{className:'dash-empty'},['No guests yesterday ('+yStr+').']));
-    }else{
-        var croissants=yTotal;
-        var baguettes=Math.ceil(yTotal/4);
-        breadBody.appendChild(el('div',{style:'font-size:13px;line-height:1.6'},[
-            el('div',{style:'margin-bottom:8px;color:var(--muted)'},['Based on '+yStr+' ('+yTotal+' guests):']),
-            el('div',{style:'display:flex;gap:16px;flex-wrap:wrap'},[
-                el('div',{style:'background:rgba(249,115,22,.15);border-radius:10px;padding:12px 16px;text-align:center;flex:1;min-width:100px'},[
-                    el('div',{style:'font-size:24px;font-weight:800;color:#fb923c'},[String(croissants)]),
-                    el('div',{style:'font-size:11px;color:var(--muted);margin-top:2px'},['Croissants']),
-                ]),
-                el('div',{style:'background:rgba(59,130,246,.15);border-radius:10px;padding:12px 16px;text-align:center;flex:1;min-width:100px'},[
-                    el('div',{style:'font-size:24px;font-weight:800;color:#60a5fa'},[String(baguettes)]),
-                    el('div',{style:'font-size:11px;color:var(--muted);margin-top:2px'},['Baguettes']),
-                ]),
-            ]),
-        ]));
+    function fmtDate(ds){
+        var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        var dt=new Date(ds+'T12:00:00');
+        return days[dt.getDay()]+' '+String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0');
     }
+
+    var breadDates=[];
+    for(var i=0;i<7;i++){
+        var d=new Date(todayStr);
+        d.setDate(d.getDate()+i);
+        var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        breadDates.push(ds);
+    }
+
+    var breadScroll=el('div',{className:'bread-scroll'});
+    breadDates.forEach(function(ds,i){
+        var isToday=i===0;
+        var prevCount=0;
+        var prevDate=null;
+        if(!isToday){
+            prevDate=breadDates[i-1];
+            var g=guestByDate[prevDate];
+            if(g) prevCount=g.total;
+        }
+        var dayBox=el('div',{className:'bread-day'+(isToday?' today':'')});
+        dayBox.appendChild(el('div',{className:'bd-date'},[fmtDate(ds)]));
+        if(prevCount===0 && !isToday){
+            // Previous day had data but showed as 0
+            dayBox.appendChild(el('div',{className:'bd-empty'},['No guests']));
+        }else if(isToday){
+            dayBox.appendChild(el('div',{className:'bd-empty'},['No guests']));
+        }else{
+            var croissants=prevCount;
+            var baguettes=Math.ceil(prevCount/4);
+            dayBox.appendChild(el('div',{className:'bd-row',style:'color:var(--muted);font-size:11px'},[
+                el('span',{},['Based on']),
+                el('span',{},[fmtDate(prevDate)]),
+            ]));
+            dayBox.appendChild(el('div',{className:'bd-row'},[
+                el('span',{},['Guests']),
+                el('span',{},[String(prevCount)]),
+            ]));
+            dayBox.appendChild(el('div',{className:'bd-row'},[
+                el('span',{},['\uD83E\uDD50 Croissants']),
+                el('span',{},[String(croissants)]),
+            ]));
+            dayBox.appendChild(el('div',{className:'bd-row'},[
+                el('span',{},['\uD83E\uDD56 Baguettes']),
+                el('span',{},[String(baguettes)]),
+            ]));
+        }
+        breadScroll.appendChild(dayBox);
+    });
+    breadBody.appendChild(breadScroll);
+    breadBody.appendChild(el('div',{className:'bd-scroll-hint'},['\u2190 Scroll for more days \u2192']));
 
     // Card 4: Notes
     root.appendChild(grid);
@@ -879,14 +1117,18 @@ function render(){
         document.getElementById('booking-cards').style.display='none';
         document.getElementById('item-grid').style.display='none';
         document.getElementById('cal-view').style.display='none';
+        document.getElementById('cal-nav').style.display='none';
         document.getElementById('maint-view').style.display='none';
+        document.getElementById('fin-view').style.display='none';
         document.getElementById('dash-view').style.display='block';
         renderDashboard();
     }else if(state.viewMode==='list'){
         document.getElementById('booking-cards').style.display='flex';
         document.getElementById('item-grid').style.display='block';
         document.getElementById('cal-view').style.display='none';
+        document.getElementById('cal-nav').style.display='none';
         document.getElementById('maint-view').style.display='none';
+        document.getElementById('fin-view').style.display='none';
         document.getElementById('dash-view').style.display='none';
         renderBookings();
         renderCatalog();
@@ -894,16 +1136,29 @@ function render(){
         document.getElementById('booking-cards').style.display='none';
         document.getElementById('item-grid').style.display='none';
         document.getElementById('cal-view').style.display='block';
+        document.getElementById('cal-nav').style.display='flex';
         document.getElementById('maint-view').style.display='none';
+        document.getElementById('fin-view').style.display='none';
         document.getElementById('dash-view').style.display='none';
         loadCalendar();
     }else if(state.viewMode==='maint'){
         document.getElementById('booking-cards').style.display='none';
         document.getElementById('item-grid').style.display='none';
         document.getElementById('cal-view').style.display='none';
+        document.getElementById('cal-nav').style.display='none';
         document.getElementById('maint-view').style.display='block';
         document.getElementById('dash-view').style.display='none';
+        document.getElementById('fin-view').style.display='none';
         loadMaintenanceNotes();
+    }else if(state.viewMode==='fin'){
+        document.getElementById('booking-cards').style.display='none';
+        document.getElementById('item-grid').style.display='none';
+        document.getElementById('cal-view').style.display='none';
+        document.getElementById('cal-nav').style.display='none';
+        document.getElementById('maint-view').style.display='none';
+        document.getElementById('dash-view').style.display='none';
+        document.getElementById('fin-view').style.display='block';
+        renderFinances();
     }
     renderTicket();
 }
@@ -1025,19 +1280,33 @@ function renderCatalog(){
 }
 
 /* ---- Calendar ---- */
-var _calLoaded=false;
 function loadCalendar(){
-    if(_calLoaded) return;
-    _calLoaded=true;
-    apiGet('ticket-calendar?date='+state.date+'&days=12').then(function(data){
+    var d=new Date(state.date+'T12:00:00');
+    if(d.getDate()!==1) d.setDate(1);
+    state.calDate=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+    document.getElementById('cal-nav-label').textContent=
+        new Date(state.calDate+'T12:00:00').toLocaleString('en',{month:'long',year:'numeric'});
+    fetchCalendarData();
+}
+
+function fetchCalendarData(){
+    apiGet('ticket-calendar?date='+state.calDate+'&days=31').then(function(data){
         state.calRooms=data.rooms||[];
         state.calOccupancy=data.occupancy||[];
         state.calDailyNotes=data.daily_notes||[];
         renderCalendar();
     }).catch(function(err){
         if(err.message!=='unauthorized') showError('Calendar load failed.');
-        _calLoaded=false;
     });
+}
+
+function calNavMonth(delta){
+    var d=new Date(state.calDate+'T12:00:00');
+    d.setMonth(d.getMonth()+delta);
+    state.calDate=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+    document.getElementById('cal-nav-label').textContent=
+        new Date(state.calDate+'T12:00:00').toLocaleString('en',{month:'long',year:'numeric'});
+    fetchCalendarData();
 }
 
 function renderCalendar(){
@@ -1046,70 +1315,79 @@ function renderCalendar(){
     var noteMap={};
     state.calDailyNotes.forEach(function(n){noteMap[n.note_date]=n.note_text;});
 
+    var d=new Date(state.calDate+'T12:00:00');
+    var year=d.getFullYear();
+    var month=d.getMonth();
+    var monthLabel=new Date(year,month).toLocaleString('en',{month:'long',year:'numeric'});
+    document.getElementById('cal-nav-label').textContent=monthLabel;
+    var daysInMonth=new Date(year,month+1,0).getDate();
     var dates=[];
-    for(var i=0;i<12;i++){
-        var d=new Date(state.date+'T12:00:00');
-        d.setDate(d.getDate()+i);
-        dates.push(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2));
+    for(var i=1;i<=daysInMonth;i++){
+        var ds=year+'-'+String(month+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
+        dates.push(ds);
     }
     var todayStr=today();
 
     var html='<div class="cal-grid">';
+    // Date header row
     html+='<div class="cal-row">';
     html+='<div class="cal-room-col">Room</div>';
-    dates.forEach(function(d){
-        var cls='cal-date-col'+(d===todayStr?' cal-today':'');
-        var lbl=d.slice(5);
-        html+='<div class="'+cls+'">'+lbl+'</div>';
+    dates.forEach(function(ds){
+        var cls='cal-date-col'+(ds===todayStr?' cal-today':'');
+        var dt=new Date(ds+'T12:00:00');
+        var dayAbbr=dt.toLocaleString('en',{weekday:'short'});
+        html+='<div class="'+cls+'">'+String(dt.getDate())+'<br><span style="font-weight:400;font-size:9px">'+dayAbbr+'</span></div>';
     });
     html+='</div>';
 
+    // Daily notes row (above rooms)
+    html+='<div class="cal-row">';
+    html+='<div class="cal-room-col" style="background:var(--accent);font-weight:600;color:#fff">Notes</div>';
+    dates.forEach(function(date){
+        var note=noteMap[date];
+        var cls='cal-cell cal-free';
+        if(date===todayStr) cls+=' cal-today';
+        html+='<div class="'+cls+'" style="color:var(--muted);overflow:hidden;text-overflow:ellipsis">'+
+            (note?note.slice(0,10):'')+'</div>';
+    });
+    html+='</div>';
+
+    // Room rows
     state.calRooms.forEach(function(room){
         if(!room.active) return;
-        html+='<div class="cal-row">';
-        html+='<div class="cal-room-col" style="background:'+(room.color||'var(--border)')+'">'+
+        var color=room.color||'var(--border)';
+        html+='<div class="cal-row" style="background:'+color+'50">';
+        html+='<div class="cal-room-col" style="background:'+color+'">'+
             (room.room_code||'')+'</div>';
         dates.forEach(function(date){
             var occ=occMap[date+'-'+room.id];
             var cls='cal-cell';
-            var guestName='';
             var bookingId=0;
             if(occ){
                 cls+=' cal-occ-'+(occ.status_code==='checked_in'?'checked_in':'confirmed');
-                guestName=(occ.first_name||'')+' '+(occ.last_name||'');
                 bookingId=parseInt(occ.booking_id,10);
             }else{
                 cls+=' cal-free';
             }
             if(date===todayStr) cls+=' cal-today';
             var extra='';
-            if(bookingId){
-                extra='<span class="cal-guest-name">'+guestName.slice(0,15)+'</span>';
+            if(occ){
+                var name=(occ.first_name||'')+' '+(occ.last_name||'');
+                var occLine=(parseInt(occ.adults)||0)+'A';
+                if(parseInt(occ.children)) occLine+=' '+parseInt(occ.children)+'C';
+                if(parseInt(occ.babies)) occLine+=' '+parseInt(occ.babies)+'B';
+                extra='<span class="cal-guest-name">'+name.slice(0,18)+'</span>'+
+                    '<span class="cal-occ-line">'+occLine+'</span>';
             }
-            html+='<div class="'+cls+'"'+
-                (bookingId?' onclick="window._calSelectBooking&&window._calSelectBooking('+bookingId+')"':'')+
-                '>'+extra+'</div>';
+            html+='<div class="'+cls+'" data-bid="'+bookingId+'">'+extra+'</div>';
         });
         html+='</div>';
     });
-
-    // Daily notes row
-    html+='<div class="cal-row">';
-    html+='<div class="cal-room-col" style="background:var(--accent);font-size:11px;font-weight:600;color:#fff">Notes</div>';
-    dates.forEach(function(date){
-        var note=noteMap[date];
-        var cls='cal-cell cal-free';
-        if(date===todayStr) cls+=' cal-today';
-        html+='<div class="'+cls+'" style="color:var(--muted);max-width:60px;overflow:hidden;text-overflow:ellipsis">'+
-            (note?note.slice(0,20):'')+'</div>';
-    });
-    html+='</div>';
 
     html+='</div>';
     document.getElementById('cal-view').innerHTML=html;
 }
 window._calSelectBooking=function(bid){
-    // Switch to list view and select booking
     setViewMode('list');
     selectBooking(bid);
 };
@@ -1378,7 +1656,7 @@ function addItem(item){
     var found=-1;
     for(var i=0;i<state.ticketItems.length;i++){if(state.ticketItems[i].name===name){found=i;break;}}
     if(found>=0){state.ticketItems[found].qty+=1;}
-    else{state.tempIdCounter-=1;state.ticketItems.push({id:state.tempIdCounter,name:name,qty:1,price:price});}
+    else{state.tempIdCounter-=1;state.ticketItems.push({id:state.tempIdCounter,name:name,qty:1,price:price,stay_date:state.date});}
     renderTicket();
     autoSave();
 }
@@ -1386,28 +1664,37 @@ function incrementItem(idx){if(idx>=0&&idx<state.ticketItems.length){state.ticke
 function removeItem(idx){if(idx>=0&&idx<state.ticketItems.length){state.ticketItems.splice(idx,1);renderTicket();autoSave();}}
 
 var _saveTimer=0;
+var _saving=false;
 function autoSave(){
+    if(_saving){clearTimeout(_saveTimer);_saveTimer=setTimeout(autoSave,800);return;}
     clearTimeout(_saveTimer);
     _saveTimer=setTimeout(function(){saveTicket().catch(function(){})},800);
 }
 
 function saveTicket(){
+    if(_saving) return Promise.resolve();
+    _saving=true;
     document.getElementById('ticket-error').style.display='none';
     document.getElementById('ticket-save-indicator').style.display='inline';
     return apiPost('ticket-save',{
         booking_id:state.activeBookingId,
         booking_room_id:state.activeRoomId||null,
         date:state.date,
-        items:state.ticketItems.map(function(item){return {name:item.name,qty:item.qty,price:item.price};}),
+        items:state.ticketItems.filter(function(item){
+            // New items (temp negative id) or items whose stay_date matches current date
+            return item.id<0||item.stay_date===state.date;
+        }).map(function(item){return {name:item.name,qty:item.qty,price:item.price};}),
     }).then(function(data){
         state.ticketItems=(data.items||[]).map(function(item){
-            return {id:item.id,name:item.item_name,qty:parseInt(item.quantity,10),price:parseFloat(item.unit_price)};
+            return {id:item.id,name:item.item_name,qty:parseInt(item.quantity,10),price:parseFloat(item.unit_price),stay_date:item.stay_date||null};
         });
         state.savedItems=data.items||[];
         renderTicket();
         document.getElementById('ticket-save-indicator').style.display='none';
+        _saving=false;
     }).catch(function(err){
         document.getElementById('ticket-save-indicator').style.display='none';
+        _saving=false;
         if(err.message!=='unauthorized') showError(err.message||'Save failed');
         throw err;
     });
@@ -1863,7 +2150,6 @@ document.addEventListener('DOMContentLoaded',function(){
         state.date=this.value;
         state.activeBookingId=0;state.activeRoomId=0;state.activeBooking=null;
         state.ticketItems=[];state.savedItems=[];
-        _calLoaded=false;
         fetchData();
         loadDailyNote();
     });
@@ -1874,10 +2160,20 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('view-list').addEventListener('click',function(){closeHm();setViewMode('list');});
     document.getElementById('view-cal').addEventListener('click',function(){closeHm();setViewMode('cal');});
     document.getElementById('view-maint').addEventListener('click',function(){closeHm();setViewMode('maint');});
+    document.getElementById('view-fin').addEventListener('click',function(){closeHm();setViewMode('fin');});
     document.getElementById('hm-view-dash').addEventListener('click',function(){closeHm();setViewMode('dash');});
     document.getElementById('hm-view-list').addEventListener('click',function(){closeHm();setViewMode('list');});
     document.getElementById('hm-view-cal').addEventListener('click',function(){closeHm();setViewMode('cal');});
     document.getElementById('hm-view-maint').addEventListener('click',function(){closeHm();setViewMode('maint');});
+    document.getElementById('hm-view-fin').addEventListener('click',function(){closeHm();setViewMode('fin');});
+
+    // Calendar nav
+    document.getElementById('cal-prev').addEventListener('click',function(){calNavMonth(-1);});
+    document.getElementById('cal-next').addEventListener('click',function(){calNavMonth(1);});
+
+    // Finances nav
+    document.getElementById('fin-prev').addEventListener('click',function(){goFinMonth(-1);});
+    document.getElementById('fin-next').addEventListener('click',function(){goFinMonth(1);});
 
     // Daily note
     document.getElementById('dn-input').addEventListener('input',function(){saveDailyNote();});
@@ -1948,6 +2244,14 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('hm-logout').addEventListener('click',function(){closeHm();doLogout();});
     document.getElementById('login-pass').addEventListener('keydown',function(e){if(e.key==='Enter') doLogin();});
     document.getElementById('login-user').addEventListener('keydown',function(e){if(e.key==='Enter') document.getElementById('login-pass').focus();});
+
+    // Calendar cell click delegation (attached once)
+    document.getElementById('cal-view').addEventListener('click',function(e){
+        var cell=e.target.closest('[data-bid]');
+        if(cell&&parseInt(cell.getAttribute('data-bid'),10)){
+            window._calSelectBooking(parseInt(cell.getAttribute('data-bid'),10));
+        }
+    });
 });
 })();
 </script>

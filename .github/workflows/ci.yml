@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+jobs:
+  php-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax check
+        run: |
+          changed=$(git diff --name-only --diff-filter=ACMR origin/main...HEAD -- '*.php' || true)
+          if [ -z "$changed" ]; then
+            echo "No PHP files changed — checking all for safety"
+            changed=$(find . -name '*.php' -not -path './.git/*')
+          fi
+          for f in $changed; do
+            echo "Checking: $f"
+            php -l "$f"
+          done
