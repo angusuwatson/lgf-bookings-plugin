@@ -21,7 +21,7 @@ When spawned by `ai-worker.sh` to complete a task:
 4. Push to the branch: `git push origin <branch-name>`
 5. Create a pull request:
    ```
-   gh pr create --title "Task title" --body "Closes task \`task-id\`." --base main
+   gh pr create --title "Task title" --body "Closes task \`task-id\`." --base master
    ```
 6. Write ONLY the PR URL to the output file specified in the prompt
 7. Do NOT modify `tasks.json` — the worker script handles that

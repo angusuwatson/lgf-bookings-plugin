@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
     types: [opened, synchronize]
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: PHP syntax check
         run: |
-          changed=$(git diff --name-only --diff-filter=ACMR origin/main...HEAD -- '*.php' || true)
+          changed=$(git diff --name-only --diff-filter=ACMR origin/master...HEAD -- '*.php' || true)
           if [ -z "$changed" ]; then
             echo "No PHP files changed — checking all for safety"
             changed=$(find . -name '*.php' -not -path './.git/*')
