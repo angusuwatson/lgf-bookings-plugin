@@ -29,6 +29,7 @@ function simple_hotel_crm_install_tables() {
     $crm_catalog_items_table = simple_hotel_crm_catalog_items_table();
     $room_closures_table = simple_hotel_crm_room_closures_table();
     $guest_preferences_table = simple_hotel_crm_guest_preferences_table();
+    $booking_types_table = simple_hotel_crm_booking_types_table();
 
     $sql_daily_notes = "CREATE TABLE {$daily_notes_table} (
         note_date date NOT NULL,
@@ -319,8 +320,19 @@ function simple_hotel_crm_install_tables() {
         KEY guest_id (guest_id)
     ) {$charset_collate};";
 
+    $sql_booking_types = "CREATE TABLE {$booking_types_table} (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        type_key varchar(50) NOT NULL,
+        type_label varchar(100) NOT NULL,
+        sort_order int(11) NOT NULL DEFAULT 0,
+        created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id),
+        UNIQUE KEY type_key (type_key)
+    ) {$charset_collate};";
+
     dbDelta( $sql_room_closures );
     dbDelta( $sql_guest_preferences );
+    dbDelta( $sql_booking_types );
 
     dbDelta( $sql_daily_notes );
     dbDelta( $sql_booking_notes );
@@ -347,6 +359,7 @@ function simple_hotel_crm_install_tables() {
     simple_hotel_crm_migrate_booking_items_rooms();
     simple_hotel_crm_migrate_catalog_items();
     simple_hotel_crm_migrate_room_status_column();
+    simple_hotel_crm_migrate_booking_type_column();
 
     update_option( 'simple_hotel_crm_db_version', SIMPLE_HOTEL_CRM_DB_VERSION );
 }
@@ -805,6 +818,11 @@ function simple_hotel_crm_room_closures_table() {
 function simple_hotel_crm_guest_preferences_table() {
     global $wpdb;
     return $wpdb->prefix . 'simple_hotel_crm_guest_preferences';
+}
+
+function simple_hotel_crm_booking_types_table() {
+    global $wpdb;
+    return $wpdb->prefix . 'simple_hotel_crm_booking_types';
 }
 
 function simple_hotel_crm_get_room_colors() {
@@ -1606,6 +1624,29 @@ function simple_hotel_crm_migrate_room_status_column() {
     $rooms_table = simple_hotel_crm_rooms_table();
     if ( ! simple_hotel_crm_table_has_column( $rooms_table, 'room_status' ) ) {
         $wpdb->query( "ALTER TABLE {$rooms_table} ADD COLUMN room_status varchar(20) NOT NULL DEFAULT 'clean' AFTER color" );
+    }
+}
+
+function simple_hotel_crm_migrate_booking_type_column() {
+    global $wpdb;
+    $bookings_table = simple_hotel_crm_bookings_table();
+    if ( ! simple_hotel_crm_table_has_column( $bookings_table, 'booking_type' ) ) {
+        $wpdb->query( "ALTER TABLE {$bookings_table} ADD COLUMN booking_type varchar(50) NULL AFTER internal_notes" );
+    }
+    $types_table = simple_hotel_crm_booking_types_table();
+    $count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$types_table}" );
+    if ( 0 === $count ) {
+        $defaults = [
+            [ 'type_key' => 'pilgrim_hiker', 'type_label' => 'Pilgrim / Hiker', 'sort_order' => 1 ],
+            [ 'type_key' => 'travelling_through', 'type_label' => 'Travelling Through', 'sort_order' => 2 ],
+            [ 'type_key' => 'visiting_family', 'type_label' => 'Visiting Family', 'sort_order' => 3 ],
+            [ 'type_key' => 'for_work', 'type_label' => 'For Work', 'sort_order' => 4 ],
+            [ 'type_key' => 'cyclist', 'type_label' => 'Cyclist', 'sort_order' => 5 ],
+            [ 'type_key' => 'competition', 'type_label' => 'Competition', 'sort_order' => 6 ],
+        ];
+        foreach ( $defaults as $type ) {
+            $wpdb->insert( $types_table, $type, [ '%s', '%s', '%d' ] );
+        }
     }
 }
 

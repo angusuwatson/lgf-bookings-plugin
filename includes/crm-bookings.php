@@ -55,6 +55,17 @@ function simple_hotel_crm_get_booking_channel_options() {
     ];
 }
 
+function simple_hotel_crm_get_booking_type_options() {
+    global $wpdb;
+    $table = simple_hotel_crm_booking_types_table();
+    $rows = $wpdb->get_results( "SELECT type_key, type_label FROM {$table} ORDER BY sort_order ASC, type_label ASC", ARRAY_A );
+    $options = [];
+    foreach ( $rows as $row ) {
+        $options[ $row['type_key'] ] = $row['type_label'];
+    }
+    return $options;
+}
+
 function simple_hotel_crm_distribute_amounts( $total, $count ) {
     $count = max( 1, (int) $count );
     $total_cents = (int) round( (float) $total * 100 );
@@ -425,10 +436,11 @@ function simple_hotel_crm_create_wp_crm_booking( $data ) {
             'currency' => 'EUR',
             'booking_note' => $booking_note,
             'internal_notes' => $import_notes,
+            'booking_type' => sanitize_text_field( (string) ( $data['booking_type'] ?? '' ) ),
             'invoice_ninja_client_id' => '',
             'invoice_ninja_invoice_id' => '',
         ],
-        [ '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%f', '%f', '%f', '%f', '%s', '%s', '%s', '%s', '%s' ]
+        [ '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%f', '%f', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%s' ]
     );
     if ( false === $booking_inserted ) {
         $wpdb->query( 'ROLLBACK' );
