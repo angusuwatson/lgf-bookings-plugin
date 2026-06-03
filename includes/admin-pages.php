@@ -23,6 +23,7 @@ function simple_hotel_crm_register_admin_menu() {
     add_submenu_page( null, __( 'Guest Detail', 'simple-hotel-crm' ), __( 'Guest Detail', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-guest-detail', 'simple_hotel_crm_render_guest_detail_page' );
     add_submenu_page( 'simple-hotel-crm', __( 'Settings', 'simple-hotel-crm' ), __( 'Settings', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-settings', 'simple_hotel_crm_render_settings_page' );
     add_submenu_page( 'simple-hotel-crm', __( 'Room Closures', 'simple-hotel-crm' ), __( 'Room Closures', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-room-closures', 'simple_hotel_crm_render_room_closures_page' );
+    add_submenu_page( 'simple-hotel-crm', __( 'Stay Purposes', 'simple-hotel-crm' ), __( 'Stay Purposes', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-booking-types', 'simple_hotel_crm_render_booking_types_page' );
     add_submenu_page( 'simple-hotel-crm', __( 'Tickets', 'simple-hotel-crm' ), __( 'Tickets', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-tickets', 'simple_hotel_crm_render_tickets_page' );
 }
 
@@ -1924,9 +1925,10 @@ function simple_hotel_crm_replace_booking_room_data( $booking_id, $data, $existi
             'total_amount' => $booking_total,
             'booking_note' => $booking_note,
             'internal_notes' => $import_notes,
+            'booking_type' => sanitize_text_field( (string) ( $data['booking_type'] ?? '' ) ),
         ],
         [ 'id' => $booking_id ],
-        [ '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%f', '%f', '%f', '%f', '%s', '%s' ],
+        [ '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%f', '%f', '%f', '%f', '%s', '%s', '%s' ],
         [ '%d' ]
     );
 
@@ -2212,11 +2214,13 @@ function simple_hotel_crm_render_booking_detail_page() {
         $booking_form_data = [
             'guest_name' => $guest_name,
             'phone' => $phone,
+            'email' => $email,
             'check_in' => sanitize_text_field( wp_unslash( $_POST['check_in_date'] ?? '' ) ),
             'check_out' => sanitize_text_field( wp_unslash( $_POST['check_out_date'] ?? '' ) ),
             'source_channel' => sanitize_text_field( wp_unslash( $_POST['source_channel'] ?? '' ) ),
             'status_code' => sanitize_text_field( wp_unslash( $_POST['status_code'] ?? '' ) ),
             'contacted_date' => sanitize_text_field( wp_unslash( $_POST['contacted_date'] ?? '' ) ),
+            'booking_type' => sanitize_text_field( wp_unslash( $_POST['booking_type'] ?? '' ) ),
             'booking_note' => array_key_exists( 'booking_note', $_POST ) ? sanitize_textarea_field( wp_unslash( $_POST['booking_note'] ) ) : simple_hotel_crm_get_booking_note_text( $booking_id ),
             'import_notes' => sanitize_textarea_field( wp_unslash( $_POST['internal_notes'] ?? '' ) ),
             'room_lines' => $posted_room_lines,
@@ -2349,6 +2353,11 @@ function simple_hotel_crm_render_booking_detail_page() {
     echo '</select></label><label style="margin:0;">' . esc_html__( 'Total', 'simple-hotel-crm' ) . '<br><input type="text" class="regular-text" value="' . esc_attr( $total_currency ) . '" readonly style="background:#f5f5f5;" /></label></div></td></tr>';
     echo '<tr><th>' . esc_html__( 'Dates', 'simple-hotel-crm' ) . '</th><td><div class="simple-hotel-crm-admin-inline-fields" style="display:flex;gap:12px;flex-wrap:nowrap;align-items:flex-end;"><label style="flex:1 1 33%;min-width:180px;">' . esc_html__( 'Contacted', 'simple-hotel-crm' ) . '<br><input type="date" name="contacted_date" value="' . esc_attr( (string) $booking['contacted_date'] ) . '" /></label><label style="flex:1 1 33%;min-width:180px;">' . esc_html__( 'Check-in', 'simple-hotel-crm' ) . '<br><input type="date" name="check_in_date" value="' . esc_attr( (string) $booking['check_in_date'] ) . '" /></label><label style="flex:1 1 33%;min-width:180px;">' . esc_html__( 'Check-out', 'simple-hotel-crm' ) . '<br><input type="date" name="check_out_date" value="' . esc_attr( (string) $booking['check_out_date'] ) . '" /></label></div></td></tr>';
     echo '<tr><th><label for="booking_note">' . esc_html__( 'Booking note', 'simple-hotel-crm' ) . '</label></th><td><textarea name="booking_note" id="booking_note" rows="3" class="large-text">' . esc_textarea( simple_hotel_crm_get_booking_note_text( $booking_id ) ) . '</textarea></td></tr>';
+    echo '<tr><th><label for="stay_purpose">' . esc_html__( 'Stay Purpose', 'simple-hotel-crm' ) . '</label></th><td><select name="booking_type" id="stay_purpose"><option value="">' . esc_html__( '— None —', 'simple-hotel-crm' ) . '</option>';
+    foreach ( simple_hotel_crm_get_booking_type_options() as $key => $label ) {
+        echo '<option value="' . esc_attr( $key ) . '"' . selected( (string) ( $booking['booking_type'] ?? '' ), $key, false ) . '>' . esc_html( $label ) . '</option>';
+    }
+    echo '</select></td></tr>';
     echo '<tr><th>' . esc_html__( 'Internal notes', 'simple-hotel-crm' ) . '</th><td><textarea name="internal_notes" rows="5" class="large-text">' . esc_textarea( (string) $booking['internal_notes'] ) . '</textarea></td></tr>';
     echo '</table>';
     echo '<h2>' . esc_html__( 'Stored Notes', 'simple-hotel-crm' ) . '</h2>';
@@ -3049,6 +3058,7 @@ function simple_hotel_crm_render_add_booking_page() {
         'status_code' => 'confirmed',
         'contacted_date' => gmdate( 'Y-m-d' ),
         'booking_note' => '',
+        'booking_type' => '',
         'import_notes' => '',
         'room_lines' => [ [ 'room_sync_id' => '', 'room_note' => '', 'adults' => 2, 'children' => 0, 'babies' => 0, 'room_rate_amount' => '0.00', 'discount_type' => 'none', 'discount_value' => '0.00', 'extras_formula' => '', 'extras_amount' => '0.00' ] ],
     ];
@@ -3095,6 +3105,7 @@ function simple_hotel_crm_render_add_booking_page() {
     }
     $channels = simple_hotel_crm_get_booking_channel_options();
     $statuses = simple_hotel_crm_get_booking_status_options();
+    $booking_types = simple_hotel_crm_get_booking_type_options();
     $dates_ready = preg_match( '/^\d{4}-\d{2}-\d{2}$/', $check_in_value ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $check_out_value ) && $check_out_value > $check_in_value;
 
     echo '<div class="wrap">';
@@ -3193,6 +3204,11 @@ function simple_hotel_crm_render_add_booking_page() {
     echo '<tr><th><label for="country">' . esc_html__( 'Country', 'simple-hotel-crm' ) . '</label></th><td><input type="text" name="country" id="country" class="regular-text" value="' . esc_attr( (string) $form_data['country'] ) . '" /></td></tr>';
     echo '<tr><th><label for="guest_notes">' . esc_html__( 'Guest notes', 'simple-hotel-crm' ) . '</label></th><td><textarea name="guest_notes" id="guest_notes" rows="3" class="large-text">' . esc_textarea( (string) $form_data['guest_notes'] ) . '</textarea></td></tr>';
     echo '<tr><th><label for="booking_note">' . esc_html__( 'Booking note', 'simple-hotel-crm' ) . '</label></th><td><textarea name="booking_note" id="booking_note" rows="3" class="large-text">' . esc_textarea( (string) $form_data['booking_note'] ) . '</textarea></td></tr>';
+    echo '<tr><th><label for="stay_purpose">' . esc_html__( 'Stay Purpose', 'simple-hotel-crm' ) . '</label></th><td><select name="booking_type" id="stay_purpose"><option value="">' . esc_html__( '— None —', 'simple-hotel-crm' ) . '</option>';
+    foreach ( $booking_types as $key => $label ) {
+        echo '<option value="' . esc_attr( $key ) . '"' . selected( (string) ( $form_data['booking_type'] ?? '' ), $key, false ) . '>' . esc_html( $label ) . '</option>';
+    }
+    echo '</select></td></tr>';
     echo '<tr><th><label for="import_notes">' . esc_html__( 'Import / internal notes', 'simple-hotel-crm' ) . '</label></th><td><textarea name="import_notes" id="import_notes" rows="4" class="large-text">' . esc_textarea( (string) $form_data['import_notes'] ) . '</textarea></td></tr>';
     echo '</table>';
     echo '<p><strong>' . esc_html__( 'Booking total preview', 'simple-hotel-crm' ) . ':</strong> <span class="simple-hotel-crm-booking-total-preview">0.00</span></p>';
@@ -5586,6 +5602,79 @@ if(sel) sel.checked=hdr.checked;
     }
 
     simple_hotel_crm_clear_calendar_cache();
+    echo '</div>';
+}
+
+function simple_hotel_crm_render_booking_types_page() {
+    if ( ! simple_hotel_crm_user_can_access() ) {
+        wp_die( esc_html__( 'You do not have permission to access this page.', 'simple-hotel-crm' ) );
+    }
+    global $wpdb;
+    $table = simple_hotel_crm_booking_types_table();
+
+    if ( isset( $_POST['simple_hotel_crm_add_booking_type'] ) ) {
+        check_admin_referer( 'simple_hotel_crm_manage_booking_types' );
+        $type_key = sanitize_key( $_POST['type_key'] ?? '' );
+        $type_label = sanitize_text_field( wp_unslash( $_POST['type_label'] ?? '' ) );
+        if ( '' !== $type_key && '' !== $type_label ) {
+            $exists = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE type_key = %s", $type_key ) );
+            if ( $exists ) {
+                echo '<div class="notice notice-error"><p>' . esc_html__( 'A type with this key already exists.', 'simple-hotel-crm' ) . '</p></div>';
+            } else {
+                $max_sort = (int) $wpdb->get_var( "SELECT COALESCE(MAX(sort_order), 0) FROM {$table}" );
+                $wpdb->insert( $table, [ 'type_key' => $type_key, 'type_label' => $type_label, 'sort_order' => $max_sort + 1 ], [ '%s', '%s', '%d' ] );
+                echo '<div class="notice notice-success"><p>' . esc_html__( 'Stay purpose added.', 'simple-hotel-crm' ) . '</p></div>';
+            }
+        } else {
+            echo '<div class="notice notice-error"><p>' . esc_html__( 'Both key and label are required.', 'simple-hotel-crm' ) . '</p></div>';
+        }
+    }
+
+    if ( isset( $_POST['simple_hotel_crm_delete_booking_type'] ) ) {
+        check_admin_referer( 'simple_hotel_crm_manage_booking_types' );
+        $type_key = sanitize_key( $_POST['type_key'] ?? '' );
+        if ( '' !== $type_key ) {
+            $wpdb->delete( $table, [ 'type_key' => $type_key ], [ '%s' ] );
+            echo '<div class="notice notice-success"><p>' . esc_html__( 'Stay purpose deleted.', 'simple-hotel-crm' ) . '</p></div>';
+        }
+    }
+
+    $types = $wpdb->get_results( "SELECT * FROM {$table} ORDER BY sort_order ASC", ARRAY_A );
+
+    echo '<div class="wrap">';
+    echo '<h1>' . esc_html__( 'Stay Purposes', 'simple-hotel-crm' ) . '</h1>';
+    echo '<p>' . esc_html__( 'Manage the list of stay purpose options available when creating or editing a booking.', 'simple-hotel-crm' ) . '</p>';
+
+    echo '<h2>' . esc_html__( 'Existing Purposes', 'simple-hotel-crm' ) . '</h2>';
+    echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Key', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Label', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Order', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Actions', 'simple-hotel-crm' ) . '</th></tr></thead><tbody>';
+    if ( empty( $types ) ) {
+        echo '<tr><td colspan="4">' . esc_html__( 'No stay purposes defined yet.', 'simple-hotel-crm' ) . '</td></tr>';
+    } else {
+        foreach ( $types as $type ) {
+            echo '<tr>';
+            echo '<td>' . esc_html( $type['type_key'] ) . '</td>';
+            echo '<td>' . esc_html( $type['type_label'] ) . '</td>';
+            echo '<td>' . esc_html( (string) $type['sort_order'] ) . '</td>';
+            echo '<td>';
+            echo '<form method="post" style="display:inline;">';
+            wp_nonce_field( 'simple_hotel_crm_manage_booking_types' );
+            echo '<input type="hidden" name="type_key" value="' . esc_attr( $type['type_key'] ) . '" />';
+            submit_button( __( 'Delete', 'simple-hotel-crm' ), 'button-small button-link-delete', 'simple_hotel_crm_delete_booking_type', false );
+            echo '</form>';
+            echo '</td>';
+            echo '</tr>';
+        }
+    }
+    echo '</tbody></table>';
+
+    echo '<h2>' . esc_html__( 'Add New Purpose', 'simple-hotel-crm' ) . '</h2>';
+    echo '<form method="post">';
+    wp_nonce_field( 'simple_hotel_crm_manage_booking_types' );
+    echo '<table class="form-table"><tr><th><label for="type_key">' . esc_html__( 'Key', 'simple-hotel-crm' ) . '</label></th><td><input type="text" name="type_key" id="type_key" class="regular-text" placeholder="e.g. cyclist" /></td></tr>';
+    echo '<tr><th><label for="type_label">' . esc_html__( 'Label', 'simple-hotel-crm' ) . '</label></th><td><input type="text" name="type_label" id="type_label" class="regular-text" placeholder="e.g. Cyclist" /></td></tr>';
+    echo '</table>';
+    submit_button( __( 'Add Purpose', 'simple-hotel-crm' ), 'primary', 'simple_hotel_crm_add_booking_type' );
+    echo '</form>';
     echo '</div>';
 }
 
