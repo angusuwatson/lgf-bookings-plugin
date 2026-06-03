@@ -328,6 +328,8 @@ function simple_hotel_crm_square_verify_webhook_signature( $body, $signature ) {
     if ( empty( $signature_key ) || empty( $signature ) ) {
         return false;
     }
-    $expected = base64_encode( hash_hmac( 'sha256', $body, $signature_key, true ) );
+    $notification_url = simple_hotel_crm_square_get_webhook_url();
+    $payload = $notification_url . $body;
+    $expected = base64_encode( hash_hmac( 'sha256', $payload, $signature_key, true ) );
     return hash_equals( $expected, $signature );
 }
