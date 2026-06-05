@@ -123,8 +123,8 @@ function simple_hotel_crm_ics_export_on_booking_change( $booking_id ) {
     $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
     $bookings_table = simple_hotel_crm_bookings_table();
 
-    $booking = $wpdb->get_row( $wpdb->prepare( "SELECT source_channel, status_code FROM {$bookings_table} WHERE id = %d", $booking_id ), ARRAY_A );
-    if ( ! $booking || 'direct' !== (string) $booking['source_channel'] || 'confirmed' !== (string) $booking['status_code'] ) {
+    $booking = $wpdb->get_row( $wpdb->prepare( "SELECT source_channel FROM {$bookings_table} WHERE id = %d", $booking_id ), ARRAY_A );
+    if ( ! $booking || 'direct' !== (string) $booking['source_channel'] ) {
         return;
     }
 
