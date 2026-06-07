@@ -66,6 +66,7 @@ input,select{font-family:inherit;font-size:16px}
 .btn-co{background:var(--orange);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:14px;font-weight:600;min-height:36px}
 .btn-co:active{background:#ea580c}
 .booking-name{font-weight:700;font-size:15px;white-space:nowrap}
+.badge-paid{display:inline-block;font-size:10px;font-weight:700;color:#fff;background:#16a34a;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;line-height:16px}
 .booking-meta{font-size:12px;color:var(--muted);margin-top:2px}
 .booking-room{font-size:11px;color:var(--muted);margin-top:2px}
 /* Catalog */
@@ -733,7 +734,7 @@ function fetchData(){
             state.bookingRooms=data.booking_rooms||[];
             state.roomNights=data.room_nights||[];
             state.ticketItems=(data.items||[]).map(function(item){
-                return {id:item.id,name:item.item_name,qty:parseInt(item.quantity,10),price:parseFloat(item.unit_price),stay_date:item.stay_date||null};
+                return {id:item.id,name:item.item_name,qty:parseInt(item.quantity,10),price:parseFloat(item.unit_price),stay_date:item.stay_date||null,booking_room_id:item.booking_room_id||null};
             });
         }else{
             state.savedItems=[];state.bookingRooms=[];state.roomNights=[];state.ticketItems=[];
@@ -782,7 +783,7 @@ function renderFinances(){
         el('div',{className:'fin-card'},[
             el('div',{className:'fin-card-title'},['Taxe de S\u00e9jour']),
             el('div',{className:'fin-card-amount orange'},[m.taxe_sejour.toFixed(2)+'\u20AC']),
-            el('div',{className:'fin-card-sub'},[m.label]),
+            el('div',{className:'fin-card-sub'},[m.adults+' adults \u00B7 '+m.children+' children']),
         ]),
         el('div',{className:'fin-card'},[
             el('div',{className:'fin-card-title'},['Paid']),
@@ -1181,12 +1182,12 @@ function renderBookings(){
         var isCheckedOut=b.status_code==='checked_out';
         var canCheckIn=b.status_code==='confirmed'&&b.check_in_date===todayStr;
         var canCheckOut=isCheckedIn&&b.check_out_date===todayStr;
+        var isPaid=b.payment_status==='paid'||b.payment_status==='completed';
         var children=[
-            el('div',{className:'booking-name'},[name.trim()||'#'+b.id]),
+            el('div',{className:'booking-name'},[name.trim()||'#'+b.id].concat(isPaid?[el('span',{className:'badge-paid'},['Paid'])]:[])),
             el('div',{className:'booking-meta'},[
                 '#'+b.id+' · '+b.check_in_date+' → '+b.check_out_date,
                 (b.total_amount?' · '+parseFloat(b.total_amount).toFixed(2)+'\u20AC':''),
-                (b.payment_status==='paid'||b.payment_status==='completed'?' ✓':''),
                 (isCheckedIn?' · ✓ In':''),
                 (isCheckedOut?' · ✓ Out':''),
             ]),
@@ -1656,7 +1657,7 @@ function addItem(item){
     var found=-1;
     for(var i=0;i<state.ticketItems.length;i++){if(state.ticketItems[i].name===name){found=i;break;}}
     if(found>=0){state.ticketItems[found].qty+=1;}
-    else{state.tempIdCounter-=1;state.ticketItems.push({id:state.tempIdCounter,name:name,qty:1,price:price,stay_date:state.date});}
+    else{state.tempIdCounter-=1;state.ticketItems.push({id:state.tempIdCounter,name:name,qty:1,price:price,stay_date:state.date,booking_room_id:state.activeRoomId||null});}
     renderTicket();
     autoSave();
 }
@@ -1682,11 +1683,14 @@ function saveTicket(){
         date:state.date,
         items:state.ticketItems.filter(function(item){
             // New items (temp negative id) or items whose stay_date matches current date
-            return item.id<0||item.stay_date===state.date;
-        }).map(function(item){return {name:item.name,qty:item.qty,price:item.price};}),
+            if(!(item.id<0||item.stay_date===state.date)) return false;
+            // When a specific room is selected, only include items for that room or unassigned (booking-level) items
+            if(state.activeRoomId>0&&item.booking_room_id!==null&&item.booking_room_id!==state.activeRoomId) return false;
+            return true;
+        }).map(function(item){return {name:item.name,qty:item.qty,price:item.price,booking_room_id:item.booking_room_id||null};}),
     }).then(function(data){
         state.ticketItems=(data.items||[]).map(function(item){
-            return {id:item.id,name:item.item_name,qty:parseInt(item.quantity,10),price:parseFloat(item.unit_price),stay_date:item.stay_date||null};
+            return {id:item.id,name:item.item_name,qty:parseInt(item.quantity,10),price:parseFloat(item.unit_price),stay_date:item.stay_date||null,booking_room_id:item.booking_room_id||null};
         });
         state.savedItems=data.items||[];
         renderTicket();

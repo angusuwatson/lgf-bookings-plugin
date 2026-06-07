@@ -22,9 +22,9 @@ function simple_hotel_crm_register_admin_menu() {
     add_submenu_page( null, __( 'Booking Merges', 'simple-hotel-crm' ), __( 'Booking Merges', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-booking-merges', 'simple_hotel_crm_render_booking_merges_page' );
     add_submenu_page( null, __( 'Guest Detail', 'simple-hotel-crm' ), __( 'Guest Detail', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-guest-detail', 'simple_hotel_crm_render_guest_detail_page' );
     add_submenu_page( 'simple-hotel-crm', __( 'Settings', 'simple-hotel-crm' ), __( 'Settings', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-settings', 'simple_hotel_crm_render_settings_page' );
-    add_submenu_page( 'simple-hotel-crm', __( 'Room Closures', 'simple-hotel-crm' ), __( 'Room Closures', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-room-closures', 'simple_hotel_crm_render_room_closures_page' );
-    add_submenu_page( 'simple-hotel-crm', __( 'Stay Purposes', 'simple-hotel-crm' ), __( 'Stay Purposes', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-booking-types', 'simple_hotel_crm_render_booking_types_page' );
-    add_submenu_page( 'simple-hotel-crm', __( 'Tickets', 'simple-hotel-crm' ), __( 'Tickets', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-tickets', 'simple_hotel_crm_render_tickets_page' );
+    add_submenu_page( null, __( 'Room Closures', 'simple-hotel-crm' ), __( 'Room Closures', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-room-closures', 'simple_hotel_crm_render_room_closures_page' );
+    add_submenu_page( null, __( 'Stay Purposes', 'simple-hotel-crm' ), __( 'Stay Purposes', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-booking-types', 'simple_hotel_crm_render_booking_types_page' );
+    add_submenu_page( null, __( 'Tickets', 'simple-hotel-crm' ), __( 'Tickets', 'simple-hotel-crm' ), 'manage_options', 'simple-hotel-crm-tickets', 'simple_hotel_crm_render_tickets_page' );
 }
 
 function simple_hotel_crm_render_admin_sync_notice() {
@@ -379,6 +379,7 @@ function simple_hotel_crm_render_bookings_page() {
     $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
     $rooms_table = simple_hotel_crm_rooms_table();
     $view = ( isset( $_GET['view'] ) && in_array( $_GET['view'], [ 'trash', 'archive', 'cancelled' ], true ) ) ? sanitize_key( $_GET['view'] ) : 'active';
+    $active_tab = isset( $_GET['tab'] ) && in_array( $_GET['tab'], [ 'room-closures', 'tickets' ], true ) ? sanitize_key( $_GET['tab'] ) : '';
     $is_deleted = 'trash' === $view ? 1 : 0;
     $archive_sql = 'active' === $view ? " AND (b.internal_notes IS NULL OR b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%') " : ( 'archive' === $view ? " AND b.internal_notes LIKE '%[MERGED_ARCHIVE]%' " : '' );
     $status_sql = 'cancelled' === $view ? " AND b.status_code = 'cancelled' " : ( 'active' === $view ? " AND b.status_code <> 'cancelled' " : '' );
@@ -536,6 +537,22 @@ function simple_hotel_crm_render_bookings_page() {
     $trash_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$bookings_table} WHERE is_deleted = 1" );
     echo '<div class="wrap">';
     echo '<h1>' . esc_html__( 'Bookings', 'simple-hotel-crm' ) . ' <a class="page-title-action" href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-add-booking' ) ) . '">' . esc_html__( 'Add Booking', 'simple-hotel-crm' ) . '</a> <a class="page-title-action" href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-booking-duplicates' ) ) . '">' . esc_html__( 'Duplicate Check', 'simple-hotel-crm' ) . '</a></h1>';
+    echo '<nav class="nav-tab-wrapper">';
+    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings' ) ) . '" class="nav-tab' . ( '' === $active_tab ? ' nav-tab-active' : '' ) . '">' . esc_html__( 'Bookings List', 'simple-hotel-crm' ) . '</a>';
+    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&tab=room-closures' ) ) . '" class="nav-tab' . ( 'room-closures' === $active_tab ? ' nav-tab-active' : '' ) . '">' . esc_html__( 'Room Closures', 'simple-hotel-crm' ) . '</a>';
+    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&tab=tickets' ) ) . '" class="nav-tab' . ( 'tickets' === $active_tab ? ' nav-tab-active' : '' ) . '">' . esc_html__( 'Tickets', 'simple-hotel-crm' ) . '</a>';
+    echo '</nav>';
+
+    if ( $active_tab ) {
+        echo '</div>';
+        if ( 'room-closures' === $active_tab ) {
+            simple_hotel_crm_render_room_closures_page();
+        } elseif ( 'tickets' === $active_tab ) {
+            simple_hotel_crm_render_tickets_page();
+        }
+        return;
+    }
+
     if ( isset( $_GET['per_page'] ) ) { update_user_meta( get_current_user_id(), 'simple_hotel_crm_bookings_per_page', $per_page ); }
     if ( isset( $_GET['per_page'] ) ) { update_user_meta( get_current_user_id(), 'simple_hotel_crm_guests_per_page', $per_page ); }
     echo '<form method="get" style="margin:12px 0;">';
@@ -4554,17 +4571,17 @@ function simple_hotel_crm_render_settings_page() {
         wp_die( esc_html__( 'You do not have permission to access this page.', 'simple-hotel-crm' ) );
     }
 
-    $tab = isset( $_GET['tab'] ) && in_array( $_GET['tab'], [ 'general', 'invoice-ninja', 'import', 'export', 'motopress', 'booking-com', 'ics-export', 'sync-log', 'item-catalog', 'square' ], true ) ? sanitize_key( $_GET['tab'] ) : 'general';
+    $tab = isset( $_GET['tab'] ) && in_array( $_GET['tab'], [ 'general', 'channels', 'payments', 'data' ], true ) ? sanitize_key( $_GET['tab'] ) : 'general';
 
-    if ( 'general' === $tab && isset( $_POST['simple_hotel_crm_submit'] ) ) {
+    if ( in_array( $tab, [ 'general', 'channels' ], true ) && isset( $_POST['simple_hotel_crm_submit'] ) ) {
         check_admin_referer( 'simple_hotel_crm_settings', 'simple_hotel_crm_settings_nonce' );
 
-        $api_url = isset( $_POST['simple_hotel_crm_invoice_ninja_url'] ) ? esc_url_raw( trim( wp_unslash( $_POST['simple_hotel_crm_invoice_ninja_url'] ) ) ) : '';
-        $api_token = isset( $_POST['simple_hotel_crm_invoice_ninja_token'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_invoice_ninja_token'] ) ) ) : '';
-        $booking_com_commission_percent = isset( $_POST['simple_hotel_crm_booking_com_commission_percent'] ) ? max( 0, min( 100, (float) str_replace( ',', '.', wp_unslash( $_POST['simple_hotel_crm_booking_com_commission_percent'] ) ) ) ) : 15;
-        $taxe_sejour_rate = isset( $_POST['simple_hotel_crm_taxe_sejour_rate'] ) ? max( 0, (float) str_replace( ',', '.', wp_unslash( $_POST['simple_hotel_crm_taxe_sejour_rate'] ) ) ) : 0.80;
-        $dashboard_api_key = isset( $_POST['simple_hotel_crm_dashboard_api_key'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_dashboard_api_key'] ) ) ) : '';
-        $submitted_ics_urls = isset( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) && is_array( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) ? wp_unslash( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) : [];
+        $api_url = isset( $_POST['simple_hotel_crm_invoice_ninja_url'] ) ? esc_url_raw( trim( wp_unslash( $_POST['simple_hotel_crm_invoice_ninja_url'] ) ) ) : get_option( 'simple_hotel_crm_invoice_ninja_url', '' );
+        $api_token = isset( $_POST['simple_hotel_crm_invoice_ninja_token'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_invoice_ninja_token'] ) ) ) : get_option( 'simple_hotel_crm_invoice_ninja_token', '' );
+        $booking_com_commission_percent = isset( $_POST['simple_hotel_crm_booking_com_commission_percent'] ) ? max( 0, min( 100, (float) str_replace( ',', '.', wp_unslash( $_POST['simple_hotel_crm_booking_com_commission_percent'] ) ) ) ) : get_option( 'simple_hotel_crm_booking_com_commission_percent', 15 );
+        $taxe_sejour_rate = isset( $_POST['simple_hotel_crm_taxe_sejour_rate'] ) ? max( 0, (float) str_replace( ',', '.', wp_unslash( $_POST['simple_hotel_crm_taxe_sejour_rate'] ) ) ) : get_option( 'simple_hotel_crm_taxe_sejour_rate', 0.80 );
+        $dashboard_api_key = isset( $_POST['simple_hotel_crm_dashboard_api_key'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_dashboard_api_key'] ) ) ) : get_option( 'simple_hotel_crm_dashboard_api_key', '' );
+        $submitted_ics_urls = isset( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) && is_array( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) ? wp_unslash( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) : get_option( 'simple_hotel_crm_booking_com_ics_room_urls', [] );
         $booking_com_ics_urls = [];
         foreach ( $submitted_ics_urls as $room_id => $room_url ) {
             $room_id = absint( $room_id );
@@ -4574,6 +4591,9 @@ function simple_hotel_crm_render_settings_page() {
             }
         }
 
+        $motopress_key = isset( $_POST['simple_hotel_crm_motopress_consumer_key'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_motopress_consumer_key'] ) ) ) : get_option( 'simple_hotel_crm_motopress_consumer_key', '' );
+        $motopress_secret = isset( $_POST['simple_hotel_crm_motopress_consumer_secret'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_motopress_consumer_secret'] ) ) ) : get_option( 'simple_hotel_crm_motopress_consumer_secret', '' );
+
         update_option( 'simple_hotel_crm_invoice_ninja_url', $api_url );
         update_option( 'simple_hotel_crm_invoice_ninja_token', $api_token );
         update_option( 'simple_hotel_crm_booking_com_commission_percent', $booking_com_commission_percent );
@@ -4581,12 +4601,14 @@ function simple_hotel_crm_render_settings_page() {
         update_option( 'simple_hotel_crm_dashboard_api_key', $dashboard_api_key );
         update_option( 'simple_hotel_crm_booking_com_ics_room_urls', $booking_com_ics_urls );
         update_option( 'simple_hotel_crm_booking_source', 'wp_sync' );
+        update_option( 'simple_hotel_crm_motopress_consumer_key', $motopress_key );
+        update_option( 'simple_hotel_crm_motopress_consumer_secret', $motopress_secret );
 
         simple_hotel_crm_clear_calendar_cache();
         echo '<div class="notice notice-success"><p>' . esc_html__( 'Settings saved.', 'simple-hotel-crm' ) . '</p></div>';
     }
 
-    if ( 'booking-com' === $tab && isset( $_POST['simple_hotel_crm_submit'] ) ) {
+    if ( in_array( $tab, [ 'booking-com', 'channels' ], true ) && isset( $_POST['simple_hotel_crm_submit'] ) ) {
         check_admin_referer( 'simple_hotel_crm_settings', 'simple_hotel_crm_settings_nonce' );
 
         $booking_com_commission_percent = isset( $_POST['simple_hotel_crm_booking_com_commission_percent'] ) ? max( 0, min( 100, (float) str_replace( ',', '.', wp_unslash( $_POST['simple_hotel_crm_booking_com_commission_percent'] ) ) ) ) : 15;
@@ -4714,368 +4736,19 @@ function simple_hotel_crm_render_settings_page() {
     echo '<p><strong>' . esc_html__( 'Plugin version:', 'simple-hotel-crm' ) . '</strong> ' . esc_html( SIMPLE_HOTEL_CRM_VERSION ) . ' &nbsp; <strong>' . esc_html__( 'DB version:', 'simple-hotel-crm' ) . '</strong> ' . esc_html( SIMPLE_HOTEL_CRM_DB_VERSION ) . '</p>';
     echo '<nav class="nav-tab-wrapper">';
     echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=general' ) ) . '" class="nav-tab ' . ( 'general' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'General', 'simple-hotel-crm' ) . '</a>';
-    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=motopress' ) ) . '" class="nav-tab ' . ( 'motopress' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'MotoPress Sync', 'simple-hotel-crm' ) . '</a>';
-    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=booking-com' ) ) . '" class="nav-tab ' . ( 'booking-com' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'Booking.com', 'simple-hotel-crm' ) . '</a>';
-    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=invoice-ninja' ) ) . '" class="nav-tab ' . ( 'invoice-ninja' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'Invoice Ninja', 'simple-hotel-crm' ) . '</a>';
-    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=import' ) ) . '" class="nav-tab ' . ( 'import' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'Import', 'simple-hotel-crm' ) . '</a>';
-    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=export' ) ) . '" class="nav-tab ' . ( 'export' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'Export', 'simple-hotel-crm' ) . '</a>';
-    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=sync-log' ) ) . '" class="nav-tab ' . ( 'sync-log' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'Sync Log', 'simple-hotel-crm' ) . '</a>';
-    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=ics-export' ) ) . '" class="nav-tab ' . ( 'ics-export' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'ICS Export', 'simple-hotel-crm' ) . '</a>';
-    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=item-catalog' ) ) . '" class="nav-tab ' . ( 'item-catalog' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'Item Catalog', 'simple-hotel-crm' ) . '</a>';
-    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=square' ) ) . '" class="nav-tab ' . ( 'square' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'Square Payments', 'simple-hotel-crm' ) . '</a>';
+    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=channels' ) ) . '" class="nav-tab ' . ( 'channels' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'Channels', 'simple-hotel-crm' ) . '</a>';
+    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=payments' ) ) . '" class="nav-tab ' . ( 'payments' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'Payments', 'simple-hotel-crm' ) . '</a>';
+    echo '<a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-settings&tab=data' ) ) . '" class="nav-tab ' . ( 'data' === $tab ? 'nav-tab-active' : '' ) . '">' . esc_html__( 'Data', 'simple-hotel-crm' ) . '</a>';
     echo '</nav>';
 
-    if ( 'import' === $tab ) {
-        simple_hotel_crm_render_import_panel();
-    } elseif ( 'export' === $tab ) {
-        simple_hotel_crm_render_export_panel();
-    } elseif ( 'motopress' === $tab ) {
+    if ( 'channels' === $tab ) {
+        echo '<div style="max-width:900px;">';
+        echo '<h2>' . esc_html__( 'MotoPress Sync', 'simple-hotel-crm' ) . '</h2>';
         simple_hotel_crm_render_motopress_sync_page();
-    } elseif ( 'sync-log' === $tab ) {
-        simple_hotel_crm_render_sync_log_page( true );
-    } elseif ( 'ics-export' === $tab ) {
-        simple_hotel_crm_render_ics_export_panel();
-    } elseif ( 'item-catalog' === $tab ) {
-        // Handle sample CSV download
-        if ( isset( $_GET['download_sample_csv'] ) ) {
-            check_admin_referer( 'download_sample_csv' );
-            header( 'Content-Type: text/csv; charset=utf-8' );
-            header( 'Content-Disposition: attachment; filename="sample-catalog-import.csv"' );
-            echo "Item Name,Price,SKU,Category,Variation Name\n";
-            echo "Coffee,3.50,COF001,dinner,\n";
-            echo "Croissant,4.00,CRO001,dinner,\n";
-            echo "Chambre Coquelicot,95.00,COQ001,rooms,\n";
-            echo "Chambre Bleuet,85.00,COQ001,rooms,\n";
-            echo "Beer,5.00,BEER001,dinner,Pint\n";
-            echo "Beer,8.00,BEER002,dinner,Bottle\n";
-            exit;
-        }
-        // Handle repair
-        if ( isset( $_POST['repair_catalog_table'] ) ) {
-            check_admin_referer( 'repair_catalog_table' );
-            $result = simple_hotel_crm_repair_catalog_table();
-            if ( true === $result ) {
-                echo '<div class="notice notice-success"><p>' . esc_html__( 'Catalog table is up to date.', 'simple-hotel-crm' ) . '</p></div>';
-            } else {
-                echo '<div class="notice notice-error"><p>' . esc_html( $result ) . '</p></div>';
-            }
-        }
-        // Handle add
-        if ( isset( $_POST['simple_hotel_crm_add_catalog_item'] ) ) {
-            check_admin_referer( 'simple_hotel_crm_catalog_item', 'simple_hotel_crm_catalog_item_nonce' );
-            $name = sanitize_text_field( (string) ( $_POST['cat_name'] ?? '' ) );
-            $price = (float) str_replace( [ ',', '€', '$' ], [ '.', '', '' ], (string) ( $_POST['cat_price'] ?? '0' ) );
-            $category = sanitize_text_field( (string) ( $_POST['cat_category'] ?? 'other' ) );
-            $square_id = sanitize_text_field( (string) ( $_POST['cat_square_id'] ?? '' ) );
-            if ( '' !== $name && $price > 0 ) {
-                simple_hotel_crm_add_catalog_item( $name, $price, $category, $square_id ?: null );
-                echo '<div class="notice notice-success"><p>' . esc_html__( 'Item added.', 'simple-hotel-crm' ) . '</p></div>';
-            } else {
-                echo '<div class="notice notice-error"><p>' . esc_html__( 'Name and price are required.', 'simple-hotel-crm' ) . '</p></div>';
-            }
-        }
-        // Handle update
-        if ( isset( $_POST['simple_hotel_crm_update_catalog_item'] ) ) {
-            check_admin_referer( 'simple_hotel_crm_catalog_item', 'simple_hotel_crm_catalog_item_nonce' );
-            $item_id = absint( $_POST['catalog_item_id'] ?? 0 );
-            if ( $item_id > 0 ) {
-                $data = [];
-                if ( isset( $_POST['cat_name'] ) ) {
-                    $data['item_name'] = sanitize_text_field( (string) $_POST['cat_name'] );
-                }
-                if ( isset( $_POST['cat_price'] ) ) {
-                    $data['unit_price'] = (float) str_replace( [ ',', '€', '$' ], [ '.', '', '' ], (string) $_POST['cat_price'] );
-                }
-                if ( isset( $_POST['cat_category'] ) ) {
-                    $data['category'] = sanitize_text_field( (string) $_POST['cat_category'] );
-                }
-                if ( isset( $_POST['cat_square_id'] ) ) {
-                    $data['square_id'] = sanitize_text_field( (string) $_POST['cat_square_id'] ) ?: null;
-                }
-                simple_hotel_crm_update_catalog_item( $item_id, $data );
-                echo '<div class="notice notice-success"><p>' . esc_html__( 'Item updated.', 'simple-hotel-crm' ) . '</p></div>';
-            }
-        }
-        // Handle toggle favorite
-        if ( isset( $_POST['simple_hotel_crm_toggle_favorite_item'] ) ) {
-            check_admin_referer( 'simple_hotel_crm_catalog_item', 'simple_hotel_crm_catalog_item_nonce' );
-            $item_id = absint( $_POST['catalog_item_id'] ?? 0 );
-            if ( $item_id > 0 ) {
-                simple_hotel_crm_toggle_favorite( $item_id );
-            }
-        }
-        // Handle delete
-        if ( isset( $_POST['simple_hotel_crm_delete_catalog_item'] ) ) {
-            check_admin_referer( 'simple_hotel_crm_catalog_item', 'simple_hotel_crm_catalog_item_nonce' );
-            $delete_id = absint( $_POST['catalog_item_id'] ?? 0 );
-            if ( $delete_id > 0 ) {
-                simple_hotel_crm_delete_catalog_item( $delete_id );
-                echo '<div class="notice notice-success"><p>' . esc_html__( 'Item deleted.', 'simple-hotel-crm' ) . '</p></div>';
-            }
-        }
-        // Handle CSV import
-        $import_result = null;
-        if ( isset( $_POST['simple_hotel_crm_import_catalog'] ) ) {
-            check_admin_referer( 'simple_hotel_crm_import_catalog', 'simple_hotel_crm_import_catalog_nonce' );
-            if ( isset( $_FILES['catalog_csv'] ) && UPLOAD_ERR_OK === $_FILES['catalog_csv']['error'] ) {
-                $import_result = simple_hotel_crm_import_catalog_csv( $_FILES['catalog_csv']['tmp_name'] );
-            } else {
-                $import_result = new WP_Error( 'upload_failed', 'Please select a CSV file to upload.' );
-            }
-        }
-        $catalog_items = simple_hotel_crm_get_catalog_items();
-        $category_options = [ 'rooms', 'dinner', 'other' ];
-        echo '<h2>' . esc_html__( 'Item Catalog', 'simple-hotel-crm' ) . '</h2>';
-        echo '<p>' . esc_html__( 'Manage items for the ticket/bar orders page and the extras dropdown on booking detail.', 'simple-hotel-crm' ) . '</p>';
-
-        // Import form
-        echo '<form method="post" enctype="multipart/form-data" style="margin:12px 0;padding:12px;background:#fff;border:1px solid #ccd0d4;">';
-        wp_nonce_field( 'simple_hotel_crm_import_catalog', 'simple_hotel_crm_import_catalog_nonce' );
-        echo '<table class="form-table"><tr><th scope="row"><label for="catalog_csv">' . esc_html__( 'Upload CSV', 'simple-hotel-crm' ) . '</label></th>';
-        echo '<td><input type="file" id="catalog_csv" name="catalog_csv" accept=".csv" /> ';
-        submit_button( __( 'Import CSV', 'simple-hotel-crm' ), 'primary', 'simple_hotel_crm_import_catalog', false );
-        echo ' <a href="' . esc_url( wp_nonce_url( add_query_arg( 'download_sample_csv', '1' ), 'download_sample_csv' ) ) . '" class="button" style="margin-left:6px;">' . esc_html__( 'Download Sample CSV', 'simple-hotel-crm' ) . '</a>';
-        echo '<p class="description">' . esc_html__( 'CSV columns: name, price (required); square_id, category (optional). For Square exports, "Variation Name" is auto-appended.', 'simple-hotel-crm' ) . '</p>';
-        echo '</td></tr></table>';
-        echo '</form>';
-        // Repair button
-        echo '<form method="post" style="margin:-6px 0 12px;">';
-        wp_nonce_field( 'repair_catalog_table', 'repair_catalog_table_nonce' );
-        submit_button( __( 'Repair Catalog Table', 'simple-hotel-crm' ), 'secondary', 'repair_catalog_table', false );
-        echo ' <span class="description">' . esc_html__( 'Run this if the "category" column is missing from the database table.', 'simple-hotel-crm' ) . '</span>';
-        echo '</form>';
-        if ( is_wp_error( $import_result ) ) {
-            echo '<div class="notice notice-error"><p>' . esc_html( $import_result->get_error_message() ) . '</p></div>';
-        } elseif ( is_array( $import_result ) ) {
-            echo '<div class="notice notice-success"><p>' . esc_html( sprintf( __( 'Imported: %1$d items, Skipped: %2$d', 'simple-hotel-crm' ), $import_result['imported'], $import_result['skipped'] ) ) . '</p></div>';
-            if ( ! empty( $import_result['errors'] ) ) {
-                echo '<div class="notice notice-error"><p><strong>' . esc_html__( 'Errors:', 'simple-hotel-crm' ) . '</strong></p><ul>';
-                foreach ( $import_result['errors'] as $err ) {
-                    echo '<li>' . esc_html( $err ) . '</li>';
-                }
-                echo '</ul></div>';
-            }
-            // Re-fetch after import
-            $catalog_items = simple_hotel_crm_get_catalog_items();
-        }
-
-        // Handle bulk actions
-        $bulk_result = null;
-        if ( isset( $_POST['simple_hotel_crm_bulk_action_nonce'] ) ) {
-            check_admin_referer( 'simple_hotel_crm_bulk_action', 'simple_hotel_crm_bulk_action_nonce' );
-            $raw = sanitize_text_field( (string) ( $_POST['bulk_ids'] ?? '' ) );
-            $ids = array_filter( array_map( 'absint', explode( ',', $raw ) ), function( $id ) { return $id > 0; } );
-            $action = sanitize_key( (string) ( $_POST['bulk_action'] ?? '' ) );
-            if ( ! empty( $ids ) ) {
-                if ( 'delete' === $action ) {
-                    $table = simple_hotel_crm_catalog_items_table();
-                    $deleted = 0;
-                    foreach ( $ids as $id ) {
-                        $result = $wpdb->delete( $table, [ 'id' => $id ], [ '%d' ] );
-                        if ( false !== $result ) {
-                            $deleted++;
-                        }
-                    }
-                    $bulk_result = sprintf( 'Deleted %d item(s).', $deleted );
-                } elseif ( 'set-category' === $action ) {
-                    $category = sanitize_text_field( (string) ( $_POST['bulk_category'] ?? '' ) );
-                    if ( in_array( $category, [ 'rooms', 'dinner', 'other' ], true ) ) {
-                        $table = simple_hotel_crm_catalog_items_table();
-                        $updated = 0;
-                        foreach ( $ids as $id ) {
-                            simple_hotel_crm_update_catalog_item( $id, [ 'category' => $category ] );
-                            $updated++;
-                        }
-                        $bulk_result = sprintf( 'Set %d item(s) to "%s".', $updated, $category );
-                    } else {
-                        $bulk_result = 'Invalid category.';
-                    }
-                }
-            } else {
-                $bulk_result = 'No items selected.';
-            }
-            // Re-fetch after bulk action
-            $catalog_items = simple_hotel_crm_get_catalog_items();
-        }
-
-        // Items table with inline edit
-        $has_category_col = simple_hotel_crm_table_has_column( simple_hotel_crm_catalog_items_table(), 'category' );
-        echo '<h3>' . esc_html__( 'Items', 'simple-hotel-crm' ) . ' (' . esc_html( (string) count( $catalog_items ) ) . ')</h3>';
-
-        // Bulk action form (uses JS to populate hidden fields)
-        echo '<form method="post" id="bulk-action-form" style="margin-bottom:8px;display:flex;gap:6px;align-items:center;">';
-        wp_nonce_field( 'simple_hotel_crm_bulk_action', 'simple_hotel_crm_bulk_action_nonce' );
-        echo '<select name="bulk_action" id="bulk_action_select">';
-        echo '<option value="">' . esc_html__( 'Bulk Actions', 'simple-hotel-crm' ) . '</option>';
-        echo '<option value="delete">' . esc_html__( 'Delete Selected', 'simple-hotel-crm' ) . '</option>';
-        if ( $has_category_col ) {
-            echo '<option value="set-category">' . esc_html__( 'Set Category', 'simple-hotel-crm' ) . '</option>';
-        }
-        echo '</select>';
-        if ( $has_category_col ) {
-            echo '<select name="bulk_category" id="bulk_category_select" style="display:none;">';
-            foreach ( $category_options as $opt ) {
-                echo '<option value="' . esc_attr( $opt ) . '">' . esc_html( ucfirst( $opt ) ) . '</option>';
-            }
-            echo '</select>';
-        }
-        echo '<input type="hidden" name="bulk_ids" id="bulk_ids_field" value="" />';
-        submit_button( __( 'Apply', 'simple-hotel-crm' ), 'secondary', 'simple_hotel_crm_bulk_action', false, [ 'id' => 'bulk-apply-btn' ] );
-        echo '</form>';
-        if ( $bulk_result ) {
-            echo '<div class="notice notice-success"><p>' . esc_html( $bulk_result ) . '</p></div>';
-        }
-
-        echo '<table class="widefat striped" style="max-width:800px;" id="catalog-items-table"><thead><tr>';
-        echo '<th style="width:30px;"><input type="checkbox" id="select-all-items" /></th>';
-        echo '<th style="width:30px;">★</th>';
-        echo '<th>' . esc_html__( 'Name', 'simple-hotel-crm' ) . '</th>';
-        echo '<th>' . esc_html__( 'Category', 'simple-hotel-crm' ) . '</th>';
-        echo '<th>' . esc_html__( 'Price', 'simple-hotel-crm' ) . '</th>';
-        echo '<th>' . esc_html__( 'Square ID', 'simple-hotel-crm' ) . '</th>';
-        echo '<th></th>';
-        echo '</tr></thead>';
-
-        // Group items: favorites first, then by category
-        $favorites = [];
-        $grouped = [ 'rooms' => [], 'dinner' => [], 'other' => [] ];
-        foreach ( $catalog_items as $item ) {
-            $is_fav = ! empty( $item['favorite'] );
-            $cat = (string) ( $item['category'] ?? 'other' );
-            if ( ! isset( $grouped[ $cat ] ) ) {
-                $cat = 'other';
-            }
-            if ( $is_fav ) {
-                $favorites[] = $item;
-            }
-            $grouped[ $cat ][] = $item;
-        }
-
-        $section_titles = [
-            'favorites' => __( 'Favourites', 'simple-hotel-crm' ),
-            'rooms' => __( 'Rooms', 'simple-hotel-crm' ),
-            'dinner' => __( 'Dinner', 'simple-hotel-crm' ),
-            'other' => __( 'Other', 'simple-hotel-crm' ),
-        ];
-        $section_order = [ 'favorites' => $favorites, 'rooms' => $grouped['rooms'], 'dinner' => $grouped['dinner'], 'other' => $grouped['other'] ];
-
-        $render_item_row = function( $item ) use ( $category_options ) {
-            $fav = ! empty( $item['favorite'] );
-            echo '<td><input type="checkbox" class="bulk-item-cb" value="' . esc_attr( (string) $item['id'] ) . '" /></td>';
-            echo '<td style="text-align:center;"><form method="post" style="display:inline;">';
-            wp_nonce_field( 'simple_hotel_crm_catalog_item', 'simple_hotel_crm_catalog_item_nonce' );
-            echo '<input type="hidden" name="catalog_item_id" value="' . esc_attr( (string) $item['id'] ) . '" />';
-            echo '<button type="submit" name="simple_hotel_crm_toggle_favorite_item" class="star-btn" style="background:none;border:none;cursor:pointer;font-size:18px;line-height:1;color:' . ( $fav ? '#f5b342' : '#ccc' ) . ';" title="' . ( $fav ? esc_attr__( 'Remove from favourites', 'simple-hotel-crm' ) : esc_attr__( 'Add to favourites', 'simple-hotel-crm' ) ) . '">' . ( $fav ? '★' : '☆' ) . '</button>';
-            echo '</form></td>';
-            echo '<form method="post" style="display:contents;">';
-            wp_nonce_field( 'simple_hotel_crm_catalog_item', 'simple_hotel_crm_catalog_item_nonce' );
-            echo '<input type="hidden" name="catalog_item_id" value="' . esc_attr( (string) $item['id'] ) . '" />';
-            echo '<td><input type="text" name="cat_name" value="' . esc_attr( (string) $item['item_name'] ) . '" style="width:100%;" /></td>';
-            echo '<td><select name="cat_category" style="width:100%;">';
-            $cat = (string) ( $item['category'] ?? 'other' );
-            foreach ( $category_options as $opt ) {
-                echo '<option value="' . esc_attr( $opt ) . '"' . ( $cat === $opt ? ' selected' : '' ) . '>' . esc_html( ucfirst( $opt ) ) . '</option>';
-            }
-            echo '</select></td>';
-            echo '<td><input type="number" step="0.01" min="0" name="cat_price" value="' . esc_attr( number_format( (float) $item['unit_price'], 2, '.', '' ) ) . '" style="width:90px;" /></td>';
-            echo '<td><input type="text" name="cat_square_id" value="' . esc_attr( (string) ( $item['square_id'] ?? '' ) ) . '" placeholder="' . esc_attr__( '(optional)', 'simple-hotel-crm' ) . '" style="width:100%;" /></td>';
-            echo '<td style="white-space:nowrap;">';
-            echo get_submit_button( __( 'Save', 'simple-hotel-crm' ), 'small', 'simple_hotel_crm_update_catalog_item', false );
-            echo ' ';
-            echo get_submit_button( __( 'Delete', 'simple-hotel-crm' ), 'small', 'simple_hotel_crm_delete_catalog_item', false );
-            echo '</td>';
-            echo '</form>';
-        };
-
-        // Add-new row (outside category groups, always visible)
-        echo '<tbody><tr class="new-item-row" style="background:#f0f6fc;">';
-        echo '<td></td><td></td>';
-        echo '<form method="post" style="display:contents;">';
-        wp_nonce_field( 'simple_hotel_crm_catalog_item', 'simple_hotel_crm_catalog_item_nonce' );
-        echo '<td><input type="text" name="cat_name" placeholder="' . esc_attr__( 'Item name', 'simple-hotel-crm' ) . '" required style="width:100%;" /></td>';
-        echo '<td><select name="cat_category" style="width:100%;">';
-        foreach ( $category_options as $opt ) {
-            echo '<option value="' . esc_attr( $opt ) . '"' . ( 'other' === $opt ? ' selected' : '' ) . '>' . esc_html( ucfirst( $opt ) ) . '</option>';
-        }
-        echo '</select></td>';
-        echo '<td><input type="number" step="0.01" min="0" name="cat_price" placeholder="0.00" required style="width:90px;" /></td>';
-        echo '<td><input type="text" name="cat_square_id" placeholder="' . esc_attr__( '(optional)', 'simple-hotel-crm' ) . '" style="width:100%;" /></td>';
-        echo '<td>' . get_submit_button( __( 'Add', 'simple-hotel-crm' ), 'primary small', 'simple_hotel_crm_add_catalog_item', false ) . '</td>';
-        echo '</form>';
-        echo '</tr></tbody>';
-
-        $first = true;
-        foreach ( $section_order as $key => $items ) {
-            if ( empty( $items ) ) {
-                continue;
-            }
-            $is_fav = 'favorites' === $key;
-            $expanded = $is_fav ? 'true' : 'false';
-            echo '<tbody class="cat-group" data-category="' . esc_attr( $key ) . '">';
-            echo '<tr class="cat-header" style="cursor:pointer;background:#e8e8e8;user-select:none;">';
-            echo '<td colspan="7" style="padding:6px 10px;font-weight:700;">';
-            echo '<span class="collapse-icon" style="display:inline-block;width:16px;">' . ( $is_fav ? '▼' : '▶' ) . '</span> ';
-            echo esc_html( $section_titles[ $key ] ) . ' <span style="font-weight:400;color:#666;">(' . count( $items ) . ')</span>';
-            echo '</td></tr>';
-            // Items hidden by default unless favorites
-            $display_style = $is_fav ? '' : ' style="display:none;"';
-            foreach ( $items as $item ) {
-                echo '<tr class="cat-item"' . $display_style . '>';
-                ( $render_item_row )( $item );
-                echo '</tr>';
-            }
-            echo '</tbody>';
-            $first = false;
-        }
-
-        echo '</table>';
-
-        echo '<style>
-@keyframes click-pop { 50% { transform:scale(0.92); } }
-#catalog-items-table input[type=submit]:active { animation:click-pop 0.15s ease; }
-.star-btn:active { animation:click-pop 0.15s ease; }
-.cat-header:hover { background:#ddd !important; }
-</style>';
-        echo '<script>
-document.addEventListener("DOMContentLoaded",function(){
-// Select all
-var selectAll=document.getElementById("select-all-items");
-if(selectAll){selectAll.addEventListener("change",function(){
-document.querySelectorAll(".bulk-item-cb").forEach(function(cb){cb.checked=selectAll.checked});
-});}
-// Bulk action UI
-var ba=document.getElementById("bulk_action_select");
-var bc=document.getElementById("bulk_category_select");
-if(ba&&bc){ba.addEventListener("change",function(){bc.style.display=this.value==="set-category"?"inline-block":"none";});}
-var ab=document.getElementById("bulk-apply-btn");
-if(ab){ab.addEventListener("click",function(e){
-var a=ba?ba.value:"";if(!a){alert("Please select a bulk action.");e.preventDefault();return;}
-var c=document.querySelectorAll(".bulk-item-cb:checked");if(c.length===0){alert("Please select at least one item.");e.preventDefault();return;}
-var ids=[];c.forEach(function(cb){ids.push(cb.value);});
-document.getElementById("bulk_ids_field").value=ids.join(",");
-});}
-// Collapsible categories
-document.querySelectorAll(".cat-header").forEach(function(hdr){
-hdr.addEventListener("click",function(){
-var tbody=hdr.closest("tbody");
-var icon=tbody.querySelector(".collapse-icon");
-var items=tbody.querySelectorAll(".cat-item");
-var expanded=items.length>0&&items[0].style.display!=="none";
-items.forEach(function(r){r.style.display=expanded?"none":"";});
-if(icon){icon.textContent=expanded?"\\u25B6":"\\u25BC";}
-});
-});
-});
-</script>';
-    echo '<hr />';
-        echo '<p><strong>' . esc_html__( 'Tips', 'simple-hotel-crm' ) . '</strong></p>';
-        echo '<ul style="list-style:disc;margin-left:20px;"><li>' . esc_html__( 'Export your Square item library as CSV, then upload it here.', 'simple-hotel-crm' ) . '</li>';
-        echo '<li>' . esc_html__( 'Duplicate item names are updated (upsert) — upload the same CSV again to refresh prices.', 'simple-hotel-crm' ) . '</li>';
-        echo '<li>' . esc_html__( 'Use category "rooms" for room charges, "dinner" for food, "other" for everything else.', 'simple-hotel-crm' ) . '</li></ul>';
-    } elseif ( 'booking-com' === $tab ) {
+        echo '<hr />';
+        echo '<h2>' . esc_html__( 'Booking.com', 'simple-hotel-crm' ) . '</h2>';
         echo '<form method="post">';
         wp_nonce_field( 'simple_hotel_crm_settings', 'simple_hotel_crm_settings_nonce' );
-        echo '<h2>' . esc_html__( 'Booking.com', 'simple-hotel-crm' ) . '</h2>';
         echo '<table class="form-table">';
         echo '<tr><th scope="row"><label for="simple_hotel_crm_booking_com_commission_percent">' . esc_html__( 'Booking.com commission %', 'simple-hotel-crm' ) . '</label></th>';
         echo '<td><input type="number" step="0.01" min="0" max="100" id="simple_hotel_crm_booking_com_commission_percent" name="simple_hotel_crm_booking_com_commission_percent" value="' . esc_attr( (string) $booking_com_commission_percent ) . '" class="small-text" /> <p class="description">' . esc_html__( 'Used for automatic commission calculation on Booking.com channel. Applied to discounted room charge only, not extras or tax.', 'simple-hotel-crm' ) . '</p></td></tr>';
@@ -5088,33 +4761,31 @@ if(icon){icon.textContent=expanded?"\\u25B6":"\\u25BC";}
         }
         echo '<p class="description">' . esc_html__( 'One Booking.com ICS export URL per room. Used to stage bookings into sync_bookings and auto-import them into CRM.', 'simple-hotel-crm' ) . '</p></td></tr>';
         echo '</table>';
-        submit_button( __( 'Save Booking.com Settings', 'simple-hotel-crm' ), 'primary', 'simple_hotel_crm_submit' );
+        submit_button( __( 'Save Channels Settings', 'simple-hotel-crm' ), 'primary', 'simple_hotel_crm_submit' );
         echo '</form>';
 
         echo '<form method="post" style="margin-top:12px;">';
         wp_nonce_field( 'simple_hotel_crm_run_booking_com_ics_import', 'simple_hotel_crm_run_booking_com_ics_import_nonce' );
-        echo '<hr />';
         echo '<h2>' . esc_html__( 'ICS Sync', 'simple-hotel-crm' ) . '</h2>';
         echo '<p>' . esc_html__( 'Fetch Booking.com ICS room feeds, stage nights, then create only missing booking skeletons in CRM. Existing enriched bookings are skipped.', 'simple-hotel-crm' ) . '</p>';
         submit_button( __( 'Sync Booking.com ICS Skeletons', 'simple-hotel-crm' ), 'secondary', 'simple_hotel_crm_run_booking_com_ics_import', false );
         echo '</form>';
-    } elseif ( 'invoice-ninja' === $tab ) {
+        echo '<hr />';
+
+        echo '<h2>' . esc_html__( 'Invoice Ninja', 'simple-hotel-crm' ) . '</h2>';
         echo '<form method="post">';
         wp_nonce_field( 'simple_hotel_crm_settings', 'simple_hotel_crm_settings_nonce' );
-        echo '<h2>' . esc_html__( 'Invoice Ninja', 'simple-hotel-crm' ) . '</h2>';
         echo '<table class="form-table">';
         echo '<tr><th scope="row"><label for="simple_hotel_crm_invoice_ninja_url">' . esc_html__( 'Invoice Ninja URL', 'simple-hotel-crm' ) . '</label></th>';
         echo '<td><input type="url" id="simple_hotel_crm_invoice_ninja_url" name="simple_hotel_crm_invoice_ninja_url" value="' . esc_attr( $api_url ) . '" class="regular-text" placeholder="https://your-invoice-ninja.com" /></td></tr>';
         echo '<tr><th scope="row"><label for="simple_hotel_crm_invoice_ninja_token">' . esc_html__( 'API Token', 'simple-hotel-crm' ) . '</label></th>';
         echo '<td><input type="password" id="simple_hotel_crm_invoice_ninja_token" name="simple_hotel_crm_invoice_ninja_token" value="' . esc_attr( $api_token ) . '" class="regular-text" /></td></tr>';
         echo '</table>';
-        submit_button( __( 'Save Invoice Ninja Settings', 'simple-hotel-crm' ), 'primary', 'simple_hotel_crm_submit' );
         echo '</form>';
 
         echo '<form method="post" style="margin-top:12px;">';
         wp_nonce_field( 'simple_hotel_crm_run_invoice_ninja_test_sync', 'simple_hotel_crm_run_invoice_ninja_test_sync_nonce' );
-        echo '<hr />';
-        echo '<h2>' . esc_html__( 'Test Sync — Single Booking', 'simple-hotel-crm' ) . '</h2>';
+        echo '<h3>' . esc_html__( 'Test Sync — Single Booking', 'simple-hotel-crm' ) . '</h3>';
         echo '<p>' . esc_html__( 'Select one uninvoiced booking to create an invoice in Invoice Ninja. Check the result before running the full bulk sync.', 'simple-hotel-crm' ) . '</p>';
         echo '<table class="form-table"><tr><th scope="row"><label for="simple_hotel_crm_invoice_ninja_test_booking_id">' . esc_html__( 'Booking', 'simple-hotel-crm' ) . '</label></th><td><select id="simple_hotel_crm_invoice_ninja_test_booking_id" name="simple_hotel_crm_invoice_ninja_test_booking_id">';
         echo '<option value="">' . esc_html__( '— Select a booking —', 'simple-hotel-crm' ) . '</option>';
@@ -5137,12 +4808,24 @@ if(icon){icon.textContent=expanded?"\\u25B6":"\\u25BC";}
 
         echo '<form method="post" style="margin-top:12px;">';
         wp_nonce_field( 'simple_hotel_crm_run_invoice_ninja_sync', 'simple_hotel_crm_run_invoice_ninja_sync_nonce' );
-        echo '<hr />';
-        echo '<h2>' . esc_html__( 'Bulk Sync', 'simple-hotel-crm' ) . '</h2>';
+        echo '<h3>' . esc_html__( 'Bulk Sync', 'simple-hotel-crm' ) . '</h3>';
         echo '<p>' . esc_html__( 'Create invoices in Invoice Ninja for all past confirmed, checked-in, and checked-out bookings that do not yet have an invoice. Each booking gets one invoice with all rooms as line items.', 'simple-hotel-crm' ) . '</p>';
         submit_button( __( 'Sync Past Bookings to Invoice Ninja', 'simple-hotel-crm' ), 'secondary', 'simple_hotel_crm_run_invoice_ninja_sync', false );
         echo '</form>';
-    } elseif ( 'square' === $tab ) {
+        echo '<hr />';
+
+        echo '<h2>' . esc_html__( 'ICS Export', 'simple-hotel-crm' ) . '</h2>';
+        simple_hotel_crm_render_ics_export_panel();
+        echo '<hr />';
+
+        echo '<h2>' . esc_html__( 'Sync Log', 'simple-hotel-crm' ) . '</h2>';
+        simple_hotel_crm_render_sync_log_page( true );
+        echo '</div>';
+    } elseif ( 'data' === $tab ) {
+        simple_hotel_crm_render_import_panel();
+        echo '<hr />';
+        simple_hotel_crm_render_export_panel();
+    } elseif ( 'payments' === $tab ) {
         if ( isset( $_POST['simple_hotel_crm_submit'] ) ) {
             check_admin_referer( 'simple_hotel_crm_settings', 'simple_hotel_crm_settings_nonce' );
             update_option( 'simple_hotel_crm_square_access_token', sanitize_text_field( wp_unslash( $_POST['simple_hotel_crm_square_access_token'] ?? '' ) ) );
@@ -5176,7 +4859,6 @@ if(icon){icon.textContent=expanded?"\\u25B6":"\\u25BC";}
         submit_button( __( 'Save Square Settings', 'simple-hotel-crm' ), 'primary', 'simple_hotel_crm_submit' );
         echo '</form>';
 
-        // Handle device code generation
         if ( isset( $_POST['square_generate_device_code'] ) ) {
             check_admin_referer( 'square_device_code', 'square_device_code_nonce' );
             $device_code_result = simple_hotel_crm_square_generate_device_code();
@@ -5197,15 +4879,12 @@ if(icon){icon.textContent=expanded?"\\u25B6":"\\u25BC";}
                     echo '<p>' . esc_html__( 'Expires:', 'simple-hotel-crm' ) . ' ' . esc_html( $pair_by ) . ' UTC</p>';
                 }
                 echo '</div>';
-
-                // Auto-fill device_id if returned from a re-pair and none stored yet
                 if ( ! empty( $device_id ) && empty( simple_hotel_crm_square_get_device_id() ) ) {
                     update_option( 'simple_hotel_crm_square_device_id', $device_id );
                 }
             }
         }
 
-        // Mode switching section
         echo '<hr />';
         echo '<h2>' . esc_html__( 'Terminal Mode', 'simple-hotel-crm' ) . '</h2>';
         if ( simple_hotel_crm_square_is_configured() ) {
@@ -5222,7 +4901,6 @@ if(icon){icon.textContent=expanded?"\\u25B6":"\\u25BC";}
         echo '<li><strong>' . esc_html__( 'Standalone:', 'simple-hotel-crm' ) . '</strong> ' . esc_html__( 'Staff enters amounts and takes payments directly on the terminal. No plugin integration.', 'simple-hotel-crm' ) . '</li>';
         echo '<li><strong>' . esc_html__( 'Terminal API (Paired):', 'simple-hotel-crm' ) . '</strong> ' . esc_html__( 'Plugin sends payment requests to the terminal. Staff just taps the card.', 'simple-hotel-crm' ) . '</li>';
         echo '</ol>';
-
         echo '<h3>' . esc_html__( 'Switch to Standalone Mode', 'simple-hotel-crm' ) . '</h3>';
         echo '<p>' . esc_html__( 'On the Square Terminal:', 'simple-hotel-crm' ) . '</p>';
         echo '<ol style="margin-left:20px;">';
@@ -5232,7 +4910,6 @@ if(icon){icon.textContent=expanded?"\\u25B6":"\\u25BC";}
         echo '<li>' . esc_html__( 'The terminal returns to normal standalone mode.', 'simple-hotel-crm' ) . '</li>';
         echo '</ol>';
         echo '<p><em>' . esc_html__( 'Note: The Device ID in settings above can be left as-is — it will reconnect when you re-pair.', 'simple-hotel-crm' ) . '</em></p>';
-
         echo '<h3>' . esc_html__( 'Switch Back to Terminal API Mode', 'simple-hotel-crm' ) . '</h3>';
         echo '<form method="post">';
         wp_nonce_field( 'square_device_code', 'square_device_code_nonce' );

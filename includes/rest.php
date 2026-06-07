@@ -825,17 +825,28 @@ function simple_hotel_crm_rest_ticket_save( WP_REST_Request $request ) {
     }
 
     $table = simple_hotel_crm_booking_items_table();
-    $where = [ 'booking_id' => $booking_id ];
-    $where_format = [ '%d' ];
-    if ( null !== $booking_room_id ) {
-        $where['booking_room_id'] = $booking_room_id;
-        $where_format[] = '%d';
+    $has_valid_date = ! empty( $date ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date );
+
+    if ( null !== $booking_room_id && $has_valid_date ) {
+        // When saving for a specific room, also delete booking-level (unassigned) items
+        // for the same date so they don't get duplicated
+        $wpdb->query( $wpdb->prepare(
+            "DELETE FROM {$table} WHERE booking_id = %d AND (booking_room_id = %d OR booking_room_id IS NULL) AND stay_date = %s",
+            $booking_id, $booking_room_id, $date
+        ) );
+    } else {
+        $where = [ 'booking_id' => $booking_id ];
+        $where_format = [ '%d' ];
+        if ( null !== $booking_room_id ) {
+            $where['booking_room_id'] = $booking_room_id;
+            $where_format[] = '%d';
+        }
+        if ( $has_valid_date ) {
+            $where['stay_date'] = $date;
+            $where_format[] = '%s';
+        }
+        $wpdb->delete( $table, $where, $where_format );
     }
-    if ( ! empty( $date ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
-        $where['stay_date'] = $date;
-        $where_format[] = '%s';
-    }
-    $wpdb->delete( $table, $where, $where_format );
 
     foreach ( $items as $item ) {
         $name = sanitize_text_field( (string) ( $item['name'] ?? '' ) );
@@ -844,7 +855,8 @@ function simple_hotel_crm_rest_ticket_save( WP_REST_Request $request ) {
         if ( '' === $name || $price <= 0 ) {
             continue;
         }
-        simple_hotel_crm_add_booking_item( $booking_id, $name, $qty, $price, $booking_room_id, $date );
+        $item_room_id = isset( $item['booking_room_id'] ) && null !== $item['booking_room_id'] ? absint( $item['booking_room_id'] ) : $booking_room_id;
+        simple_hotel_crm_add_booking_item( $booking_id, $name, $qty, $price, $item_room_id, $date );
     }
 
     $updated_items = simple_hotel_crm_get_booking_items_by_room( $booking_id );
@@ -1000,6 +1012,8 @@ function simple_hotel_crm_rest_ticket_finances( WP_REST_Request $request ) {
             COALESCE(SUM(brn.extras_amount),0)       AS extras_revenue,
             COALESCE(SUM(brn.tourist_tax_amount),0)  AS taxe_sejour,
             COALESCE(SUM(brn.total_amount),0)        AS total_room_revenue,
+            COALESCE(SUM(brn.adults),0)              AS total_adults,
+            COALESCE(SUM(brn.children + brn.babies),0) AS total_children,
             COUNT(*)                                  AS occupied_nights
         FROM {$booking_nights_table} brn
         JOIN {$booking_rooms_table} br ON br.id = brn.booking_room_id
@@ -1167,6 +1181,8 @@ function simple_hotel_crm_rest_ticket_finances( WP_REST_Request $request ) {
             'total_nights'  => $max_possible,
             'occupancy_pct' => $occupancy_pct,
             'adr'           => $adr,
+            'adults'        => (int) $monthly['total_adults'],
+            'children'      => (int) $monthly['total_children'],
         ],
         'trimester' => [
             'label'     => 'Q' . $quarter . ' ' . $year,
