@@ -191,6 +191,7 @@ function simple_hotel_crm_import_motopress_bookings() {
     }
 
     $bookings_table = simple_hotel_crm_bookings_table();
+    $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
 
     $stats = [ 'fetched' => 0, 'imported' => 0, 'skipped' => 0, 'cancelled' => 0, 'errors' => [] ];
     $analysis_skipped = 0;
@@ -243,8 +244,18 @@ function simple_hotel_crm_import_motopress_bookings() {
                 $wpdb->update( $bookings_table, [ 'status_code' => 'cancelled' ], [ 'id' => $existing['id'] ] );
                 $stats['cancelled']++;
             }
-            $analysis_skipped++;
-            continue;
+            // Check for orphaned header (booking created but room import failed)
+            $has_rooms = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$booking_rooms_table} WHERE booking_id = %d",
+                $existing['id']
+            ) );
+            if ( 0 === $has_rooms ) {
+                $wpdb->delete( $bookings_table, [ 'id' => $existing['id'] ], [ '%d' ] );
+                $stats['errors'][] = sprintf( 'Booking %s: re-importing (previous room import left orphaned header)', $external_id );
+            } else {
+                $analysis_skipped++;
+                continue;
+            }
         }
 
         // Map & analyse
@@ -277,11 +288,13 @@ function simple_hotel_crm_import_motopress_bookings() {
 
     // ── Phase 4: Import rooms for each successfully created booking ──
     $all_room_rows = [];
+    $room_errors = [];
 
     foreach ( $imported_external_ids as $external_id ) {
         $raw_booking = $raw_by_external_id[ $external_id ];
         $reserved = $raw_booking['reserved_accommodations'] ?? [];
         if ( empty( $reserved ) ) {
+            $room_errors[] = sprintf( 'Booking %s: no reserved_accommodations in API response — cannot map rooms', $external_id );
             continue;
         }
 
@@ -295,6 +308,11 @@ function simple_hotel_crm_import_motopress_bookings() {
         }
 
         $mapped_rooms = simple_hotel_crm_map_motopress_room_candidates( $raw_booking );
+        if ( empty( $mapped_rooms ) ) {
+            $room_errors[] = sprintf( 'Booking %s: MotoPress rooms could not be matched to any CRM room', $external_id );
+            continue;
+        }
+
         $room_rows = simple_hotel_crm_build_motopress_room_import_rows( $mapped_booking_row, $mapped_rooms, $raw_booking );
         $all_room_rows = array_merge( $all_room_rows, $room_rows );
     }
@@ -303,8 +321,15 @@ function simple_hotel_crm_import_motopress_bookings() {
         $room_result = simple_hotel_crm_import_booking_rooms_csv( $all_room_rows, false );
 
         if ( ! empty( $room_result['errors'] ) ) {
-            $stats['errors'] = array_merge( $stats['errors'], $room_result['errors'] );
+            $room_errors = array_merge( $room_errors, $room_result['errors'] );
         }
+    }
+
+    // ROLLBACK on any room failure so orphaned booking headers aren't left behind
+    if ( ! empty( $room_errors ) ) {
+        $wpdb->query( 'ROLLBACK' );
+        $stats['errors'] = array_merge( $stats['errors'], $room_errors );
+        return $stats;
     }
 
     $wpdb->query( 'COMMIT' );
@@ -333,11 +358,17 @@ function simple_hotel_crm_motopress_cron_sync() {
             $moto_result['fetched'], $moto_result['imported'], $moto_result['skipped'], $moto_result['cancelled'] ?? 0 );
     }
     $summary = implode( ' | ', $output );
+    $log_errors = [];
+    if ( is_wp_error( $moto_result ) ) {
+        $log_errors = [ $moto_result->get_error_message() ];
+    } elseif ( is_array( $moto_result ) && ! empty( $moto_result['errors'] ) ) {
+        $log_errors = $moto_result['errors'];
+    }
     if ( $summary ) {
         error_log( 'SHC cron sync: ' . $summary );
         simple_hotel_crm_log_sync_result( [
             'success' => $summary,
-            'errors'  => is_wp_error( $moto_result ) ? [ $moto_result->get_error_message() ] : [],
+            'errors'  => $log_errors,
         ] );
     }
 }
