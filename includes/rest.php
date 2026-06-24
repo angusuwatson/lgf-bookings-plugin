@@ -514,7 +514,8 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
 
     $booking = $wpdb->get_row(
         $wpdb->prepare(
-            "SELECT b.id, b.guest_id, b.status_code, b.source_channel, b.contacted_date, b.booking_note, b.internal_notes, g.first_name, g.last_name, g.phone, g.email
+            "SELECT b.id, b.guest_id, b.status_code, b.source_channel, b.contacted_date, b.booking_note, b.internal_notes,
+                    b.adults, b.children, b.babies, g.first_name, g.last_name, g.phone, g.email
              FROM {$bookings_table} b
              JOIN {$guests_table} g ON g.id = b.guest_id
              WHERE b.id = %d AND b.is_deleted = 0
@@ -535,6 +536,28 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
     $room_note = $booking_room_id > 0 ? simple_hotel_crm_get_booking_note_text( (int) $booking['id'], $booking_room_id ) : '';
     $booking_note_global = simple_hotel_crm_get_booking_note_text( (int) $booking['id'] );
 
+    $booking_rooms = [];
+    if ( $reserved_room_id > 0 ) {
+        $booking_rooms = $wpdb->get_results( $wpdb->prepare( "
+            SELECT br.id AS booking_room_id, r.room_code, r.room_name,
+                   COALESCE(br.adults, 0) AS adults, COALESCE(br.children, 0) AS children, COALESCE(br.babies, 0) AS babies
+            FROM " . simple_hotel_crm_booking_rooms_table() . " br
+            JOIN " . simple_hotel_crm_rooms_table() . " r ON r.id = br.room_id
+            WHERE br.booking_id = %d AND br.legacy_reserved_room_id = %d
+            ORDER BY r.sort_order ASC
+            LIMIT 1
+        ", $booking_id, $reserved_room_id ), ARRAY_A );
+    } else {
+        $booking_rooms = $wpdb->get_results( $wpdb->prepare( "
+            SELECT br.id AS booking_room_id, r.room_code, r.room_name,
+                   COALESCE(br.adults, 0) AS adults, COALESCE(br.children, 0) AS children, COALESCE(br.babies, 0) AS babies
+            FROM " . simple_hotel_crm_booking_rooms_table() . " br
+            JOIN " . simple_hotel_crm_rooms_table() . " r ON r.id = br.room_id
+            WHERE br.booking_id = %d
+            ORDER BY r.sort_order ASC
+        ", $booking_id ), ARRAY_A );
+    }
+
     return rest_ensure_response( [
         'id' => (int) $booking['id'],
         'guest_name' => trim( (string) $booking['first_name'] . ' ' . (string) $booking['last_name'] ),
@@ -551,6 +574,10 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
         'channel_options' => simple_hotel_crm_get_booking_channel_options(),
         'detail_url' => admin_url( 'admin.php?page=simple-hotel-crm-booking-detail&booking_id=' . (int) $booking['id'] ),
         'guest_url' => admin_url( 'admin.php?page=simple-hotel-crm-guest-detail&guest_id=' . (int) $booking['guest_id'] ),
+        'adults' => (int) ( $booking['adults'] ?? 0 ),
+        'children' => (int) ( $booking['children'] ?? 0 ),
+        'babies' => (int) ( $booking['babies'] ?? 0 ),
+        'booking_rooms' => $booking_rooms,
     ] );
 }
 
@@ -606,6 +633,23 @@ function simple_hotel_crm_rest_save_quick_booking( WP_REST_Request $request ) {
         $booking_update_formats[] = '%s';
     }
     $wpdb->update( $bookings_table, $booking_update, [ 'id' => $booking_id ], $booking_update_formats, [ '%d' ] );
+
+    $adults   = max( 0, (int) $request->get_param( 'adults' ) );
+    $children = max( 0, (int) $request->get_param( 'children' ) );
+    $babies   = max( 0, (int) $request->get_param( 'babies' ) );
+    if ( $adults > 0 || $children > 0 || $babies > 0 ) {
+        $wpdb->update( $bookings_table, [
+            'adults' => $adults, 'children' => $children, 'babies' => $babies,
+        ], [ 'id' => $booking_id ], [ '%d', '%d', '%d' ], [ '%d' ] );
+        $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
+        $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
+        $wpdb->update( $booking_rooms_table, [
+            'adults' => $adults, 'children' => $children, 'babies' => $babies,
+        ], [ 'booking_id' => $booking_id ], [ '%d', '%d', '%d' ], [ '%d' ] );
+        $wpdb->update( $booking_nights_table, [
+            'adults' => $adults, 'children' => $children, 'babies' => $babies,
+        ], [ 'booking_id' => $booking_id ], [ '%d', '%d', '%d' ], [ '%d' ] );
+    }
 
     if ( ! empty( $booking['source_booking_id'] ) ) {
         $wpdb->update( $sync_bookings_table, [
@@ -714,8 +758,7 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
     if ( ! empty( $booking_ids ) ) {
         $placeholders = implode( ',', array_fill( 0, count( $booking_ids ), '%d' ) );
         $room_results = $wpdb->get_results( $wpdb->prepare( "
-            SELECT br.booking_id, br.id AS booking_room_id, r.room_name, r.room_code, r.id AS room_id,
-                   COALESCE(br.adults, 0) AS adults, COALESCE(br.children, 0) AS children, COALESCE(br.babies, 0) AS babies
+            SELECT br.booking_id, br.id AS booking_room_id, r.room_name, r.room_code, r.id AS room_id
             FROM {$booking_rooms_table} br
             JOIN {$rooms_table} r ON r.id = br.room_id
             WHERE br.booking_id IN ({$placeholders})
@@ -1741,29 +1784,6 @@ function simple_hotel_crm_rest_ticket_update_booking( WP_REST_Request $request )
                     ],
                     [ '%d', '%s', '%d', '%d' ]
                 );
-            }
-        }
-    }
-
-    $rooms_occupancy = $request->get_param( 'rooms_occupancy' );
-    if ( is_array( $rooms_occupancy ) ) {
-        $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
-        $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
-        foreach ( $rooms_occupancy as $booking_room_id => $occ ) {
-            $booking_room_id = absint( $booking_room_id );
-            if ( $booking_room_id <= 0 ) continue;
-            $adults   = isset( $occ['adults'] )   ? max( 0, (int) $occ['adults'] )   : null;
-            $children = isset( $occ['children'] ) ? max( 0, (int) $occ['children'] ) : null;
-            $babies   = isset( $occ['babies'] )   ? max( 0, (int) $occ['babies'] )   : null;
-            if ( $adults === null && $children === null && $babies === null ) continue;
-            $update = [];
-            $formats = [];
-            if ( $adults !== null )   { $update['adults'] = $adults;   $formats[] = '%d'; }
-            if ( $children !== null ) { $update['children'] = $children; $formats[] = '%d'; }
-            if ( $babies !== null )   { $update['babies'] = $babies;   $formats[] = '%d'; }
-            if ( ! empty( $update ) ) {
-                $wpdb->update( $booking_rooms_table, $update, [ 'id' => $booking_room_id ], $formats, [ '%d' ] );
-                $wpdb->update( $booking_nights_table, $update, [ 'booking_room_id' => $booking_room_id ], $formats, [ '%d' ] );
             }
         }
     }

@@ -139,6 +139,9 @@
                     $form.find('[name="contacted_date"]').val(response.contacted_date || '');
                     $form.find('[name="internal_notes"]').val(response.internal_notes || '');
                     $form.find('[name="status_code"]').val(response.status_code || '');
+                    $form.find('[name="adults"]').val(response.adults || 0);
+                    $form.find('[name="children"]').val(response.children || 0);
+                    $form.find('[name="babies"]').val(response.babies || 0);
                     $modal.find('.simple-hotel-crm-open-full-booking').attr('href', response.detail_url || '#');
                     $modal.find('.simple-hotel-crm-open-guest').attr('href', response.guest_url || '#');
                     $message.text('');

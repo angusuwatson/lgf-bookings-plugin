@@ -5437,7 +5437,6 @@ function simple_hotel_crm_render_tickets_page() {
                 <div id="ticket-panel">
                     <h2 id="ticket-heading"><?php esc_html_e( 'Selected: -', 'simple-hotel-crm' ); ?></h2>
                     <div id="room-selector" style="display:none"></div>
-                    <div id="room-occupancy" style="display:none;"></div>
                     <div id="ticket-items"></div>
                     <div id="ticket-total" class="ticket-total"></div>
                     <div class="ticket-actions">
@@ -5492,14 +5491,8 @@ function simple_hotel_crm_render_tickets_page() {
         .item-card .item-price { font-size:12px; color:#666; margin-top:2px; }
         #ticket-panel { background:#f6f7f7; padding:12px; border-radius:6px; border:1px solid #dcdcde; }
         #ticket-panel h2 { margin:0 0 8px 0; font-size:16px; }
-        #room-selector { margin-bottom:4px; }
+        #room-selector { margin-bottom:8px; }
         #room-selector select { margin-left:4px; }
-        #room-occupancy { margin-bottom:8px; padding:6px 0; border-top:1px solid #dcdcde; }
-        #room-occupancy .occ-title { font-size:12px; font-weight:600; color:#555; margin-bottom:4px; }
-        #room-occupancy .occ-fields { display:flex; gap:8px; }
-        #room-occupancy .occ-field { display:flex; align-items:center; gap:4px; }
-        #room-occupancy .occ-field label { font-size:11px; color:#666; }
-        #room-occupancy .occ-field input { width:50px; padding:2px 4px; font-size:13px; text-align:center; }
         .ticket-item { display:flex; align-items:center; padding:4px 0; border-bottom:1px solid #eee; cursor:pointer; }
         .ticket-item:last-child { border-bottom:none; }
         .ticket-item .ti-name { flex:1; font-size:13px; }
@@ -5736,45 +5729,6 @@ function simple_hotel_crm_render_tickets_page() {
                 roomSel.style.display = 'none';
             }
 
-            var occDiv = document.getElementById('room-occupancy');
-            var targetRoomId = state.activeRoomId || (state.bookingRooms.length > 0 ? state.bookingRooms[0].booking_room_id : 0);
-            var targetRoom = null;
-            for (var i = 0; i < state.bookingRooms.length; i++) {
-                if (state.bookingRooms[i].booking_room_id === targetRoomId) {
-                    targetRoom = state.bookingRooms[i];
-                    break;
-                }
-            }
-            if (targetRoom) {
-                occDiv.style.display = '';
-                occDiv.innerHTML = '';
-                var title = el('div', { className: 'occ-title' }, ['Occupancy: ' + (targetRoom.room_name || targetRoom.room_code)]);
-                var fields = el('div', { className: 'occ-fields' });
-                ['adults','children','babies'].forEach(function(field) {
-                    var fieldLabel = field.charAt(0).toUpperCase() + field.slice(1);
-                    var input = el('input', {
-                        type: 'number', min: '0',
-                        value: targetRoom[field] || 0,
-                        onChange: function(f, rid) {
-                            return function() {
-                                var val = parseInt(this.value, 10) || 0;
-                                occSaveQueue[rid] = occSaveQueue[rid] || {};
-                                occSaveQueue[rid][f] = val;
-                                scheduleOccSave();
-                            };
-                        }(field, targetRoomId)
-                    });
-                    var wrap = el('div', { className: 'occ-field' });
-                    wrap.appendChild(el('label', {}, [fieldLabel + ': ']));
-                    wrap.appendChild(input);
-                    fields.appendChild(wrap);
-                });
-                occDiv.appendChild(title);
-                occDiv.appendChild(fields);
-            } else {
-                occDiv.style.display = 'none';
-            }
-
             var itemsDiv = document.getElementById('ticket-items');
             if (state.ticketItems.length === 0) {
                 itemsDiv.innerHTML = '<em style="color:#999;"><?php echo esc_js( __( 'Click catalog items to add.', 'simple-hotel-crm' ) ); ?></em>';
@@ -5794,21 +5748,6 @@ function simple_hotel_crm_render_tickets_page() {
 
             var total = state.ticketItems.reduce(function(sum, item) { return sum + item.qty * item.price; }, 0);
             setText('ticket-total', 'Total: ' + total.toFixed(2) + '\u20ac');
-        }
-
-        var occSaveQueue = {};
-        var occSaveTimer = null;
-
-        function scheduleOccSave() {
-            if (occSaveTimer) clearTimeout(occSaveTimer);
-            occSaveTimer = setTimeout(function() {
-                var payload = occSaveQueue;
-                occSaveQueue = {};
-                var body = { booking_id: state.activeBookingId, rooms_occupancy: payload };
-                apiPost('ticket-update-booking', body).catch(function(err) {
-                    showError('Failed to save occupancy: ' + err.message);
-                });
-            }, 800);
         }
 
         function selectBooking(bookingId) {
