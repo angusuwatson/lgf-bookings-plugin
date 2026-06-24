@@ -139,13 +139,10 @@
                     $form.find('[name="contacted_date"]').val(response.contacted_date || '');
                     $form.find('[name="internal_notes"]').val(response.internal_notes || '');
                     $form.find('[name="status_code"]').val(response.status_code || '');
-                    var occFromRoom = (response.booking_rooms && response.booking_rooms.length > 0) ? response.booking_rooms[0] : null;
-                    var occAdults = occFromRoom ? (parseInt(occFromRoom.adults, 10) || 0) : (parseInt(response.adults, 10) || 0);
-                    var occChildren = occFromRoom ? (parseInt(occFromRoom.children, 10) || 0) : (parseInt(response.children, 10) || 0);
-                    var occBabies = occFromRoom ? (parseInt(occFromRoom.babies, 10) || 0) : (parseInt(response.babies, 10) || 0);
-                    $form.find('[name="adults"]').val(occAdults || 0);
-                    $form.find('[name="children"]').val(occChildren || 0);
-                    $form.find('[name="babies"]').val(occBabies || 0);
+                    var occRoom = (response.booking_rooms && response.booking_rooms.length > 0) ? response.booking_rooms[0] : null;
+                    $form.find('[name="adults"]').val(occRoom ? (parseInt(occRoom.adults, 10) || 0) : 0);
+                    $form.find('[name="children"]').val(occRoom ? (parseInt(occRoom.children, 10) || 0) : 0);
+                    $form.find('[name="babies"]').val(occRoom ? (parseInt(occRoom.babies, 10) || 0) : 0);
                     $modal.find('.simple-hotel-crm-open-full-booking').attr('href', response.detail_url || '#');
                     $modal.find('.simple-hotel-crm-open-guest').attr('href', response.guest_url || '#');
                     $message.text('');

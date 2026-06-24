@@ -514,8 +514,7 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
 
     $booking = $wpdb->get_row(
         $wpdb->prepare(
-            "SELECT b.id, b.guest_id, b.status_code, b.source_channel, b.contacted_date, b.booking_note, b.internal_notes,
-                    b.adults, b.children, b.babies, g.first_name, g.last_name, g.phone, g.email
+            "SELECT b.id, b.guest_id, b.status_code, b.source_channel, b.contacted_date, b.booking_note, b.internal_notes, g.first_name, g.last_name, g.phone, g.email
              FROM {$bookings_table} b
              JOIN {$guests_table} g ON g.id = b.guest_id
              WHERE b.id = %d AND b.is_deleted = 0
@@ -574,9 +573,6 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
         'channel_options' => simple_hotel_crm_get_booking_channel_options(),
         'detail_url' => admin_url( 'admin.php?page=simple-hotel-crm-booking-detail&booking_id=' . (int) $booking['id'] ),
         'guest_url' => admin_url( 'admin.php?page=simple-hotel-crm-guest-detail&guest_id=' . (int) $booking['guest_id'] ),
-        'adults' => (int) ( $booking['adults'] ?? 0 ),
-        'children' => (int) ( $booking['children'] ?? 0 ),
-        'babies' => (int) ( $booking['babies'] ?? 0 ),
         'booking_rooms' => $booking_rooms,
     ] );
 }
@@ -637,12 +633,19 @@ function simple_hotel_crm_rest_save_quick_booking( WP_REST_Request $request ) {
     $adults   = max( 0, (int) $request->get_param( 'adults' ) );
     $children = max( 0, (int) $request->get_param( 'children' ) );
     $babies   = max( 0, (int) $request->get_param( 'babies' ) );
-    if ( $adults > 0 || $children > 0 || $babies > 0 ) {
-        $wpdb->update( $bookings_table, [
-            'adults' => $adults, 'children' => $children, 'babies' => $babies,
-        ], [ 'id' => $booking_id ], [ '%d', '%d', '%d' ], [ '%d' ] );
-        $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
-        $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
+    $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
+    $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
+    if ( $reserved_room_id > 0 ) {
+        $booking_room_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$booking_rooms_table} WHERE legacy_reserved_room_id = %d LIMIT 1", $reserved_room_id ) );
+        if ( $booking_room_id > 0 ) {
+            $wpdb->update( $booking_rooms_table, [
+                'adults' => $adults, 'children' => $children, 'babies' => $babies,
+            ], [ 'id' => $booking_room_id ], [ '%d', '%d', '%d' ], [ '%d' ] );
+            $wpdb->update( $booking_nights_table, [
+                'adults' => $adults, 'children' => $children, 'babies' => $babies,
+            ], [ 'booking_room_id' => $booking_room_id ], [ '%d', '%d', '%d' ], [ '%d' ] );
+        }
+    } else {
         $wpdb->update( $booking_rooms_table, [
             'adults' => $adults, 'children' => $children, 'babies' => $babies,
         ], [ 'booking_id' => $booking_id ], [ '%d', '%d', '%d' ], [ '%d' ] );
@@ -661,11 +664,8 @@ function simple_hotel_crm_rest_save_quick_booking( WP_REST_Request $request ) {
         ], [ 'source_booking_id' => (string) $booking['source_booking_id'] ], [ '%s', '%s', '%s', '%s', '%s' ], [ '%s' ] );
     }
 
-    if ( $reserved_room_id > 0 ) {
-        $booking_room_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM " . simple_hotel_crm_booking_rooms_table() . " WHERE legacy_reserved_room_id = %d LIMIT 1", $reserved_room_id ) );
-        if ( $has_booking_note && $booking_room_id > 0 ) {
-            simple_hotel_crm_upsert_booking_note( $booking_id, $booking_note, $booking_room_id, null, 'room' );
-        }
+    if ( $reserved_room_id > 0 && $has_booking_note && $booking_room_id > 0 ) {
+        simple_hotel_crm_upsert_booking_note( $booking_id, $booking_note, $booking_room_id, null, 'room' );
     }
 
     simple_hotel_crm_clear_calendar_cache();
