@@ -41,9 +41,18 @@ input,select{font-family:inherit;font-size:16px}
 .view-btn{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;min-height:32px;flex-shrink:0}
 .view-btn.active{border-color:#fff;color:#fff;background:rgba(255,255,255,.15)}
 .view-btn:active{background:rgba(255,255,255,.2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+#view-refresh.refreshing{animation:spin .6s linear}
 .gs-input{font-size:14px;padding:6px 10px;border-radius:8px;border:none;background:rgba(255,255,255,.15);color:#fff;min-height:32px;flex:1;min-width:80px;max-width:200px;outline:none}
 .gs-input::placeholder{color:rgba(255,255,255,.5)}
 .gs-input:focus{background:rgba(255,255,255,.25)}
+.gs-wrap{display:flex;align-items:center;gap:4px;flex:1;max-width:200px;position:relative;transition:flex .2s,max-width .2s}
+.gs-toggle{background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0;line-height:1;min-height:32px}
+.gs-toggle:active{color:#fff}
+.gs-wrap .gs-input{flex:1;min-width:0;max-width:none;transition:width .2s,opacity .2s,padding .2s}
+.gs-wrap.collapsed{flex:0;max-width:32px}
+.gs-wrap.collapsed .gs-input{width:0;padding:6px 0;opacity:0;overflow:hidden;flex:0;border:none}
+.gs-wrap.collapsed .gs-input::placeholder{color:transparent}
 .btn-qb-hdr{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:2px 10px;font-size:22px;font-weight:700;line-height:1;min-height:32px;flex-shrink:0}
 .btn-qb-hdr:active{background:rgba(255,255,255,.3)}
 /* Search results */
@@ -65,7 +74,7 @@ input,select{font-family:inherit;font-size:16px}
 .btn-ci:active{background:#2563eb}
 .btn-co{background:var(--orange);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:14px;font-weight:600;min-height:36px}
 .btn-co:active{background:#ea580c}
-.booking-name{font-weight:700;font-size:15px;white-space:nowrap}
+.booking-name{font-weight:700;font-size:15px;white-space:nowrap;color:#94a3b8}
 .badge-paid{display:inline-block;font-size:10px;font-weight:700;color:#fff;background:#16a34a;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;line-height:16px}
 .booking-meta{font-size:12px;color:var(--muted);margin-top:2px}
 .booking-room{font-size:11px;color:var(--muted);margin-top:2px}
@@ -91,12 +100,15 @@ input,select{font-family:inherit;font-size:16px}
 .cal-date-col{display:table-cell;padding:3px 4px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:600;color:var(--muted);min-width:100px;vertical-align:middle}
 .cal-cell{display:table-cell;padding:3px 4px;border:1px solid var(--border);text-align:center;font-size:11px;cursor:pointer;vertical-align:middle;transition:background .15s}
 .cal-cell:active{opacity:.7}
-.cal-free{background:transparent;color:var(--muted)}
-.cal-occ-confirmed{background:transparent;color:#60a5fa}
-.cal-occ-checked_in{background:transparent;color:#4ade80}
+.cal-free{background:transparent;color:#fff}
+.cal-occ-confirmed{background:transparent;color:#64748b}
+.cal-occ-checked_in{background:transparent;color:#000}
 .cal-today{font-weight:700;border-color:var(--accent)!important}
 .cal-guest-name{font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.cal-occ-line{font-size:10px;display:block;color:var(--muted);opacity:.8;text-align:right}
+.cal-occ-line{font-size:10px;display:block;color:#000;opacity:.9;text-align:right}
+.cal-bottom-line{display:flex;justify-content:space-between;font-size:10px;color:#000;opacity:.6}
+.cal-price{text-align:right}
+.cal-channel{display:inline-block;font-size:9px;font-weight:700;background:rgba(0,0,0,.15);border-radius:3px;padding:0 4px;margin-left:2px;line-height:14px}
 /* Dashboard */
 .dash-scroll{flex:1;overflow-y:auto;padding:12px;background:var(--card);-webkit-overflow-scrolling:touch}
 .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;margin-bottom:12px}
@@ -224,7 +236,8 @@ input,select{font-family:inherit;font-size:16px}
   .ticket-panel{width:100%;border-left:none;border-top:2px solid var(--border);flex:0 0 auto;max-height:50vh}
   .hamburger{display:inline-flex}
   .header > .view-btn{display:none}
-  .header .gs-input{display:none}
+  .header > .view-btn{display:none}
+  .header .gs-wrap{display:none}
   .header .user-name{display:none}
   .header #logout-btn{display:none}
 }
@@ -301,6 +314,7 @@ input,select{font-family:inherit;font-size:16px}
 .dn-bar>div:first-child{display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .dn-label{font-size:13px;font-weight:700;color:var(--muted)}
 .dn-saved{font-size:11px;color:var(--green);display:none}
+.dash-date{font-size:14px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);min-height:28px;margin-left:auto}
 #dn-input{width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:var(--bg);color:var(--text)}
 .text-muted{color:var(--muted)}
 .text-sm{font-size:12px}
@@ -312,13 +326,16 @@ input,select{font-family:inherit;font-size:16px}
 <div id="app">
   <div class="header">
     <h1>LGF</h1>
-    <input type="date" id="ticket-date">
-    <input type="search" id="gs-input" placeholder="Search guests..." class="gs-input" autocomplete="off">
+    <div class="gs-wrap collapsed" id="gs-wrap">
+      <button class="gs-toggle" id="gs-toggle">🔍</button>
+      <input type="search" id="gs-input" placeholder="Search" class="gs-input" autocomplete="off">
+    </div>
     <button class="view-btn active" data-view="dash" id="view-dash">Dash</button>
     <button class="view-btn" data-view="list" id="view-list">List</button>
     <button class="view-btn" data-view="cal" id="view-cal">Cal</button>
     <button class="view-btn" data-view="fin" id="view-fin">Fin</button>
     <button class="view-btn" data-view="maint" id="view-maint">Maint</button>
+    <button class="view-btn" id="view-refresh" title="Refresh data">↻</button>
     <button class="hamburger" id="hamburger">☰</button>
     <button class="btn-qb-hdr" id="qb-open" title="Quick booking">+</button>
     <span class="user-name" id="user-label"></span>
@@ -327,12 +344,14 @@ input,select{font-family:inherit;font-size:16px}
     </button>
     <button id="logout-btn" style="background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 8px;font-size:11px;min-height:32px">Logout</button>
     <div class="hm-menu" id="hm-menu">
-      <input type="search" id="hm-search" placeholder="Search guests..." class="hm-search" autocomplete="off">
+      <input type="search" id="hm-search" placeholder="Search" class="hm-search" autocomplete="off">
       <button class="view-btn active" data-view="dash" id="hm-view-dash">📊 Dash</button>
       <button class="view-btn" data-view="list" id="hm-view-list">📋 List</button>
       <button class="view-btn" data-view="cal" id="hm-view-cal">📅 Calendar</button>
       <button class="view-btn" data-view="fin" id="hm-view-fin">💰 Fin</button>
       <button class="view-btn" data-view="maint" id="hm-view-maint">🔧 Maintenance</button>
+      <hr style="border:none;border-top:1px solid var(--border);margin:6px 0">
+      <button class="view-btn" id="hm-view-refresh" style="color:var(--muted)">↻ Refresh</button>
       <span class="hm-user" id="hm-user"></span>
       <button class="hm-logout" id="hm-logout">Sign Out</button>
     </div>
@@ -343,7 +362,7 @@ input,select{font-family:inherit;font-size:16px}
   <div class="main">
     <div class="left-panel">
       <div class="dn-bar" id="dn-bar">
-        <div><span class="dn-label">&#128203; Daily Note</span><span class="dn-saved" id="dn-saved">Saved</span></div>
+        <div><span class="dn-label">&#128203; Daily Note</span><input type="date" id="dash-date" class="dash-date"><span class="dn-saved" id="dn-saved">Saved</span></div>
         <input type="text" id="dn-input" placeholder="Note for today..." autocomplete="off">
       </div>
       <div class="bookings-row" id="booking-cards"></div>
@@ -532,7 +551,7 @@ var state = {
     roomNights: [],
     activeBooking: null,
     tempIdCounter: 0,
-    viewMode: 'dash',
+    viewMode: localStorage.getItem('shc_viewMode')||'dash',
     calDate: '',
     calRooms: [],
     calOccupancy: [],
@@ -875,6 +894,7 @@ function renderFinances(){
 
 function setViewMode(mode){
     state.viewMode=mode;
+    try{localStorage.setItem('shc_viewMode',mode);}catch(e){}
     qsa('.view-btn').forEach(function(b){
         b.classList.toggle('active',b.getAttribute('data-view')===mode);
     });
@@ -1042,7 +1062,7 @@ function renderDashboard(){
 
     var breadDates=[];
     for(var i=0;i<7;i++){
-        var d=new Date(todayStr);
+        var d=new Date(state.date+'T12:00:00');
         d.setDate(d.getDate()+i);
         var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
         breadDates.push(ds);
@@ -1050,20 +1070,21 @@ function renderDashboard(){
 
     var breadScroll=el('div',{className:'bread-scroll'});
     breadDates.forEach(function(ds,i){
-        var isToday=i===0;
         var prevCount=0;
-        var prevDate=null;
-        if(!isToday){
+        var prevDate;
+        if(i===0){
+            var d=new Date(state.date+'T12:00:00');
+            d.setDate(d.getDate()-1);
+            prevDate=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        }else{
             prevDate=breadDates[i-1];
-            var g=guestByDate[prevDate];
-            if(g) prevCount=g.total;
         }
+        var g=guestByDate[prevDate];
+        if(g) prevCount=g.total;
+        var isToday=ds===todayStr;
         var dayBox=el('div',{className:'bread-day'+(isToday?' today':'')});
         dayBox.appendChild(el('div',{className:'bd-date'},[fmtDate(ds)]));
-        if(prevCount===0 && !isToday){
-            // Previous day had data but showed as 0
-            dayBox.appendChild(el('div',{className:'bd-empty'},['No guests']));
-        }else if(isToday){
+        if(prevCount===0){
             dayBox.appendChild(el('div',{className:'bd-empty'},['No guests']));
         }else{
             var croissants=prevCount;
@@ -1071,10 +1092,6 @@ function renderDashboard(){
             dayBox.appendChild(el('div',{className:'bd-row',style:'color:var(--muted);font-size:11px'},[
                 el('span',{},['Based on']),
                 el('span',{},[fmtDate(prevDate)]),
-            ]));
-            dayBox.appendChild(el('div',{className:'bd-row'},[
-                el('span',{},['Guests']),
-                el('span',{},[String(prevCount)]),
             ]));
             dayBox.appendChild(el('div',{className:'bd-row'},[
                 el('span',{},['\uD83E\uDD50 Croissants']),
@@ -1114,7 +1131,9 @@ function renderDashboard(){
 }
 
 function render(){
+    var dd=document.getElementById('dash-date');
     if(state.viewMode==='dash'){
+        if(dd) dd.style.display='';
         document.getElementById('booking-cards').style.display='none';
         document.getElementById('item-grid').style.display='none';
         document.getElementById('cal-view').style.display='none';
@@ -1123,7 +1142,10 @@ function render(){
         document.getElementById('fin-view').style.display='none';
         document.getElementById('dash-view').style.display='block';
         renderDashboard();
-    }else if(state.viewMode==='list'){
+    }else{
+        if(dd) dd.style.display='none';
+    }
+    if(state.viewMode==='list'){
         document.getElementById('booking-cards').style.display='flex';
         document.getElementById('item-grid').style.display='block';
         document.getElementById('cal-view').style.display='none';
@@ -1184,7 +1206,7 @@ function renderBookings(){
         var canCheckOut=isCheckedIn&&b.check_out_date===todayStr;
         var isPaid=b.payment_status==='paid'||b.payment_status==='completed';
         var children=[
-            el('div',{className:'booking-name'},[name.trim()||'#'+b.id].concat(isPaid?[el('span',{className:'badge-paid'},['Paid'])]:[])),
+            el('div',{className:'booking-name'},[name.trim()||'#'+b.id].concat(isPaid?[el('span',{className:'badge-paid'},['Paid'])]:[]).concat(parseInt(b.dinner_count,10)>0?[' \uD83C\uDF7D\u00D7'+b.dinner_count]:[])),
             el('div',{className:'booking-meta'},[
                 '#'+b.id+' · '+b.check_in_date+' → '+b.check_out_date,
                 (b.total_amount?' · '+parseFloat(b.total_amount).toFixed(2)+'\u20AC':''),
@@ -1295,6 +1317,7 @@ function fetchCalendarData(){
         state.calRooms=data.rooms||[];
         state.calOccupancy=data.occupancy||[];
         state.calDailyNotes=data.daily_notes||[];
+        state.calDinnerCounts=data.dinner_counts||{};
         renderCalendar();
     }).catch(function(err){
         if(err.message!=='unauthorized') showError('Calendar load failed.');
@@ -1315,6 +1338,7 @@ function renderCalendar(){
     state.calOccupancy.forEach(function(o){occMap[o.stay_date+'-'+o.room_id]=o;});
     var noteMap={};
     state.calDailyNotes.forEach(function(n){noteMap[n.note_date]=n.note_text;});
+    var dinnerMap=state.calDinnerCounts||{};
 
     var d=new Date(state.calDate+'T12:00:00');
     var year=d.getFullYear();
@@ -1357,7 +1381,7 @@ function renderCalendar(){
     state.calRooms.forEach(function(room){
         if(!room.active) return;
         var color=room.color||'var(--border)';
-        html+='<div class="cal-row" style="background:'+color+'50">';
+        html+='<div class="cal-row" style="background:'+color+'">';
         html+='<div class="cal-room-col" style="background:'+color+'">'+
             (room.room_code||'')+'</div>';
         dates.forEach(function(date){
@@ -1374,11 +1398,17 @@ function renderCalendar(){
             var extra='';
             if(occ){
                 var name=(occ.first_name||'')+' '+(occ.last_name||'');
+                var channelAbbr={direct:'D',booking_com:'B',website:'W'}[occ.source_channel]||'';
                 var occLine=(parseInt(occ.adults)||0)+'A';
                 if(parseInt(occ.children)) occLine+=' '+parseInt(occ.children)+'C';
                 if(parseInt(occ.babies)) occLine+=' '+parseInt(occ.babies)+'B';
+                if(parseInt(dinnerMap[occ.booking_id],10)>0) occLine+=' \uD83C\uDF7D';
                 extra='<span class="cal-guest-name">'+name.slice(0,18)+'</span>'+
-                    '<span class="cal-occ-line">'+occLine+'</span>';
+                    '<span class="cal-occ-line">'+occLine+'</span>'+
+                    '<div class="cal-bottom-line">'+
+                        (channelAbbr?'<span class="cal-channel">'+channelAbbr+'</span>':'<span></span>')+
+                        '<span class="cal-price">'+(parseFloat(occ.room_rate_amount)||0).toFixed(0)+'\u20AC</span>'+
+                    '</div>';
             }
             html+='<div class="'+cls+'" data-bid="'+bookingId+'">'+extra+'</div>';
         });
@@ -1507,6 +1537,7 @@ window._selectGuestResult=function(guestId){
     // Switch to list view, search will close
     setViewMode('list');
     document.getElementById('gs-input').value='';
+    document.getElementById('gs-wrap').classList.add('collapsed');
     document.getElementById('gs-results').classList.remove('active');
     // Try to find a booking for this guest in current data
     for(var i=0;i<state.bookings.length;i++){
@@ -1658,11 +1689,23 @@ function addItem(item){
     for(var i=0;i<state.ticketItems.length;i++){if(state.ticketItems[i].name===name){found=i;break;}}
     if(found>=0){state.ticketItems[found].qty+=1;}
     else{state.tempIdCounter-=1;state.ticketItems.push({id:state.tempIdCounter,name:name,qty:1,price:price,stay_date:state.date,booking_room_id:state.activeRoomId||null});}
+    _saveVersion++;
     renderTicket();
     autoSave();
 }
-function incrementItem(idx){if(idx>=0&&idx<state.ticketItems.length){state.ticketItems[idx].qty+=1;renderTicket();autoSave();}}
-function removeItem(idx){if(idx>=0&&idx<state.ticketItems.length){state.ticketItems.splice(idx,1);renderTicket();autoSave();}}
+var _saveVersion=0;
+var _removedItemIds=[];
+function incrementItem(idx){if(idx>=0&&idx<state.ticketItems.length){state.ticketItems[idx].qty+=1;_saveVersion++;renderTicket();autoSave();}}
+function removeItem(idx){
+    if(idx>=0&&idx<state.ticketItems.length){
+        var item=state.ticketItems[idx];
+        if(item.id>0) _removedItemIds.push(item.id);
+        state.ticketItems.splice(idx,1);
+        _saveVersion++;
+        renderTicket();
+        autoSave();
+    }
+}
 
 var _saveTimer=0;
 var _saving=false;
@@ -1675,12 +1718,14 @@ function autoSave(){
 function saveTicket(){
     if(_saving) return Promise.resolve();
     _saving=true;
+    var savedVersion=_saveVersion;
     document.getElementById('ticket-error').style.display='none';
     document.getElementById('ticket-save-indicator').style.display='inline';
     return apiPost('ticket-save',{
         booking_id:state.activeBookingId,
         booking_room_id:state.activeRoomId||null,
         date:state.date,
+        remove_ids:_removedItemIds,
         items:state.ticketItems.filter(function(item){
             // New items (temp negative id) or items whose stay_date matches current date
             if(!(item.id<0||item.stay_date===state.date)) return false;
@@ -1689,12 +1734,15 @@ function saveTicket(){
             return true;
         }).map(function(item){return {name:item.name,qty:item.qty,price:item.price,booking_room_id:item.booking_room_id||null};}),
     }).then(function(data){
-        state.ticketItems=(data.items||[]).map(function(item){
-            return {id:item.id,name:item.item_name,qty:parseInt(item.quantity,10),price:parseFloat(item.unit_price),stay_date:item.stay_date||null,booking_room_id:item.booking_room_id||null};
-        });
-        state.savedItems=data.items||[];
-        renderTicket();
         document.getElementById('ticket-save-indicator').style.display='none';
+        _removedItemIds=[];
+        if(savedVersion===_saveVersion){
+            state.ticketItems=(data.items||[]).map(function(item){
+                return {id:item.id,name:item.item_name,qty:parseInt(item.quantity,10),price:parseFloat(item.unit_price),stay_date:item.stay_date||null,booking_room_id:item.booking_room_id||null};
+            });
+            state.savedItems=data.items||[];
+            renderTicket();
+        }
         _saving=false;
     }).catch(function(err){
         document.getElementById('ticket-save-indicator').style.display='none';
@@ -1925,13 +1973,13 @@ function submitCheckin(){
         booking_id:_ciBookingId,
         guest:guestData,
     }).then(function(data){
-        closeCiModal();
         for(var i=0;i<state.bookings.length;i++){
             if(parseInt(state.bookings[i].id,10)===_ciBookingId){
                 state.bookings[i].status_code='checked_in';
                 break;
             }
         }
+        closeCiModal();
         renderBookings();
     }).catch(function(err){
         if(err.message==='unauthorized') return;
@@ -2135,7 +2183,7 @@ document.addEventListener('DOMContentLoaded',function(){
         }
     });
 
-    var dateInput=document.getElementById('ticket-date');
+    var dateInput=document.getElementById('dash-date');
     if(!dateInput) return;
     dateInput.value=today();
     state.date=dateInput.value;
@@ -2146,6 +2194,7 @@ document.addEventListener('DOMContentLoaded',function(){
         try{storedName=localStorage.getItem(FIRST_NAME_KEY)||''}catch(e){}
         setUserLabel(storedName);
         hideLogin();
+        setViewMode(state.viewMode);
         fetchData();
         loadDailyNote();
     }
@@ -2158,8 +2207,24 @@ document.addEventListener('DOMContentLoaded',function(){
         loadDailyNote();
     });
 
+    // Search toggle
+    document.getElementById('gs-toggle').addEventListener('click',function(){
+        var wrap=document.getElementById('gs-wrap');
+        var input=document.getElementById('gs-input');
+        wrap.classList.toggle('collapsed');
+        if(!wrap.classList.contains('collapsed')){input.focus();}
+    });
+    document.getElementById('gs-input').addEventListener('blur',function(){
+        if(!this.value.trim()) document.getElementById('gs-wrap').classList.add('collapsed');
+    });
+
     // View switching
     document.getElementById('hamburger').addEventListener('click',function(e){e.stopPropagation();toggleHm();});
+    document.getElementById('view-refresh').addEventListener('click',function(){
+        var btn=this;
+        btn.classList.add('refreshing');
+        fetchData().then(function(){btn.classList.remove('refreshing');}).catch(function(){btn.classList.remove('refreshing');});
+    });
     document.getElementById('view-dash').addEventListener('click',function(){closeHm();setViewMode('dash');});
     document.getElementById('view-list').addEventListener('click',function(){closeHm();setViewMode('list');});
     document.getElementById('view-cal').addEventListener('click',function(){closeHm();setViewMode('cal');});
@@ -2170,6 +2235,7 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('hm-view-cal').addEventListener('click',function(){closeHm();setViewMode('cal');});
     document.getElementById('hm-view-maint').addEventListener('click',function(){closeHm();setViewMode('maint');});
     document.getElementById('hm-view-fin').addEventListener('click',function(){closeHm();setViewMode('fin');});
+    document.getElementById('hm-view-refresh').addEventListener('click',function(){closeHm();var btn=document.getElementById('view-refresh');btn.classList.add('refreshing');fetchData().then(function(){btn.classList.remove('refreshing');}).catch(function(){btn.classList.remove('refreshing');});});
 
     // Calendar nav
     document.getElementById('cal-prev').addEventListener('click',function(){calNavMonth(-1);});

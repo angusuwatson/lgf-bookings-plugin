@@ -714,7 +714,8 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
     if ( ! empty( $booking_ids ) ) {
         $placeholders = implode( ',', array_fill( 0, count( $booking_ids ), '%d' ) );
         $room_results = $wpdb->get_results( $wpdb->prepare( "
-            SELECT br.booking_id, br.id AS booking_room_id, r.room_name, r.room_code, r.id AS room_id
+            SELECT br.booking_id, br.id AS booking_room_id, r.room_name, r.room_code, r.id AS room_id,
+                   COALESCE(br.adults, 0) AS adults, COALESCE(br.children, 0) AS children, COALESCE(br.babies, 0) AS babies
             FROM {$booking_rooms_table} br
             JOIN {$rooms_table} r ON r.id = br.room_id
             WHERE br.booking_id IN ({$placeholders})
@@ -728,12 +729,14 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
     $dinner_counts = [];
     if ( ! empty( $booking_ids ) ) {
         $items_table = simple_hotel_crm_booking_items_table();
+        $catalog_table = simple_hotel_crm_catalog_items_table();
         $placeholders = implode( ',', array_fill( 0, count( $booking_ids ), '%d' ) );
         $dinner_results = $wpdb->get_results( $wpdb->prepare( "
-            SELECT booking_id, SUM(quantity) AS dinner_qty FROM {$items_table}
-            WHERE booking_id IN ({$placeholders})
-            AND (LOWER(item_name) LIKE '%dîner%' OR LOWER(item_name) LIKE '%diner%' OR LOWER(item_name) LIKE '%dinner%')
-            GROUP BY booking_id
+            SELECT bi.booking_id, SUM(bi.quantity) AS dinner_qty FROM {$items_table} bi
+            LEFT JOIN {$catalog_table} c ON c.item_name = bi.item_name
+            WHERE bi.booking_id IN ({$placeholders})
+            AND (c.category = 'dinner' OR LOWER(bi.item_name) LIKE '%diner%')
+            GROUP BY bi.booking_id
         ", $booking_ids ), ARRAY_A );
         foreach ( $dinner_results as $dr ) {
             $dinner_counts[ $dr['booking_id'] ] = (int) $dr['dinner_qty'];
@@ -826,6 +829,20 @@ function simple_hotel_crm_rest_ticket_save( WP_REST_Request $request ) {
 
     $table = simple_hotel_crm_booking_items_table();
     $has_valid_date = ! empty( $date ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date );
+
+    // Explicitly delete items marked for removal (by ID), regardless of scope
+    $remove_ids = $request->get_param( 'remove_ids' ) ?: [];
+    if ( ! empty( $remove_ids ) && is_array( $remove_ids ) ) {
+        $ids = array_map( 'absint', $remove_ids );
+        $ids = array_filter( $ids, function( $id ) { return $id > 0; } );
+        if ( ! empty( $ids ) ) {
+            $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+            $wpdb->query( $wpdb->prepare(
+                "DELETE FROM {$table} WHERE id IN ({$placeholders}) AND booking_id = %d",
+                array_merge( $ids, [ $booking_id ] )
+            ) );
+        }
+    }
 
     if ( null !== $booking_room_id && $has_valid_date ) {
         // When saving for a specific room, also delete booking-level (unassigned) items
@@ -1340,7 +1357,9 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
                COALESCE(brn.children, br.children, 0) AS children,
                COALESCE(brn.babies, br.babies, 0) AS babies,
                COALESCE(brn.guest_count, br.guest_count, 0) AS guest_count,
+               brn.room_rate_amount,
                b.id AS booking_id, b.status_code, b.check_in_date, b.check_out_date,
+               b.source_channel,
                g.first_name, g.last_name
         FROM {$booking_nights_table} brn
         JOIN {$booking_rooms_table} br ON br.id = brn.booking_room_id
@@ -1355,6 +1374,24 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
         ORDER BY brn.stay_date ASC, r.sort_order ASC
     ", $start_date, $end_date ), ARRAY_A );
 
+    $dinner_counts = [];
+    if ( ! empty( $occupancy ) ) {
+        $bids = array_unique( array_column( $occupancy, 'booking_id' ) );
+        $items_table = simple_hotel_crm_booking_items_table();
+        $catalog_table = simple_hotel_crm_catalog_items_table();
+        $placeholders = implode( ',', array_fill( 0, count( $bids ), '%d' ) );
+        $dinner_results = $wpdb->get_results( $wpdb->prepare( "
+            SELECT bi.booking_id, SUM(bi.quantity) AS dinner_qty FROM {$items_table} bi
+            LEFT JOIN {$catalog_table} c ON c.item_name = bi.item_name
+            WHERE bi.booking_id IN ({$placeholders})
+            AND (c.category = 'dinner' OR LOWER(bi.item_name) LIKE '%diner%')
+            GROUP BY bi.booking_id
+        ", $bids ), ARRAY_A );
+        foreach ( $dinner_results as $dr ) {
+            $dinner_counts[ (int) $dr['booking_id'] ] = (int) $dr['dinner_qty'];
+        }
+    }
+
     $daily_notes_table = simple_hotel_crm_daily_notes_table();
     $daily_notes = $wpdb->get_results( $wpdb->prepare( "
         SELECT note_date, note_text FROM {$daily_notes_table}
@@ -1368,6 +1405,7 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
         'rooms'      => $rooms,
         'occupancy'  => $occupancy,
         'daily_notes' => $daily_notes,
+        'dinner_counts' => $dinner_counts,
     ] );
 }
 
@@ -1703,6 +1741,29 @@ function simple_hotel_crm_rest_ticket_update_booking( WP_REST_Request $request )
                     ],
                     [ '%d', '%s', '%d', '%d' ]
                 );
+            }
+        }
+    }
+
+    $rooms_occupancy = $request->get_param( 'rooms_occupancy' );
+    if ( is_array( $rooms_occupancy ) ) {
+        $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
+        $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
+        foreach ( $rooms_occupancy as $booking_room_id => $occ ) {
+            $booking_room_id = absint( $booking_room_id );
+            if ( $booking_room_id <= 0 ) continue;
+            $adults   = isset( $occ['adults'] )   ? max( 0, (int) $occ['adults'] )   : null;
+            $children = isset( $occ['children'] ) ? max( 0, (int) $occ['children'] ) : null;
+            $babies   = isset( $occ['babies'] )   ? max( 0, (int) $occ['babies'] )   : null;
+            if ( $adults === null && $children === null && $babies === null ) continue;
+            $update = [];
+            $formats = [];
+            if ( $adults !== null )   { $update['adults'] = $adults;   $formats[] = '%d'; }
+            if ( $children !== null ) { $update['children'] = $children; $formats[] = '%d'; }
+            if ( $babies !== null )   { $update['babies'] = $babies;   $formats[] = '%d'; }
+            if ( ! empty( $update ) ) {
+                $wpdb->update( $booking_rooms_table, $update, [ 'id' => $booking_room_id ], $formats, [ '%d' ] );
+                $wpdb->update( $booking_nights_table, $update, [ 'booking_room_id' => $booking_room_id ], $formats, [ '%d' ] );
             }
         }
     }

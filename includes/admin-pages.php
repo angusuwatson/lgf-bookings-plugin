@@ -2840,18 +2840,18 @@ function simple_hotel_crm_render_guest_detail_page() {
     echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=simple-hotel-crm-guests' ) ) . '">← ' . esc_html__( 'Back to Guests', 'simple-hotel-crm' ) . '</a></p>';
     echo '<form method="post">';
     wp_nonce_field( 'simple_hotel_crm_save_guest_' . $guest_id );
-    echo '<table class="form-table">';
-    echo '<tr><th>' . esc_html__( 'First name', 'simple-hotel-crm' ) . '</th><td><input type="text" name="first_name" value="' . esc_attr( (string) $guest['first_name'] ) . '" class="regular-text" /></td></tr>';
-    echo '<tr><th>' . esc_html__( 'Last name', 'simple-hotel-crm' ) . '</th><td><input type="text" name="last_name" value="' . esc_attr( (string) $guest['last_name'] ) . '" class="regular-text" /></td></tr>';
-    echo '<tr><th>' . esc_html__( 'Email', 'simple-hotel-crm' ) . '</th><td><input type="email" name="email" value="' . esc_attr( (string) $guest['email'] ) . '" class="regular-text" /></td></tr>';
-    echo '<tr><th>' . esc_html__( 'Phone', 'simple-hotel-crm' ) . '</th><td><input type="text" name="phone" value="' . esc_attr( (string) $guest['phone'] ) . '" class="regular-text" /></td></tr>';
-    echo '<tr><th>' . esc_html__( 'Address line 1', 'simple-hotel-crm' ) . '</th><td><input type="text" name="address_line_1" value="' . esc_attr( (string) $guest['address_line_1'] ) . '" class="regular-text" /></td></tr>';
-    echo '<tr><th>' . esc_html__( 'Address line 2', 'simple-hotel-crm' ) . '</th><td><input type="text" name="address_line_2" value="' . esc_attr( (string) $guest['address_line_2'] ) . '" class="regular-text" /></td></tr>';
-    echo '<tr><th>' . esc_html__( 'City', 'simple-hotel-crm' ) . '</th><td><input type="text" name="city" value="' . esc_attr( (string) $guest['city'] ) . '" class="regular-text" /></td></tr>';
-    echo '<tr><th>' . esc_html__( 'Postcode', 'simple-hotel-crm' ) . '</th><td><input type="text" name="postcode" value="' . esc_attr( (string) $guest['postcode'] ) . '" class="regular-text" /></td></tr>';
-    echo '<tr><th>' . esc_html__( 'Country', 'simple-hotel-crm' ) . '</th><td><input type="text" name="country" value="' . esc_attr( (string) $guest['country'] ) . '" class="regular-text" /></td></tr>';
-    echo '<tr><th>' . esc_html__( 'Notes', 'simple-hotel-crm' ) . '</th><td><textarea name="notes" rows="5" class="large-text">' . esc_textarea( (string) $guest['notes'] ) . '</textarea></td></tr>';
-    echo '</table>';
+    echo '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;max-width:800px;">';
+    echo '<div><label>' . esc_html__( 'First name', 'simple-hotel-crm' ) . '</label><br /><input type="text" name="first_name" value="' . esc_attr( (string) $guest['first_name'] ) . '" style="width:100%;" /></div>';
+    echo '<div><label>' . esc_html__( 'Last name', 'simple-hotel-crm' ) . '</label><br /><input type="text" name="last_name" value="' . esc_attr( (string) $guest['last_name'] ) . '" style="width:100%;" /></div>';
+    echo '<div><label>' . esc_html__( 'Email', 'simple-hotel-crm' ) . '</label><br /><input type="email" name="email" value="' . esc_attr( (string) $guest['email'] ) . '" style="width:100%;" /></div>';
+    echo '<div><label>' . esc_html__( 'Phone', 'simple-hotel-crm' ) . '</label><br /><input type="text" name="phone" value="' . esc_attr( (string) $guest['phone'] ) . '" style="width:100%;" /></div>';
+    echo '<div><label>' . esc_html__( 'Address line 1', 'simple-hotel-crm' ) . '</label><br /><input type="text" name="address_line_1" value="' . esc_attr( (string) $guest['address_line_1'] ) . '" style="width:100%;" /></div>';
+    echo '<div><label>' . esc_html__( 'Address line 2', 'simple-hotel-crm' ) . '</label><br /><input type="text" name="address_line_2" value="' . esc_attr( (string) $guest['address_line_2'] ) . '" style="width:100%;" /></div>';
+    echo '<div><label>' . esc_html__( 'City', 'simple-hotel-crm' ) . '</label><br /><input type="text" name="city" value="' . esc_attr( (string) $guest['city'] ) . '" style="width:100%;" /></div>';
+    echo '<div><label>' . esc_html__( 'Postcode', 'simple-hotel-crm' ) . '</label><br /><input type="text" name="postcode" value="' . esc_attr( (string) $guest['postcode'] ) . '" style="width:100%;" /></div>';
+    echo '<div style="grid-column:1/2;"><label>' . esc_html__( 'Country', 'simple-hotel-crm' ) . '</label><br /><input type="text" name="country" value="' . esc_attr( (string) $guest['country'] ) . '" style="width:100%;" /></div>';
+    echo '</div>';
+    echo '<div style="max-width:800px;margin-top:8px;"><label>' . esc_html__( 'Notes', 'simple-hotel-crm' ) . '</label><br /><textarea name="notes" rows="3" style="width:100%;">' . esc_textarea( (string) $guest['notes'] ) . '</textarea></div>';
     submit_button( __( 'Save Guest', 'simple-hotel-crm' ), 'primary', 'simple_hotel_crm_save_guest' );
     echo '</form>';
     
@@ -2939,57 +2939,6 @@ function simple_hotel_crm_render_guest_detail_page() {
                 }
     echo '</form>';
 
-    // Square Terminal payment section
-    if ( simple_hotel_crm_square_is_configured() ) {
-        $square_checkout_id = get_post_meta( $booking_id, '_square_checkout_id', true );
-        $square_status = get_post_meta( $booking_id, '_square_checkout_status', true );
-        $payment_status = isset( $booking['payment_status'] ) ? $booking['payment_status'] : 'pending';
-        echo '<div style="margin:12px 0;padding:12px;background:#fff;border:1px solid #ccd0d4;">';
-        echo '<h2>' . esc_html__( 'Card Payment (Square Terminal)', 'simple-hotel-crm' ) . '</h2>';
-        if ( 'paid' === $payment_status ) {
-            $square_payment_id = get_post_meta( $booking_id, '_square_payment_id', true );
-            echo '<p><strong style="color:green;">' . esc_html__( '✓ Paid', 'simple-hotel-crm' ) . '</strong></p>';
-            if ( $square_payment_id ) {
-                echo '<form method="post" style="margin-top:8px;padding:8px;background:#fefefe;border:1px solid #ddd;border-radius:3px;">';
-                wp_nonce_field( 'square_refund_' . $booking_id, 'square_refund_nonce' );
-                echo '<p><label>' . esc_html__( 'Refund amount (€):', 'simple-hotel-crm' ) . ' <input type="number" step="0.01" min="0" name="square_refund_amount" class="small-text" /></label>';
-                echo ' <button type="submit" name="square_refund_payment" value="1" class="button button-small" onclick="return confirm(' . wp_json_encode( __( 'Process this refund?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Refund', 'simple-hotel-crm' ) . '</button></p>';
-                echo '<p class="description">' . esc_html__( 'Leave amount empty for full refund.', 'simple-hotel-crm' ) . '</p>';
-                echo '</form>';
-            }
-        } elseif ( 'refunded' === $payment_status ) {
-            echo '<p><strong style="color:#b32d2e;">' . esc_html__( 'Refunded', 'simple-hotel-crm' ) . '</strong></p>';
-        } elseif ( $square_checkout_id && 'completed' === $square_status ) {
-            echo '<p><strong style="color:green;">' . esc_html__( '✓ Payment completed', 'simple-hotel-crm' ) . '</strong>';
-            echo ' <a href="' . esc_url( wp_nonce_url( admin_url( 'admin.php?page=simple-hotel-crm-booking-detail&booking_id=' . $booking_id . '&square_confirm=1' ), 'square_confirm_' . $booking_id ) ) . '" class="button button-small">' . esc_html__( 'Create IN Invoice', 'simple-hotel-crm' ) . '</a></p>';
-        } elseif ( $square_checkout_id ) {
-            $current_status = simple_hotel_crm_square_get_checkout_status( $square_checkout_id );
-            if ( is_string( $current_status ) ) {
-                echo '<p>' . esc_html__( 'Status:', 'simple-hotel-crm' ) . ' <strong>' . esc_html( simple_hotel_crm_square_get_payment_status_label( $current_status ) ) . '</strong></p>';
-            }
-            echo '<form method="post" style="display:inline;">';
-            wp_nonce_field( 'square_check_payment_' . $booking_id, 'square_check_payment_nonce' );
-            echo '<input type="hidden" name="square_check_payment" value="1" />';
-            submit_button( __( 'Check Payment Status', 'simple-hotel-crm' ), 'small', '', false );
-            echo '</form>';
-            echo ' ';
-            echo '<form method="post" style="display:inline;" onsubmit="return confirm(' . wp_json_encode( __( 'Cancel this payment request?', 'simple-hotel-crm' ) ) . ');">';
-            wp_nonce_field( 'square_cancel_payment_' . $booking_id, 'square_cancel_payment_nonce' );
-            echo '<input type="hidden" name="square_cancel_payment" value="1" />';
-            submit_button( __( 'Cancel', 'simple-hotel-crm' ), 'small', '', false );
-            echo '</form>';
-        } else {
-            $total = (float) $booking['total_amount'];
-            echo '<form method="post">';
-            wp_nonce_field( 'square_pay_booking_' . $booking_id, 'square_pay_booking_nonce' );
-            echo '<input type="hidden" name="square_create_checkout" value="1" />';
-            echo '<p><label>' . esc_html__( 'Amount (€):', 'simple-hotel-crm' ) . ' <input type="number" step="0.01" min="0" name="square_payment_amount" value="' . esc_attr( number_format( $total, 2, '.', '' ) ) . '" class="small-text" /></label></p>';
-            echo '<p><label><input type="checkbox" name="square_skip_receipt" value="1" /> ' . esc_html__( 'Skip receipt screen on terminal', 'simple-hotel-crm' ) . '</label></p>';
-            submit_button( __( 'Pay with Square Terminal', 'simple-hotel-crm' ), 'primary', '', false );
-            echo '</form>';
-        }
-        echo '</div>';
-    }
                 echo '</td>';
                 
                 echo '</tr>';
@@ -5488,6 +5437,7 @@ function simple_hotel_crm_render_tickets_page() {
                 <div id="ticket-panel">
                     <h2 id="ticket-heading"><?php esc_html_e( 'Selected: -', 'simple-hotel-crm' ); ?></h2>
                     <div id="room-selector" style="display:none"></div>
+                    <div id="room-occupancy" style="display:none;"></div>
                     <div id="ticket-items"></div>
                     <div id="ticket-total" class="ticket-total"></div>
                     <div class="ticket-actions">
@@ -5542,8 +5492,14 @@ function simple_hotel_crm_render_tickets_page() {
         .item-card .item-price { font-size:12px; color:#666; margin-top:2px; }
         #ticket-panel { background:#f6f7f7; padding:12px; border-radius:6px; border:1px solid #dcdcde; }
         #ticket-panel h2 { margin:0 0 8px 0; font-size:16px; }
-        #room-selector { margin-bottom:8px; }
+        #room-selector { margin-bottom:4px; }
         #room-selector select { margin-left:4px; }
+        #room-occupancy { margin-bottom:8px; padding:6px 0; border-top:1px solid #dcdcde; }
+        #room-occupancy .occ-title { font-size:12px; font-weight:600; color:#555; margin-bottom:4px; }
+        #room-occupancy .occ-fields { display:flex; gap:8px; }
+        #room-occupancy .occ-field { display:flex; align-items:center; gap:4px; }
+        #room-occupancy .occ-field label { font-size:11px; color:#666; }
+        #room-occupancy .occ-field input { width:50px; padding:2px 4px; font-size:13px; text-align:center; }
         .ticket-item { display:flex; align-items:center; padding:4px 0; border-bottom:1px solid #eee; cursor:pointer; }
         .ticket-item:last-child { border-bottom:none; }
         .ticket-item .ti-name { flex:1; font-size:13px; }
@@ -5780,6 +5736,45 @@ function simple_hotel_crm_render_tickets_page() {
                 roomSel.style.display = 'none';
             }
 
+            var occDiv = document.getElementById('room-occupancy');
+            var targetRoomId = state.activeRoomId || (state.bookingRooms.length > 0 ? state.bookingRooms[0].booking_room_id : 0);
+            var targetRoom = null;
+            for (var i = 0; i < state.bookingRooms.length; i++) {
+                if (state.bookingRooms[i].booking_room_id === targetRoomId) {
+                    targetRoom = state.bookingRooms[i];
+                    break;
+                }
+            }
+            if (targetRoom) {
+                occDiv.style.display = '';
+                occDiv.innerHTML = '';
+                var title = el('div', { className: 'occ-title' }, ['Occupancy: ' + (targetRoom.room_name || targetRoom.room_code)]);
+                var fields = el('div', { className: 'occ-fields' });
+                ['adults','children','babies'].forEach(function(field) {
+                    var fieldLabel = field.charAt(0).toUpperCase() + field.slice(1);
+                    var input = el('input', {
+                        type: 'number', min: '0',
+                        value: targetRoom[field] || 0,
+                        onChange: function(f, rid) {
+                            return function() {
+                                var val = parseInt(this.value, 10) || 0;
+                                occSaveQueue[rid] = occSaveQueue[rid] || {};
+                                occSaveQueue[rid][f] = val;
+                                scheduleOccSave();
+                            };
+                        }(field, targetRoomId)
+                    });
+                    var wrap = el('div', { className: 'occ-field' });
+                    wrap.appendChild(el('label', {}, [fieldLabel + ': ']));
+                    wrap.appendChild(input);
+                    fields.appendChild(wrap);
+                });
+                occDiv.appendChild(title);
+                occDiv.appendChild(fields);
+            } else {
+                occDiv.style.display = 'none';
+            }
+
             var itemsDiv = document.getElementById('ticket-items');
             if (state.ticketItems.length === 0) {
                 itemsDiv.innerHTML = '<em style="color:#999;"><?php echo esc_js( __( 'Click catalog items to add.', 'simple-hotel-crm' ) ); ?></em>';
@@ -5799,6 +5794,21 @@ function simple_hotel_crm_render_tickets_page() {
 
             var total = state.ticketItems.reduce(function(sum, item) { return sum + item.qty * item.price; }, 0);
             setText('ticket-total', 'Total: ' + total.toFixed(2) + '\u20ac');
+        }
+
+        var occSaveQueue = {};
+        var occSaveTimer = null;
+
+        function scheduleOccSave() {
+            if (occSaveTimer) clearTimeout(occSaveTimer);
+            occSaveTimer = setTimeout(function() {
+                var payload = occSaveQueue;
+                occSaveQueue = {};
+                var body = { booking_id: state.activeBookingId, rooms_occupancy: payload };
+                apiPost('ticket-update-booking', body).catch(function(err) {
+                    showError('Failed to save occupancy: ' + err.message);
+                });
+            }, 800);
         }
 
         function selectBooking(bookingId) {
