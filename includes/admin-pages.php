@@ -1852,7 +1852,8 @@ function simple_hotel_crm_replace_booking_room_data( $booking_id, $data, $existi
     if ( ! empty( $legacy_ids ) ) {
         $wpdb->query( "DELETE FROM {$sync_bookings_table} WHERE external_booking_room_id IN (" . implode( ',', array_map( 'intval', array_filter( $legacy_ids ) ) ) . ")" );
     }
-    $room_ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$crm_booking_rooms_table} WHERE booking_id = %d", $booking_id ) );
+    $old_booking_rooms = $wpdb->get_results( $wpdb->prepare( "SELECT id FROM {$crm_booking_rooms_table} WHERE booking_id = %d ORDER BY id ASC", $booking_id ), ARRAY_A );
+    $room_ids = wp_list_pluck( $old_booking_rooms, 'id' );
     if ( ! empty( $room_ids ) ) {
         $wpdb->query( "DELETE FROM {$crm_booking_nights_table} WHERE booking_room_id IN (" . implode( ',', array_map( 'intval', $room_ids ) ) . ")" );
     }
@@ -1910,10 +1911,11 @@ function simple_hotel_crm_replace_booking_room_data( $booking_id, $data, $existi
     $booking_extras = round( $booking_extras + $items_total, 2 );
     $booking_total = round( $booking_total + $items_total, 2 );
 
-    foreach ( $calculated_room_lines as $line ) {
+    foreach ( $calculated_room_lines as $idx => $line ) {
         $crm_room_id = (int) $line['crm_room_id'];
         $room = $line['room'];
         $legacy_reserved_room_id = $next_legacy_room_id++;
+        $old_booking_room_id = isset( $old_booking_rooms[ $idx ] ) ? (int) $old_booking_rooms[ $idx ]['id'] : 0;
         $inserted = $wpdb->insert(
             $crm_booking_rooms_table,
             [
@@ -1944,6 +1946,9 @@ function simple_hotel_crm_replace_booking_room_data( $booking_id, $data, $existi
             return new WP_Error( 'booking_room_insert_failed', __( 'Could not save booking rooms.', 'simple-hotel-crm' ) );
         }
         $crm_booking_room_id = (int) $wpdb->insert_id;
+        if ( $old_booking_room_id > 0 && $old_booking_room_id !== $crm_booking_room_id ) {
+            $wpdb->query( $wpdb->prepare( "UPDATE {$booking_notes_table} SET booking_room_id = %d WHERE booking_room_id = %d AND booking_id = %d AND stay_date IS NOT NULL", $crm_booking_room_id, $old_booking_room_id, $booking_id ) );
+        }
         $room_note = sanitize_textarea_field( (string) ( $line['room_note'] ?? '' ) );
         simple_hotel_crm_upsert_booking_note( $booking_id, $room_note, $crm_booking_room_id, null, 'room' );
         $base_price_nightly = simple_hotel_crm_distribute_amounts( $line['base_price_amount'], $nights );
