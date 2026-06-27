@@ -535,27 +535,14 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
     $room_note = $booking_room_id > 0 ? simple_hotel_crm_get_booking_note_text( (int) $booking['id'], $booking_room_id ) : '';
     $booking_note_global = simple_hotel_crm_get_booking_note_text( (int) $booking['id'] );
 
-    $booking_rooms = [];
-    if ( $reserved_room_id > 0 ) {
-        $booking_rooms = $wpdb->get_results( $wpdb->prepare( "
-            SELECT br.id AS booking_room_id, r.room_code, r.room_name,
-                   COALESCE(br.adults, 0) AS adults, COALESCE(br.children, 0) AS children, COALESCE(br.babies, 0) AS babies
-            FROM " . simple_hotel_crm_booking_rooms_table() . " br
-            JOIN " . simple_hotel_crm_rooms_table() . " r ON r.id = br.room_id
-            WHERE br.booking_id = %d AND br.legacy_reserved_room_id = %d
-            ORDER BY r.sort_order ASC
-            LIMIT 1
-        ", $booking_id, $reserved_room_id ), ARRAY_A );
-    } else {
-        $booking_rooms = $wpdb->get_results( $wpdb->prepare( "
-            SELECT br.id AS booking_room_id, r.room_code, r.room_name,
-                   COALESCE(br.adults, 0) AS adults, COALESCE(br.children, 0) AS children, COALESCE(br.babies, 0) AS babies
-            FROM " . simple_hotel_crm_booking_rooms_table() . " br
-            JOIN " . simple_hotel_crm_rooms_table() . " r ON r.id = br.room_id
-            WHERE br.booking_id = %d
-            ORDER BY r.sort_order ASC
-        ", $booking_id ), ARRAY_A );
-    }
+    $booking_rooms = $wpdb->get_results( $wpdb->prepare( "
+        SELECT br.id AS booking_room_id, r.room_code, r.room_name,
+               COALESCE(br.adults, 0) AS adults, COALESCE(br.children, 0) AS children, COALESCE(br.babies, 0) AS babies
+        FROM " . simple_hotel_crm_booking_rooms_table() . " br
+        JOIN " . simple_hotel_crm_rooms_table() . " r ON r.id = br.room_id
+        WHERE br.booking_id = %d
+        ORDER BY r.sort_order ASC
+    ", $booking_id ), ARRAY_A );
 
     return rest_ensure_response( [
         'id' => (int) $booking['id'],
@@ -636,7 +623,7 @@ function simple_hotel_crm_rest_save_quick_booking( WP_REST_Request $request ) {
     $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
     $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
     if ( $reserved_room_id > 0 ) {
-        $booking_room_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$booking_rooms_table} WHERE legacy_reserved_room_id = %d LIMIT 1", $reserved_room_id ) );
+        $booking_room_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$booking_rooms_table} WHERE (legacy_reserved_room_id = %d OR id = %d) AND booking_id = %d LIMIT 1", $reserved_room_id, $reserved_room_id, $booking_id ) );
         if ( $booking_room_id > 0 ) {
             $wpdb->update( $booking_rooms_table, [
                 'adults' => $adults, 'children' => $children, 'babies' => $babies,
