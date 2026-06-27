@@ -145,6 +145,7 @@
                     $form.find('[name="babies"]').val(occRoom ? (parseInt(occRoom.babies, 10) || 0) : 0);
                     $modal.find('.simple-hotel-crm-open-full-booking').attr('href', response.detail_url || '#');
                     $modal.find('.simple-hotel-crm-open-guest').attr('href', response.guest_url || '#');
+                    $modal.find('.simple-hotel-crm-transfer-booking').attr('href', response.detail_url || '#');
                     $message.text('');
                 },
                 error: function(xhr) {

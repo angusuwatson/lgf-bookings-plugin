@@ -490,6 +490,23 @@ body.shc-fullscreen #wpbody-content {
     line-height: 1;
 }
 
+.simple-hotel-crm-quick-booking-occupancy {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.simple-hotel-crm-quick-booking-occupancy label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.simple-hotel-crm-quick-booking-occupancy input {
+    width: 45px !important;
+    text-align: center;
+}
+
 .simple-hotel-crm-quick-booking-actions {
     display: flex;
     gap: 8px;
