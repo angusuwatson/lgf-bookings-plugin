@@ -106,6 +106,23 @@ function simple_hotel_crm_get_wp_sync_calendar_data( $month, $year ) {
         ARRAY_A
     );
 
+    $items_table = simple_hotel_crm_booking_items_table();
+    $booking_ids_in_view = array_unique( array_map( function( $r ) { return (int) $r['booking_id']; }, $booking_rows ) );
+    $items_by_key = [];
+    if ( ! empty( $booking_ids_in_view ) ) {
+        $items_results = $wpdb->get_results(
+            "SELECT booking_id, COALESCE(booking_room_id, 0) AS booking_room_id, COALESCE(stay_date, '') AS stay_date, SUM(quantity * unit_price) AS item_total
+             FROM {$items_table}
+             WHERE booking_id IN (" . implode( ',', array_map( 'intval', $booking_ids_in_view ) ) . ")
+             GROUP BY booking_id, booking_room_id, stay_date",
+            ARRAY_A
+        );
+        foreach ( $items_results as $ir ) {
+            $key = (int) $ir['booking_id'] . '|' . (int) $ir['booking_room_id'] . '|' . $ir['stay_date'];
+            $items_by_key[ $key ] = (float) $ir['item_total'];
+        }
+    }
+
     foreach ( $booking_rows as $row ) {
         $room_id = (int) $row['room_id'];
         if ( ! isset( $matrix[ $room_id ] ) ) {
@@ -120,6 +137,11 @@ function simple_hotel_crm_get_wp_sync_calendar_data( $month, $year ) {
         if ( ! isset( $matrix[ $room_id ][ $date_str ] ) ) {
             $matrix[ $room_id ][ $date_str ] = [ 'booking' => null, 'is_checkin' => false, 'is_checkout' => false ];
         }
+
+        $exact_key = (int) $row['booking_id'] . '|' . (int) $row['booking_room_id'] . '|' . $date_str;
+        $room_key  = (int) $row['booking_id'] . '|' . (int) $row['booking_room_id'] . '|';
+        $booking_key = (int) $row['booking_id'] . '|0|';
+        $items_amount = ( $items_by_key[ $exact_key ] ?? 0 ) + ( $items_by_key[ $room_key ] ?? 0 ) + ( $items_by_key[ $booking_key ] ?? 0 );
 
         $room_day_note = simple_hotel_crm_get_booking_note_text( (int) $row['booking_id'], (int) $row['booking_room_id'], $date_str );
         $room_booking_note = $room_day_note;
@@ -148,7 +170,7 @@ function simple_hotel_crm_get_wp_sync_calendar_data( $month, $year ) {
                 ? (float) $row['manual_tarif']
                 : (float) ( ( isset( $row['subtotal_amount'] ) && (float) $row['subtotal_amount'] > 0 ) ? $row['subtotal_amount'] : $row['room_rate_amount'] ),
             'commission' => simple_hotel_crm_calculate_channel_commission( (string) $row['source_channel'], (float) ( ( isset( $row['subtotal_amount'] ) && (float) $row['subtotal_amount'] > 0 ) ? $row['subtotal_amount'] : $row['room_rate_amount'] ) ),
-            'extras_total' => (float) $row['extras_amount'] > 0 ? (float) $row['extras_amount'] : null,
+            'extras_total' => (float) $row['extras_amount'] + $items_amount > 0 ? (float) $row['extras_amount'] + $items_amount : null,
             'booking_note' => $room_booking_note,
             'has_day_note' => '' !== trim( (string) $room_day_note ),
             'booking_note_global' => simple_hotel_crm_get_booking_note_text( (int) $row['booking_id'] ),
