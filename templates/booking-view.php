@@ -69,7 +69,7 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                             [ 'label' => 'Name', 'class' => 'guest-row', 'type' => 'detail', 'field' => 'manual_guest_name', 'display_fn' => function( $b ) { return $b->guest_name ?? ''; } ],
                             [ 'label' => 'Channel', 'class' => 'channel-row', 'type' => 'detail', 'field' => '', 'display_fn' => function( $b ) { return $b->channel ?? ''; } ],
                             [ 'label' => 'Occupancy', 'class' => 'occupancy-row', 'type' => 'detail', 'field' => 'occupancy', 'display_fn' => function( $b ) { return $b->occupancy_str ?? ''; } ],
-                            [ 'label' => 'Extras', 'class' => 'extras-row', 'type' => 'detail editable-text', 'field' => 'extras_formula', 'display_fn' => function( $b ) { return $b->extras_formula ?? ''; } ],
+                            [ 'label' => 'Extras', 'class' => 'extras-row', 'type' => 'detail', 'field' => 'extras_total', 'display_fn' => function( $b ) { return ''; } ],
                             [ 'label' => 'Room rate', 'class' => 'tarif-row', 'type' => 'detail detail-tarif', 'field' => 'manual_tarif', 'display_fn' => function( $b ) { return isset( $b->tarif ) && '' !== $b->tarif && null !== $b->tarif ? number_format( (float) $b->tarif, 2, ',', ' ' ) . ' €' : ''; } ],
                             [ 'label' => 'Commission', 'class' => 'commission-row', 'type' => 'detail detail-commission', 'field' => 'manual_commission', 'display_fn' => function( $b ) { return isset( $b->commission ) && '' !== $b->commission && null !== $b->commission && (float) $b->commission > 0 ? number_format( (float) $b->commission, 2, ',', ' ' ) . ' €' : ''; } ],
                         ];
@@ -103,7 +103,7 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                                     $cell_classes[] = 'is-closed';
                                 }
                             ?>
-                                <td class="<?php echo esc_attr( implode( ' ', $cell_classes ) ); ?>" data-room-color="<?php echo esc_attr( $row_color ); ?>" style="--room-fill: <?php echo esc_attr( $row_color ); ?>;"<?php echo ( $booking && 'room-name-row' === $row['class'] ) ? ' data-room-day-note-cell="1" data-booking-id="' . esc_attr( $booking->id ) . '" data-booking-room-id="' . esc_attr( $booking->booking_room_id ?? '' ) . '" data-stay-date="' . esc_attr( $date_str ) . '" data-note-text="' . esc_attr( (string) ( $booking->booking_note ?? '' ) ) . '"' : ''; ?><?php echo ( $booking && 'extras-row' === $row['class'] ) ? ' data-room-day-extras-cell="1" data-booking-id="' . esc_attr( $booking->id ) . '" data-booking-room-id="' . esc_attr( $booking->booking_room_id ?? '' ) . '" data-stay-date="' . esc_attr( $date_str ) . '" data-extras-formula="' . esc_attr( (string) ( $booking->extras_formula ?? '' ) ) . '" data-extras-amount="' . esc_attr( (string) ( $booking->extras_total ?? '' ) ) . '"' : ''; ?>>
+                                <td class="<?php echo esc_attr( implode( ' ', $cell_classes ) ); ?>" data-room-color="<?php echo esc_attr( $row_color ); ?>" style="--room-fill: <?php echo esc_attr( $row_color ); ?>;"<?php echo ( $booking && 'room-name-row' === $row['class'] ) ? ' data-room-day-note-cell="1" data-booking-id="' . esc_attr( $booking->id ) . '" data-booking-room-id="' . esc_attr( $booking->booking_room_id ?? '' ) . '" data-stay-date="' . esc_attr( $date_str ) . '" data-note-text="' . esc_attr( (string) ( $booking->booking_note ?? '' ) ) . '"' : ''; ?><?php echo ( $booking && 'extras-row' === $row['class'] ) ? ' ' : ''; ?>>
                                     <?php if ( $booking && 'room-name-row' === $row['class'] ) : ?>
                                         <?php echo esc_html( $booking->booking_note ?? '' ); ?>
                                     <?php elseif ( $is_closed && 'room-name-row' === $row['class'] ) : ?>
@@ -226,22 +226,4 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
         </div>
     </div>
 
-    <div class="simple-hotel-crm-room-extras-modal" style="display:none;" aria-hidden="true">
-        <div class="simple-hotel-crm-modal-backdrop"></div>
-        <div class="simple-hotel-crm-modal-dialog">
-            <button type="button" class="simple-hotel-crm-room-extras-close" aria-label="<?php esc_attr_e( 'Close', 'simple-hotel-crm' ); ?>">×</button>
-            <h2><?php esc_html_e( 'Edit Room Day Extras', 'simple-hotel-crm' ); ?></h2>
-            <form class="simple-hotel-crm-room-extras-form">
-                <input type="hidden" name="booking_id" value="" />
-                <input type="hidden" name="booking_room_id" value="" />
-                <input type="hidden" name="stay_date" value="" />
-                <p><label><?php esc_html_e( 'Formula', 'simple-hotel-crm' ); ?><br><input type="text" name="formula" class="regular-text" /></label></p>
-                <p><label><?php esc_html_e( 'Amount', 'simple-hotel-crm' ); ?><br><input type="text" name="amount" class="regular-text" /></label></p>
-                <p class="simple-hotel-crm-quick-booking-actions">
-                    <button type="submit" class="button button-primary"><?php esc_html_e( 'Save extras', 'simple-hotel-crm' ); ?></button>
-                </p>
-                <div class="simple-hotel-crm-room-extras-message" aria-live="polite"></div>
-            </form>
-        </div>
-    </div>
 </div>

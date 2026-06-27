@@ -36,7 +36,6 @@ function simple_hotel_crm_enqueue_shared_assets( $context = 'frontend' ) {
         'dailyNotesUrl'  => esc_url_raw( rest_url( 'simple-hotel-crm/v1/daily-note' ) ),
         'quickBookingUrl'=> esc_url_raw( rest_url( 'simple-hotel-crm/v1/quick-booking' ) ),
         'roomDayNoteUrl'=> esc_url_raw( rest_url( 'simple-hotel-crm/v1/room-day-note' ) ),
-        'roomDayExtrasUrl'=> esc_url_raw( rest_url( 'simple-hotel-crm/v1/room-day-extras' ) ),
         'nonce'          => wp_create_nonce( 'wp_rest' ),
         'context'        => $context,
         'adminPageUrl'   => admin_url( 'admin.php?page=simple-hotel-crm' ),

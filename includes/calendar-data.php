@@ -117,9 +117,6 @@ function simple_hotel_crm_get_wp_sync_calendar_data( $month, $year ) {
         $children = (int) $row['children'];
         $guest_name = trim( (string) $row['first_name'] . ' ' . (string) $row['last_name'] );
         $date_str = (string) $row['stay_date'];
-        $extras_adjustment = simple_hotel_crm_get_booking_adjustment( (int) $row['booking_room_id'], $date_str, 'extras' );
-        $extras_formula = ! empty( $extras_adjustment['formula'] ) ? (string) $extras_adjustment['formula'] : '';
-        $extras_total = isset( $extras_adjustment['amount'] ) ? (float) $extras_adjustment['amount'] : null;
         if ( ! isset( $matrix[ $room_id ][ $date_str ] ) ) {
             $matrix[ $room_id ][ $date_str ] = [ 'booking' => null, 'is_checkin' => false, 'is_checkout' => false ];
         }
@@ -151,9 +148,7 @@ function simple_hotel_crm_get_wp_sync_calendar_data( $month, $year ) {
                 ? (float) $row['manual_tarif']
                 : (float) ( ( isset( $row['subtotal_amount'] ) && (float) $row['subtotal_amount'] > 0 ) ? $row['subtotal_amount'] : $row['room_rate_amount'] ),
             'commission' => simple_hotel_crm_calculate_channel_commission( (string) $row['source_channel'], (float) ( ( isset( $row['subtotal_amount'] ) && (float) $row['subtotal_amount'] > 0 ) ? $row['subtotal_amount'] : $row['room_rate_amount'] ) ),
-            'extras_formula' => $extras_formula,
-            'extras_total' => null !== $extras_total ? $extras_total : ( (float) $row['extras_amount'] > 0 ? (float) $row['extras_amount'] : null ),
-            'has_day_extra' => ! empty( $extras_adjustment ),
+            'extras_total' => (float) $row['extras_amount'] > 0 ? (float) $row['extras_amount'] : null,
             'booking_note' => $room_booking_note,
             'has_day_note' => '' !== trim( (string) $room_day_note ),
             'booking_note_global' => simple_hotel_crm_get_booking_note_text( (int) $row['booking_id'] ),
