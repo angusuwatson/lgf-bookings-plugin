@@ -222,7 +222,7 @@ function simple_hotel_crm_get_calendar_data( $month = null, $year = null ) {
     $month = $month ?: date( 'n' );
     $year  = $year ?: date( 'Y' );
 
-    $transient_key = 'simple_hotel_crm_wp_sync_' . $year . '_' . $month;
+    $transient_key = 'simple_hotel_crm_wp_sync_' . $year . '_' . $month . '_' . SIMPLE_HOTEL_CRM_VERSION;
     $cached = get_transient( $transient_key );
     if ( false !== $cached ) {
         return $cached;
