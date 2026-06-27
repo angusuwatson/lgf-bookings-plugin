@@ -145,7 +145,6 @@
                     $form.find('[name="babies"]').val(occRoom ? (parseInt(occRoom.babies, 10) || 0) : 0);
                     $modal.find('.simple-hotel-crm-open-full-booking').attr('href', response.detail_url || '#');
                     $modal.find('.simple-hotel-crm-open-guest').attr('href', response.guest_url || '#');
-                    $modal.find('.simple-hotel-crm-transfer-booking').attr('href', response.detail_url || '#');
                     $message.text('');
                 },
                 error: function(xhr) {
@@ -170,6 +169,98 @@
 
         $(document).on('click', '.simple-hotel-crm-room-extras-close', function() {
             closeRoomExtrasModal();
+        });
+
+        var transferSearchTimeout = null;
+
+        $(document).on('click', '.simple-hotel-crm-transfer-toggle', function() {
+            var $area = $(this).closest('.simple-hotel-crm-quick-booking-form').find('.simple-hotel-crm-quick-booking-transfer-area');
+            $area.slideToggle(150);
+            if ($area.is(':visible')) {
+                $area.find('.simple-hotel-crm-transfer-search').focus();
+            }
+        });
+
+        $(document).on('input', '.simple-hotel-crm-transfer-search', function() {
+            var $input = $(this);
+            var $results = $input.closest('.simple-hotel-crm-quick-booking-transfer-area').find('.simple-hotel-crm-quick-booking-transfer-results');
+            var $confirm = $input.closest('.simple-hotel-crm-quick-booking-transfer-area').find('.simple-hotel-crm-transfer-confirm');
+            $confirm.hide().find('[name="target_guest_id"]').val('');
+
+            clearTimeout(transferSearchTimeout);
+            var q = $input.val().trim();
+            if (q.length < 2) {
+                $results.hide().empty();
+                return;
+            }
+
+            transferSearchTimeout = setTimeout(function() {
+                request({
+                    url: quickBookingUrl.replace('/quick-booking', '/ticket-guest-search'),
+                    method: 'GET',
+                    data: { q: q },
+                    success: function(resp) {
+                        $results.empty().show();
+                        if (!resp.guests || !resp.guests.length) {
+                            $results.html('<div style="padding:8px 10px;color:#888;">No guests found.</div>');
+                            return;
+                        }
+                        resp.guests.forEach(function(g) {
+                            var name = (g.first_name || '') + ' ' + (g.last_name || '');
+                            var info = [];
+                            if (g.email) info.push(g.email);
+                            if (g.phone) info.push(g.phone);
+                            var html = '<div class="guest-result-item" data-guest-id="' + g.id + '" data-guest-name="' + $('<span>').text(name).html() + '">';
+                            html += '<strong>' + $('<span>').text(name).html() + '</strong>';
+                            if (info.length) html += ' <span style="color:#888;">' + info.join(' | ') + '</span>';
+                            if (g.booking_count) html += ' <span style="color:#888;">(' + g.booking_count + ' bookings)</span>';
+                            html += '</div>';
+                            $results.append(html);
+                        });
+                    }
+                });
+            }, 250);
+        });
+
+        $(document).on('click', '.guest-result-item', function() {
+            var $item = $(this);
+            var $area = $item.closest('.simple-hotel-crm-quick-booking-transfer-area');
+            $area.find('.guest-result-item').removeClass('selected');
+            $item.addClass('selected');
+            $area.find('[name="target_guest_id"]').val($item.data('guest-id'));
+            $area.find('.simple-hotel-crm-transfer-target-name').text('→ ' + $item.data('guest-name'));
+            $area.find('.simple-hotel-crm-transfer-confirm').show();
+            $area.find('.simple-hotel-crm-transfer-results').hide();
+            $area.find('.simple-hotel-crm-transfer-search').val($item.data('guest-name'));
+        });
+
+        $(document).on('click', '.simple-hotel-crm-transfer-execute', function() {
+            var $btn = $(this).prop('disabled', true);
+            var $area = $btn.closest('.simple-hotel-crm-quick-booking-transfer-area');
+            var $form = $area.closest('.simple-hotel-crm-quick-booking-form');
+            var bookingId = $form.find('[name="booking_id"]').val();
+            var targetGuestId = $area.find('[name="target_guest_id"]').val();
+
+            if (!bookingId || !targetGuestId) return;
+
+            request({
+                url: quickBookingUrl.replace('/quick-booking', '/transfer-booking'),
+                method: 'POST',
+                data: { booking_id: bookingId, target_guest_id: targetGuestId },
+                success: function(resp) {
+                    if (resp.success) {
+                        $area.find('.simple-hotel-crm-transfer-confirm').hide();
+                        $area.find('.simple-hotel-crm-transfer-results').hide().empty();
+                        $area.find('.simple-hotel-crm-transfer-search').val('');
+                        $area.slideUp(150);
+                        $btn.prop('disabled', false);
+                        location.reload();
+                    }
+                },
+                error: function() {
+                    $btn.prop('disabled', false);
+                }
+            });
         });
 
         $(document).on('click', '.simple-hotel-crm-copy-button', function() {

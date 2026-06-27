@@ -56,13 +56,19 @@ add_action( 'rest_api_init', function() {
         'methods'  => 'POST',
         'callback' => 'simple_hotel_crm_rest_save_quick_booking',
         'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
-        'args'     => [
-            'booking_id' => [
-                'validate_callback' => function( $param ) {
-                    return is_numeric( $param ) && $param > 0;
-                },
-                'required' => true,
-            ],
+        'args' => [
+            'booking_id' => [ 'required' => true, 'validate_callback' => function($v) { return is_numeric( $v ) && $v > 0; } ],
+            'guest_name' => [ 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ],
+        ],
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/transfer-booking', [
+        'methods'  => 'POST',
+        'callback' => 'simple_hotel_crm_rest_transfer_booking',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+        'args' => [
+            'booking_id' => [ 'required' => true, 'validate_callback' => function($v) { return is_numeric( $v ) && $v > 0; } ],
+            'target_guest_id' => [ 'required' => true, 'validate_callback' => function($v) { return is_numeric( $v ) && $v > 0; } ],
         ],
     ] );
 
@@ -659,6 +665,34 @@ function simple_hotel_crm_rest_save_quick_booking( WP_REST_Request $request ) {
         simple_hotel_crm_upsert_booking_note( $booking_id, $booking_note, $booking_room_id, null, 'room' );
     }
 
+    simple_hotel_crm_clear_calendar_cache();
+
+    return rest_ensure_response( [ 'success' => true ] );
+}
+
+function simple_hotel_crm_rest_transfer_booking( WP_REST_Request $request ) {
+    global $wpdb;
+
+    $booking_id = absint( $request->get_param( 'booking_id' ) );
+    $target_guest_id = absint( $request->get_param( 'target_guest_id' ) );
+
+    if ( ! $booking_id || ! $target_guest_id ) {
+        return new WP_Error( 'invalid_params', __( 'Invalid booking or guest ID.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+
+    $bookings_table = simple_hotel_crm_bookings_table();
+    $existing = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$bookings_table} WHERE id = %d AND is_deleted = 0 LIMIT 1", $booking_id ) );
+    if ( ! $existing ) {
+        return new WP_Error( 'not_found', __( 'Booking not found.', 'simple-hotel-crm' ), [ 'status' => 404 ] );
+    }
+
+    $guests_table = simple_hotel_crm_guests_table();
+    $guest_exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$guests_table} WHERE id = %d AND is_deleted = 0 LIMIT 1", $target_guest_id ) );
+    if ( ! $guest_exists ) {
+        return new WP_Error( 'guest_not_found', __( 'Target guest not found.', 'simple-hotel-crm' ), [ 'status' => 404 ] );
+    }
+
+    $wpdb->update( $bookings_table, [ 'guest_id' => $target_guest_id ], [ 'id' => $booking_id ], [ '%d' ], [ '%d' ] );
     simple_hotel_crm_clear_calendar_cache();
 
     return rest_ensure_response( [ 'success' => true ] );

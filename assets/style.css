@@ -491,20 +491,66 @@ body.shc-fullscreen #wpbody-content {
 }
 
 .simple-hotel-crm-quick-booking-occupancy {
-    display: flex;
+    display: flex !important;
     gap: 12px;
     align-items: center;
+    flex-wrap: nowrap !important;
 }
 
 .simple-hotel-crm-quick-booking-occupancy label {
-    display: inline-flex;
+    display: inline-flex !important;
     align-items: center;
     gap: 4px;
 }
 
 .simple-hotel-crm-quick-booking-occupancy input {
-    width: 45px !important;
+    width: 65px !important;
     text-align: center;
+    flex-shrink: 0;
+}
+
+.simple-hotel-crm-quick-booking-transfer-area {
+    margin-top: 8px;
+    padding: 8px;
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    display: none;
+}
+
+.simple-hotel-crm-quick-booking-transfer-area .guest-search-container {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.simple-hotel-crm-quick-booking-transfer-area .guest-search-container input {
+    flex: 1;
+    min-width: 0;
+}
+
+.simple-hotel-crm-quick-booking-transfer-results {
+    max-height: 160px;
+    overflow-y: auto;
+    border: 1px solid #dcdcde;
+    border-top: 0;
+    background: #fff;
+    display: none;
+}
+
+.simple-hotel-crm-quick-booking-transfer-results .guest-result-item {
+    padding: 6px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.simple-hotel-crm-quick-booking-transfer-results .guest-result-item:hover,
+.simple-hotel-crm-quick-booking-transfer-results .guest-result-item.selected {
+    background: #f0f6fc;
+}
+
+.simple-hotel-crm-transfer-confirm {
+    margin-top: 6px;
 }
 
 .simple-hotel-crm-quick-booking-actions {

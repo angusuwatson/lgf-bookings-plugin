@@ -180,12 +180,23 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                     <p><label><?php esc_html_e( 'Contacted date', 'simple-hotel-crm' ); ?><input type="date" name="contacted_date" class="regular-text" /></label></p>
                     <p><label><?php esc_html_e( 'Status', 'simple-hotel-crm' ); ?><select name="status_code" class="regular-text"><?php foreach ( simple_hotel_crm_get_booking_status_options() as $code => $label ) : ?><option value="<?php echo esc_attr( $code ); ?>"><?php echo esc_html( $label ); ?></option><?php endforeach; ?></select></label></p>
                     <div class="simple-hotel-crm-quick-booking-occupancy">
-                        <label>A <input type="number" name="adults" min="0" style="width:45px;" /></label>
-                        <label>C <input type="number" name="children" min="0" style="width:45px;" /></label>
-                        <label>BB <input type="number" name="babies" min="0" style="width:45px;" /></label>
+                        <label>A <input type="number" name="adults" min="0" /></label>
+                        <label>C <input type="number" name="children" min="0" /></label>
+                        <label>BB <input type="number" name="babies" min="0" /></label>
                     </div>
                 </div>
-                <p><a href="#" class="simple-hotel-crm-transfer-booking button"><?php esc_html_e( 'Transfer booking', 'simple-hotel-crm' ); ?></a></p>
+                <p><button type="button" class="button simple-hotel-crm-transfer-toggle"><?php esc_html_e( 'Transfer booking', 'simple-hotel-crm' ); ?></button></p>
+                <div class="simple-hotel-crm-quick-booking-transfer-area">
+                    <div class="guest-search-container">
+                        <input type="text" class="simple-hotel-crm-transfer-search" placeholder="<?php esc_attr_e( 'Search guests...', 'simple-hotel-crm' ); ?>" />
+                    </div>
+                    <div class="simple-hotel-crm-quick-booking-transfer-results"></div>
+                    <div class="simple-hotel-crm-transfer-confirm" style="display:none;">
+                        <input type="hidden" name="target_guest_id" value="" />
+                        <span class="simple-hotel-crm-transfer-target-name"></span>
+                        <button type="button" class="button button-primary simple-hotel-crm-transfer-execute"><?php esc_html_e( 'Confirm transfer', 'simple-hotel-crm' ); ?></button>
+                    </div>
+                </div>
                 <p><label><?php esc_html_e( 'Internal notes', 'simple-hotel-crm' ); ?><br><textarea name="internal_notes" rows="5" class="large-text"></textarea></label></p>
                 <p class="simple-hotel-crm-quick-booking-actions">
                     <a href="#" class="button simple-hotel-crm-open-full-booking"><?php esc_html_e( 'Open full booking', 'simple-hotel-crm' ); ?></a>
