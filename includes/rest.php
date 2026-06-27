@@ -537,10 +537,14 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
 
     $booking_rooms = $wpdb->get_results( $wpdb->prepare( "
         SELECT br.id AS booking_room_id, r.room_code, r.room_name,
-               COALESCE(br.adults, 0) AS adults, COALESCE(br.children, 0) AS children, COALESCE(br.babies, 0) AS babies
+               COALESCE(MAX(brn.adults), 0) AS adults,
+               COALESCE(MAX(brn.children), 0) AS children,
+               COALESCE(MAX(brn.babies), 0) AS babies
         FROM " . simple_hotel_crm_booking_rooms_table() . " br
         JOIN " . simple_hotel_crm_rooms_table() . " r ON r.id = br.room_id
+        LEFT JOIN " . simple_hotel_crm_booking_room_nights_table() . " brn ON brn.booking_room_id = br.id
         WHERE br.booking_id = %d
+        GROUP BY br.id, r.room_code, r.room_name
         ORDER BY r.sort_order ASC
     ", $booking_id ), ARRAY_A );
 
