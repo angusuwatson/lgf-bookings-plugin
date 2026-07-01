@@ -270,6 +270,10 @@ input,select{font-family:inherit;font-size:16px}
 .btn-save:active{background:#2563eb}
 .btn-pay{background:var(--green);color:#fff}
 .btn-pay:active{background:#16a34a}
+.btn-receipt{background:var(--card);color:var(--text);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-receipt:active{background:var(--hover-bg)}
+.btn-receipt-sm{background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;line-height:1;color:var(--muted)}
+.btn-receipt-sm:active{color:var(--text)}
 /* Error / success */
 #ticket-error,#pay-error{background:var(--error-bg);color:var(--red);padding:8px 14px;border-radius:8px;margin:6px 10px;display:none;font-size:13px}
 #pay-success{background:var(--success-bg);color:var(--green);padding:8px 14px;border-radius:8px;margin:6px 10px;display:none;font-size:13px}
@@ -403,6 +407,7 @@ input,select{font-family:inherit;font-size:16px}
         <div class="ticket-actions">
           <button class="btn-save" id="save-ticket">Save</button>
           <button class="btn-pay" id="pay-ticket">Pay</button>
+          <button class="btn-receipt" id="receipt-ticket" style="display:none">🖨 Receipt</button>
           <span id="ticket-save-indicator">Saving…</span>
         </div>
       </div>
@@ -1215,6 +1220,11 @@ function renderBookings(){
             ]),
             roomLabels?el('div',{className:'booking-room'},[roomLabels]):null,
         ];
+        if(isPaid){
+            children.push(el('button',{className:'btn-receipt-sm',type:'button',title:'Reissue receipt',
+                onClick:function(e){e.stopPropagation();reissueReceipt(parseInt(b.id,10));}
+            },['🖨']));
+        }
         if(canCheckIn){
             children.push(el('div',{style:{marginTop:'6px'}},[
                 el('button',{className:'btn-ci',type:'button',onClick:function(e){e.stopPropagation();openCheckinModal(parseInt(b.id,10));}},['Check in']),
@@ -1658,6 +1668,9 @@ function renderTicket(){
     var roomTotal=roomCharges.reduce(function(s,c){return s+c.amount;},0);
     var itemTotal=state.ticketItems.reduce(function(s,item){return s+item.qty*item.price;},0);
     setText('ticket-total','Total: '+(roomTotal+itemTotal).toFixed(2)+'\u20AC');
+
+    var recBtn=document.getElementById('receipt-ticket');
+    recBtn.style.display=(b&&(b.payment_status==='paid'||b.payment_status==='completed'))?'':'none';
 }
 
 /* ---- Interactions ---- */
@@ -1828,10 +1841,12 @@ function sendToTerminal(){
         return pollCheckoutStatus(data.checkout_id);
     }).then(function(data){
         if(!data) return;
-        setHTML('pay-success','Payment sent to terminal! '+total.toFixed(2)+'\u20AC');
+        setHTML('pay-success','Payment sent to terminal! '+total.toFixed(2)+'\u20AC'+
+            ' <button class="btn-receipt" onclick="reissueReceipt('+state.activeBookingId+')" style="margin-left:8px;vertical-align:middle">🖨 Reissue</button>');
         document.getElementById('pay-success').style.display='block';
         btn.textContent='\u2713 '+(total.toFixed(2))+'€';
-        setTimeout(function(){closePayModal();fetchData();},3000);
+        clearTimeout(window._paySuccessTimer);
+        window._paySuccessTimer=setTimeout(function(){closePayModal();fetchData();},8000);
     }).catch(function(err){
         if(err.message==='unauthorized') return;
         showPayError(err.message||'Failed to send payment.');
@@ -1876,6 +1891,27 @@ function closePayModal(){
     document.getElementById('pay-ticket').style.display='';
     hidePayError();
     document.getElementById('pay-success').style.display='none';
+}
+
+function reissueReceipt(bookingId){
+    var showMsg=function(msg,isErr){
+        var el=document.getElementById('pay-modal-error');
+        if(!el||!document.getElementById('pay-modal').classList.contains('active')){
+            el=document.getElementById('ticket-error');
+        }
+        if(isErr){
+            el.style.background='var(--error-bg)';el.style.color='var(--red)';
+        }else{
+            el.style.background='var(--success-bg)';el.style.color='var(--green)';
+        }
+        el.textContent=msg;el.style.display='block';
+        if(isErr) setTimeout(function(){el.style.display='none'},5000);
+    };
+    apiPost('ticket-reissue-receipt',{booking_id:bookingId}).then(function(data){
+        showMsg('Receipt sent to terminal!',false);
+    }).catch(function(err){
+        if(err.message!=='unauthorized') showMsg(err.message||'Failed to reissue receipt.',true);
+    });
 }
 
 function hidePayError(){
@@ -2278,6 +2314,7 @@ document.addEventListener('DOMContentLoaded',function(){
         render();
     });
     document.getElementById('pay-ticket').addEventListener('click',function(){showPayModal();});
+    document.getElementById('receipt-ticket').addEventListener('click',function(){reissueReceipt(state.activeBookingId);});
     document.getElementById('pay-items-list').addEventListener('change',function(e){if(e.target.type==='checkbox') updatePayTotal();});
     document.getElementById('pay-confirm').addEventListener('click',function(){sendToTerminal();});
     document.getElementById('pay-cancel').addEventListener('click',function(){closePayModal();});

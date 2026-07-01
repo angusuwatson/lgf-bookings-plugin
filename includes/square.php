@@ -236,6 +236,54 @@ function simple_hotel_crm_square_handle_payment_complete( $booking_id, $checkout
     return true;
 }
 
+function simple_hotel_crm_square_reprint_receipt( $booking_id ) {
+    $payment_id = get_post_meta( $booking_id, '_square_payment_id', true );
+    if ( empty( $payment_id ) ) {
+        $checkout_id = get_post_meta( $booking_id, '_square_checkout_id', true );
+        if ( empty( $checkout_id ) ) {
+            return new WP_Error( 'square_no_checkout', 'No Square checkout found for this booking.' );
+        }
+        $details = simple_hotel_crm_square_api_request( 'GET', '/v2/terminals/checkouts/' . $checkout_id );
+        if ( is_wp_error( $details ) || empty( $details['checkout']['payment_ids'][0] ) ) {
+            return new WP_Error( 'square_no_payment', 'Could not find Square payment for this booking.' );
+        }
+        $payment_id = $details['checkout']['payment_ids'][0];
+        update_post_meta( $booking_id, '_square_payment_id', $payment_id );
+    }
+
+    $device_id = simple_hotel_crm_square_get_device_id();
+    if ( empty( $device_id ) ) {
+        return new WP_Error( 'square_no_device', 'Terminal device not configured.' );
+    }
+
+    $body = [
+        'idempotency_key' => 'receipt-' . $booking_id . '-' . time(),
+        'action'          => [
+            'device_id'         => $device_id,
+            'type'              => 'RECEIPT',
+            'deadline_duration' => 'PT5M',
+            'receipt_options'   => [
+                'payment_id'   => $payment_id,
+                'is_duplicate' => true,
+                'print_only'   => true,
+            ],
+        ],
+    ];
+
+    $result = simple_hotel_crm_square_api_request( 'POST', '/v2/terminals/actions', $body );
+    if ( is_wp_error( $result ) ) {
+        error_log( 'LGF: reprint_receipt FAILED: ' . $result->get_error_message() );
+        return $result;
+    }
+
+    $action_id = isset( $result['action']['id'] ) ? $result['action']['id'] : '';
+    return [
+        'success'   => true,
+        'action_id' => $action_id,
+        'status'    => strtolower( $result['action']['status'] ?? 'pending' ),
+    ];
+}
+
 function simple_hotel_crm_square_refund_payment( $booking_id, $amount = null ) {
     $payment_id = get_post_meta( $booking_id, '_square_payment_id', true );
     if ( empty( $payment_id ) ) {

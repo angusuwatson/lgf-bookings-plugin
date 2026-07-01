@@ -154,6 +154,18 @@ add_action( 'rest_api_init', function() {
         'permission_callback' => '__return_true',
     ] );
 
+    register_rest_route( 'simple-hotel-crm/v1', '/ticket-reissue-receipt', [
+        'methods'  => 'POST',
+        'callback' => 'simple_hotel_crm_rest_ticket_reissue_receipt',
+        'permission_callback' => function( $r ) { return simple_hotel_crm_user_can_access( $r ); },
+        'args'     => [
+            'booking_id' => [
+                'required'          => true,
+                'validate_callback' => function( $p ) { return is_numeric( $p ) && (int) $p > 0; },
+            ],
+        ],
+    ] );
+
     register_rest_route( 'simple-hotel-crm/v1', '/ticket-checkin', [
         'methods'  => 'POST',
         'callback' => 'simple_hotel_crm_rest_ticket_checkin',
@@ -611,6 +623,124 @@ function simple_hotel_crm_rest_save_quick_booking( WP_REST_Request $request ) {
         ], [ 'booking_id' => $booking_id ], [ '%d', '%d', '%d' ], [ '%d' ] );
     }
 
+    // Recalculate pricing based on updated occupancy
+    $nights = 0;
+    if ( ! empty( $booking['check_in_date'] ) && ! empty( $booking['check_out_date'] ) ) {
+        $nights = max( 1, (int) floor( ( strtotime( $booking['check_out_date'] ) - strtotime( $booking['check_in_date'] ) ) / DAY_IN_SECONDS ) );
+    }
+    if ( $nights > 0 ) {
+        if ( isset( $booking_room_id ) && $booking_room_id > 0 ) {
+            $room_ids_to_recalc = [ $booking_room_id ];
+        } else {
+            $room_ids_to_recalc = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$booking_rooms_table} WHERE booking_id = %d", $booking_id ) );
+        }
+        foreach ( $room_ids_to_recalc as $br_id ) {
+            $br_row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$booking_rooms_table} WHERE id = %d", $br_id ), ARRAY_A );
+            if ( ! $br_row ) {
+                continue;
+            }
+            $room_line = [
+                'adults' => (int) $br_row['adults'],
+                'children' => (int) $br_row['children'],
+                'babies' => (int) $br_row['babies'],
+                'room_rate_amount' => (float) $br_row['room_rate_amount'],
+                'discount_type' => $br_row['discount_type'] ?: 'none',
+                'discount_value' => (float) $br_row['discount_value'],
+                'extras_amount' => (float) $br_row['extras_amount'],
+            ];
+            $room_pricing = simple_hotel_crm_calculate_room_pricing(
+                $room_line,
+                $nights,
+                (int) $br_row['room_id'],
+                (string) $booking['source_channel']
+            );
+            $wpdb->update(
+                $booking_rooms_table,
+                [
+                    'pricing_room_id' => $room_pricing['pricing_room_id'] > 0 ? $room_pricing['pricing_room_id'] : null,
+                    'occupancy_adults' => $room_pricing['occupancy_adults'],
+                    'guest_count' => $room_pricing['guest_count'],
+                    'base_price_amount' => $room_pricing['base_price_amount'],
+                    'discount_amount' => $room_pricing['discount_amount'],
+                    'subtotal_amount' => $room_pricing['subtotal_amount'],
+                    'commission_amount' => $room_pricing['commission_amount'],
+                    'room_rate_amount' => $room_pricing['room_rate_amount'],
+                    'tourist_tax_amount' => $room_pricing['tourist_tax_total'],
+                    'total_amount' => $room_pricing['total_amount'],
+                ],
+                [ 'id' => $br_id ],
+                [ '%d', '%d', '%d', '%f', '%f', '%f', '%f', '%f', '%f', '%f' ],
+                [ '%d' ]
+            );
+            $room_rate_nightly = simple_hotel_crm_distribute_amounts( $room_pricing['room_rate_amount'], $nights );
+            $base_price_nightly = simple_hotel_crm_distribute_amounts( $room_pricing['base_price_amount'], $nights );
+            $discount_nightly = simple_hotel_crm_distribute_amounts( $room_pricing['discount_amount'], $nights );
+            $subtotal_nightly = simple_hotel_crm_distribute_amounts( $room_pricing['subtotal_amount'], $nights );
+            $commission_nightly = simple_hotel_crm_distribute_amounts( $room_pricing['commission_amount'], $nights );
+            $tax_nightly = simple_hotel_crm_distribute_amounts( $room_pricing['tourist_tax_total'], $nights );
+            $existing_nights = $wpdb->get_results(
+                $wpdb->prepare( "SELECT id, stay_date, extras_amount FROM {$booking_nights_table} WHERE booking_room_id = %d ORDER BY stay_date ASC", $br_id ),
+                ARRAY_A
+            );
+            foreach ( $existing_nights as $i => $night ) {
+                $night_extras = (float) ( $night['extras_amount'] ?? 0 );
+                $night_total = round( $room_rate_nightly[ $i ] + $night_extras + $tax_nightly[ $i ], 2 );
+                $wpdb->update(
+                    $booking_nights_table,
+                    [
+                        'base_price_amount' => $base_price_nightly[ $i ],
+                        'discount_amount' => $discount_nightly[ $i ],
+                        'subtotal_amount' => $subtotal_nightly[ $i ],
+                        'commission_amount' => $commission_nightly[ $i ],
+                        'room_rate_amount' => $room_rate_nightly[ $i ],
+                        'tourist_tax_amount' => $tax_nightly[ $i ],
+                        'total_amount' => $night_total,
+                        'guest_count' => $room_pricing['guest_count'],
+                        'adults' => $room_pricing['adults'],
+                        'children' => $room_pricing['children'],
+                        'babies' => $room_pricing['babies'],
+                    ],
+                    [ 'id' => (int) $night['id'] ],
+                    [ '%f', '%f', '%f', '%f', '%f', '%f', '%f', '%d', '%d', '%d', '%d' ],
+                    [ '%d' ]
+                );
+            }
+        }
+        // Recalculate booking-level totals
+        $totals = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT COALESCE(SUM(room_rate_amount), 0) AS room_rate,
+                        COALESCE(SUM(extras_amount), 0) AS extras,
+                        COALESCE(SUM(tourist_tax_amount), 0) AS tax,
+                        COALESCE(SUM(total_amount), 0) AS total
+                 FROM {$booking_rooms_table}
+                 WHERE booking_id = %d",
+                $booking_id
+            ),
+            ARRAY_A
+        );
+        $b_adults = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(adults), 0) FROM {$booking_rooms_table} WHERE booking_id = %d", $booking_id ) );
+        $b_children = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(children), 0) FROM {$booking_rooms_table} WHERE booking_id = %d", $booking_id ) );
+        $b_babies = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(babies), 0) FROM {$booking_rooms_table} WHERE booking_id = %d", $booking_id ) );
+        $items_table = simple_hotel_crm_booking_items_table();
+        $items_total = (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(quantity * unit_price), 0) FROM {$items_table} WHERE booking_id = %d", $booking_id ) );
+        $wpdb->update(
+            $bookings_table,
+            [
+                'adults' => $b_adults,
+                'children' => $b_children,
+                'babies' => $b_babies,
+                'room_rate_amount' => round( (float) $totals['room_rate'], 2 ),
+                'extras_amount' => round( (float) $totals['extras'] + $items_total, 2 ),
+                'tourist_tax_amount' => round( (float) $totals['tax'], 2 ),
+                'total_amount' => round( (float) $totals['total'] + $items_total, 2 ),
+            ],
+            [ 'id' => $booking_id ],
+            [ '%d', '%d', '%d', '%f', '%f', '%f', '%f' ],
+            [ '%d' ]
+        );
+    }
+
     if ( ! empty( $booking['source_booking_id'] ) ) {
         $wpdb->update( $sync_bookings_table, [
             'status_code' => $status_code,
@@ -1028,6 +1158,21 @@ function simple_hotel_crm_rest_ticket_checkout_status( WP_REST_Request $request 
     }
 
     return rest_ensure_response( [ 'status' => $lower, 'checkout_id' => $checkout_id ] );
+}
+
+function simple_hotel_crm_rest_ticket_reissue_receipt( WP_REST_Request $request ) {
+    $booking_id = absint( $request->get_param( 'booking_id' ) );
+    if ( $booking_id <= 0 ) {
+        return new WP_Error( 'invalid_booking', 'Invalid booking.', [ 'status' => 400 ] );
+    }
+    if ( ! simple_hotel_crm_square_is_configured() ) {
+        return new WP_Error( 'square_not_configured', 'Square Terminal is not configured.', [ 'status' => 400 ] );
+    }
+    $result = simple_hotel_crm_square_reprint_receipt( $booking_id );
+    if ( is_wp_error( $result ) ) {
+        return new WP_Error( 'square_error', $result->get_error_message(), [ 'status' => 400 ] );
+    }
+    return rest_ensure_response( $result );
 }
 
 function simple_hotel_crm_rest_ticket_finances( WP_REST_Request $request ) {
