@@ -490,6 +490,8 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
     $bookings_table = simple_hotel_crm_bookings_table();
     $guests_table = simple_hotel_crm_guests_table();
 
+    nocache_headers();
+
     $booking = $wpdb->get_row(
         $wpdb->prepare(
             "SELECT b.id, b.guest_id, b.status_code, b.source_channel, b.contacted_date, b.booking_note, b.internal_notes, g.first_name, g.last_name, g.phone, g.email
@@ -514,7 +516,7 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
     $booking_note_global = simple_hotel_crm_get_booking_note_text( (int) $booking['id'] );
 
     $booking_rooms = $wpdb->get_results( $wpdb->prepare( "
-        SELECT br.id AS booking_room_id, r.room_code, r.room_name,
+        SELECT br.id AS booking_room_id, br.legacy_reserved_room_id, r.room_code, r.room_name,
                COALESCE(MAX(brn.adults), 0) AS adults,
                COALESCE(MAX(brn.children), 0) AS children,
                COALESCE(MAX(brn.babies), 0) AS babies
@@ -522,7 +524,7 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
         JOIN " . simple_hotel_crm_rooms_table() . " r ON r.id = br.room_id
         LEFT JOIN " . simple_hotel_crm_booking_room_nights_table() . " brn ON brn.booking_room_id = br.id
         WHERE br.booking_id = %d
-        GROUP BY br.id, r.room_code, r.room_name
+        GROUP BY br.id, br.legacy_reserved_room_id, r.room_code, r.room_name
         ORDER BY r.sort_order ASC
     ", $booking_id ), ARRAY_A );
 

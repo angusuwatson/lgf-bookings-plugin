@@ -128,7 +128,17 @@
                     $form.find('[name="contacted_date"]').val(response.contacted_date || '');
                     $form.find('[name="internal_notes"]').val(response.internal_notes || '');
                     $form.find('[name="status_code"]').val(response.status_code || '');
-                    var occRoom = (response.booking_rooms && response.booking_rooms.length > 0) ? response.booking_rooms[0] : null;
+                    var occRoom = null;
+                    if (response.booking_rooms && response.booking_rooms.length > 0) {
+                        for (var ri = 0; ri < response.booking_rooms.length; ri++) {
+                            var r = response.booking_rooms[ri];
+                            if (parseInt(r.legacy_reserved_room_id, 10) === parseInt(reservedRoomId, 10) || parseInt(r.booking_room_id, 10) === parseInt(reservedRoomId, 10)) {
+                                occRoom = r;
+                                break;
+                            }
+                        }
+                        if (!occRoom) occRoom = response.booking_rooms[0];
+                    }
                     $form.find('[name="adults"]').val(occRoom ? (parseInt(occRoom.adults, 10) || 0) : 0);
                     $form.find('[name="children"]').val(occRoom ? (parseInt(occRoom.children, 10) || 0) : 0);
                     $form.find('[name="babies"]').val(occRoom ? (parseInt(occRoom.babies, 10) || 0) : 0);
