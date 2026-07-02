@@ -40,7 +40,7 @@
             request({
                 url: restUrl,
                 method: 'GET',
-                data: { month: month, year: year, context: simpleHotelCrm.context || 'frontend' },
+                data: { month: month, year: year, context: simpleHotelCrm.context || 'frontend', _: Date.now() },
                 beforeSend: function() { $container.addClass('loading'); },
                 success: function(response) {
                     if (response && response.html) {
@@ -114,7 +114,7 @@
             request({
                 url: quickBookingUrl,
                 method: 'GET',
-                data: { booking_id: bookingId, reserved_room_id: reservedRoomId || 0 },
+                data: { booking_id: bookingId, reserved_room_id: reservedRoomId || 0, _: Date.now() },
                 success: function(response) {
                     if (!response || !response.id) {
                         $message.addClass('error').text('Failed to load booking.');
@@ -206,9 +206,11 @@
                 success: function(response) {
                     if (response && response.success) {
                         $message.addClass('success').text('Saved.');
-                        var params = new URLSearchParams(window.location.search);
-                        loadMonth(params.get('month') || new Date().getMonth() + 1, params.get('year') || new Date().getFullYear(), false);
-                        setTimeout(closeModal, 500);
+                        setTimeout(function() {
+                            closeModal();
+                            var params = new URLSearchParams(window.location.search);
+                            loadMonth(params.get('month') || new Date().getMonth() + 1, params.get('year') || new Date().getFullYear(), false);
+                        }, 600);
                     } else {
                         $message.addClass('error').text('Save failed.');
                     }

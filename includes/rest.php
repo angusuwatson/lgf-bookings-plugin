@@ -510,7 +510,7 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
 
     $booking_room_id = 0;
     if ( $reserved_room_id > 0 ) {
-        $booking_room_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM " . simple_hotel_crm_booking_rooms_table() . " WHERE legacy_reserved_room_id = %d LIMIT 1", $reserved_room_id ) );
+        $booking_room_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM " . simple_hotel_crm_booking_rooms_table() . " WHERE (legacy_reserved_room_id = %d OR id = %d) AND booking_id = %d LIMIT 1", $reserved_room_id, $reserved_room_id, $booking_id ) );
     }
     $room_note = $booking_room_id > 0 ? simple_hotel_crm_get_booking_note_text( (int) $booking['id'], $booking_room_id ) : '';
     $booking_note_global = simple_hotel_crm_get_booking_note_text( (int) $booking['id'] );
