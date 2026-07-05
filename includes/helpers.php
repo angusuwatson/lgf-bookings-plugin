@@ -544,7 +544,8 @@ function simple_hotel_crm_import_booking_com_ics_feeds() {
             $uid = trim( (string) ( $event['UID'] ?? '' ) );
             $summary_text = trim( (string) ( $event['SUMMARY'] ?? '' ) );
             $description = trim( (string) ( $event['DESCRIPTION'] ?? '' ) );
-            $status = 'confirmed';
+            $ics_status = strtoupper( trim( (string) ( $event['STATUS'] ?? 'CONFIRMED' ) ) );
+            $status = ( 'CANCELLED' === $ics_status ) ? 'cancelled' : 'confirmed';
             $source_booking_id = '' !== $uid ? $uid : md5( $room_id . '|' . $check_in . '|' . $check_out . '|' . $summary_text );
             if ( ! in_array( $source_booking_id, $summary['seen_uids'], true ) ) {
                 $summary['seen_uids'][] = $source_booking_id;

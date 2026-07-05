@@ -1418,6 +1418,19 @@ function simple_hotel_crm_import_sync_data_to_crm() {
             ),
             ARRAY_A
         );
+        if ( 'cancelled' === $booking_group['status_code'] ) {
+            if ( $booking ) {
+                $wpdb->update(
+                    $crm_bookings_table,
+                    [ 'status_code' => 'cancelled' ],
+                    [ 'id' => (int) $booking['id'] ],
+                    [ '%s' ],
+                    [ '%d' ]
+                );
+            }
+            $wpdb->query( 'COMMIT' );
+            continue;
+        }
         if ( $booking ) {
             $is_ics_skeleton = simple_hotel_crm_booking_is_ics_skeleton( $booking );
             if ( ! $is_ics_skeleton ) {

@@ -469,7 +469,7 @@ function simple_hotel_crm_render_bookings_page() {
     $is_deleted = 'trash' === $view ? 1 : 0;
     $archive_sql = 'active' === $view ? " AND (b.internal_notes IS NULL OR b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%') " : ( 'archive' === $view ? " AND b.internal_notes LIKE '%[MERGED_ARCHIVE]%' " : '' );
     $status_sql = 'cancelled' === $view ? " AND b.status_code = 'cancelled' " : ( 'active' === $view ? " AND b.status_code <> 'cancelled' " : '' );
-    $sortable = [ 'id' => 'b.id', 'guest' => 'guest_name', 'check_in' => 'b.check_in_date', 'check_out' => 'b.check_out_date', 'rooms' => 'room_count', 'status' => 'b.status_code', 'channel' => 'b.source_channel', 'commission' => 'commission_amount', 'total' => 'b.total_amount' ];
+    $sortable = [ 'id' => 'b.id', 'guest' => 'guest_name', 'check_in' => 'b.check_in_date', 'check_out' => 'b.check_out_date', 'rooms' => 'room_count', 'status' => 'b.status_code', 'channel' => 'b.source_channel', 'source_id' => 'b.source_booking_id', 'commission' => 'commission_amount', 'total' => 'b.total_amount' ];
     $search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
     $orderby_key = isset( $_GET['orderby'] ) && isset( $sortable[ $_GET['orderby'] ] ) ? $_GET['orderby'] : 'check_in';
     $order = isset( $_GET['order'] ) && 'asc' === strtolower( (string) $_GET['order'] ) ? 'ASC' : 'DESC';
@@ -563,7 +563,7 @@ function simple_hotel_crm_render_bookings_page() {
 
     $rows = $wpdb->get_results(
         $wpdb->prepare(
-            "SELECT b.id, b.guest_id, b.status_code, b.check_in_date, b.check_out_date, b.source_channel, b.total_amount, b.created_at,
+            "SELECT b.id, b.guest_id, b.status_code, b.check_in_date, b.check_out_date, b.source_channel, b.source_booking_id, b.total_amount, b.created_at,
                     COALESCE(CONCAT(g.first_name, ' ', g.last_name), '') AS guest_name,
                     COUNT(br.id) AS room_count,
                     COALESCE(GROUP_CONCAT(r.room_code ORDER BY r.room_code ASC SEPARATOR ','), '') AS room_codes,
@@ -575,7 +575,7 @@ function simple_hotel_crm_render_bookings_page() {
              LEFT JOIN {$booking_rooms_table} br ON br.booking_id = b.id
              LEFT JOIN {$rooms_table} r ON r.id = br.room_id
              WHERE b.is_deleted = %d {$archive_sql} {$status_sql} {$search_sql}
-             GROUP BY b.id, b.guest_id, b.status_code, b.check_in_date, b.check_out_date, b.source_channel, b.total_amount, b.created_at, g.first_name, g.last_name
+             GROUP BY b.id, b.guest_id, b.status_code, b.check_in_date, b.check_out_date, b.source_channel, b.source_booking_id, b.total_amount, b.created_at, g.first_name, g.last_name
              ORDER BY {$order_sql} {$order}
              LIMIT %d OFFSET %d",
             array_merge( [ $is_deleted ], $search_params, [ $per_page, $offset ] )
@@ -687,12 +687,13 @@ function simple_hotel_crm_render_bookings_page() {
     echo '<th>' . $header_link( 'rooms', __( 'Rooms (codes)', 'simple-hotel-crm' ) ) . '</th>';
     echo '<th>' . $header_link( 'status', __( 'Status', 'simple-hotel-crm' ) ) . '</th>';
     echo '<th>' . $header_link( 'channel', __( 'Channel', 'simple-hotel-crm' ) ) . '</th>';
+    echo '<th>' . $header_link( 'source_id', __( 'Source ID', 'simple-hotel-crm' ) ) . '</th>';
     echo '<th>' . $header_link( 'commission', __( 'Commission', 'simple-hotel-crm' ) ) . '</th>';
     echo '<th>' . $header_link( 'total', __( 'Total', 'simple-hotel-crm' ) ) . '</th>';
     echo '<th>' . esc_html__( 'Actions', 'simple-hotel-crm' ) . '</th>';
     echo '</tr></thead><tbody>';
     if ( empty( $rows ) ) {
-        echo '<tr><td colspan="11">' . esc_html__( 'No bookings found.', 'simple-hotel-crm' ) . '</td></tr>';
+        echo '<tr><td colspan="12">' . esc_html__( 'No bookings found.', 'simple-hotel-crm' ) . '</td></tr>';
     } else {
         foreach ( $rows as $row ) {
             $detail_url = admin_url( 'admin.php?page=simple-hotel-crm-booking-detail&booking_id=' . absint( $row['id'] ) );
@@ -708,6 +709,7 @@ function simple_hotel_crm_render_bookings_page() {
             echo '<td>' . ( '' !== $row['room_codes'] ? esc_html( $row['room_codes'] ) : '0' ) . '</td>';
             echo '<td>' . esc_html( (string) $row['status_code'] ) . '</td>';
             echo '<td>' . esc_html( simple_hotel_crm_get_booking_channel_options()[ (string) $row['source_channel'] ] ?? (string) $row['source_channel'] ) . '</td>';
+            echo '<td><code style="font-size:11px;">' . esc_html( (string) ( $row['source_booking_id'] ?? '' ) ) . '</code></td>';
             echo '<td>' . ( (float) $row['commission_amount'] > 0 ? esc_html( number_format( (float) $row['commission_amount'], 2, '.', '' ) ) : '' ) . '</td>';
             echo '<td>' . esc_html( number_format( (float) $row['display_total_amount'], 2, '.', '' ) ) . '</td>';
             echo '<td><a class="button button-small" href="' . esc_url( $detail_url ) . '">' . esc_html__( 'View / Edit', 'simple-hotel-crm' ) . '</a> ' . ( 'trash' === $view ? '<a class="button button-small" href="' . esc_url( $restore_url ) . '">' . esc_html__( 'Restore', 'simple-hotel-crm' ) . '</a> <a class="button button-small button-link-delete" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Permanently delete this booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete Permanently', 'simple-hotel-crm' ) . '</a>' : ( 'archive' === $view ? '<a class="button button-small" href="' . esc_url( $archive_restore_url ) . '">' . esc_html__( 'Restore from archive', 'simple-hotel-crm' ) . '</a> <a class="button button-small button-link-delete" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Permanently delete this archived booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete Permanently', 'simple-hotel-crm' ) . '</a>' : '<a class="button button-small" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Delete this booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete', 'simple-hotel-crm' ) . '</a>' ) ) . '</td>';
