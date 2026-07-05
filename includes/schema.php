@@ -1426,14 +1426,14 @@ function simple_hotel_crm_import_sync_data_to_crm() {
                      WHERE b.source_channel = %s
                        AND b.is_deleted = 0
                        AND b.status_code IN ('confirmed', 'checked_in')
-                       AND b.check_in_date < %s
-                       AND b.check_out_date > %s
-                       AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL)
+                        AND b.check_in_date = %s
+                        AND b.check_out_date = %s
+                        AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL)
                      LIMIT 1",
                     $crm_room_id,
                     (string) $booking_group['source_channel'],
-                    (string) $booking_group['check_out_date'],
-                    (string) $booking_group['check_in_date']
+                    (string) $booking_group['check_in_date'],
+                    (string) $booking_group['check_out_date']
                 ),
                 ARRAY_A
             );
