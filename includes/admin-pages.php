@@ -1883,6 +1883,31 @@ function simple_hotel_crm_replace_booking_room_data( $booking_id, $data, $existi
             $wpdb->delete( $crm_booking_items_table, [ 'id' => $item_id ], [ '%d' ] );
         }
     }
+    // Update existing items' room and date (values reference old booking_room_ids; migrated to new IDs after room re-insertion below)
+    $edit_rooms = isset( $_POST['edit_item_room'] ) ? (array) wp_unslash( $_POST['edit_item_room'] ) : [];
+    $edit_dates = isset( $_POST['edit_item_date'] ) ? (array) wp_unslash( $_POST['edit_item_date'] ) : [];
+    foreach ( $edit_rooms as $item_id => $room_id ) {
+        $item_id = absint( $item_id );
+        if ( $item_id <= 0 ) { continue; }
+        $item_update = [];
+        $item_fmt = [];
+        if ( absint( $room_id ) > 0 ) {
+            $item_update['booking_room_id'] = absint( $room_id );
+            $item_fmt[] = '%d';
+        } else {
+            $item_update['booking_room_id'] = null;
+            $item_fmt[] = '%s';
+        }
+        $date_val = isset( $edit_dates[ $item_id ] ) ? sanitize_text_field( trim( (string) $edit_dates[ $item_id ] ) ) : '';
+        if ( '' !== $date_val ) {
+            $item_update['stay_date'] = $date_val;
+            $item_fmt[] = '%s';
+        } else {
+            $item_update['stay_date'] = null;
+            $item_fmt[] = '%s';
+        }
+        $wpdb->update( $crm_booking_items_table, $item_update, [ 'id' => $item_id ], $item_fmt, [ '%d' ] );
+    }
     $pending_items = isset( $_POST['pending_items'] ) ? (array) wp_unslash( $_POST['pending_items'] ) : [];
     foreach ( $pending_items as $pending ) {
         $name = isset( $pending['name'] ) ? sanitize_text_field( trim( (string) $pending['name'] ) ) : '';
@@ -1950,6 +1975,7 @@ function simple_hotel_crm_replace_booking_room_data( $booking_id, $data, $existi
         $crm_booking_room_id = (int) $wpdb->insert_id;
         if ( $old_booking_room_id > 0 && $old_booking_room_id !== $crm_booking_room_id ) {
             $wpdb->query( $wpdb->prepare( "UPDATE {$booking_notes_table} SET booking_room_id = %d WHERE booking_room_id = %d AND booking_id = %d AND stay_date IS NOT NULL", $crm_booking_room_id, $old_booking_room_id, $booking_id ) );
+            $wpdb->query( $wpdb->prepare( "UPDATE {$crm_booking_items_table} SET booking_room_id = %d WHERE booking_room_id = %d AND booking_id = %d", $crm_booking_room_id, $old_booking_room_id, $booking_id ) );
         }
         $room_note = sanitize_textarea_field( (string) ( $line['room_note'] ?? '' ) );
         simple_hotel_crm_upsert_booking_note( $booking_id, $room_note, $crm_booking_room_id, null, 'room' );
@@ -2541,8 +2567,15 @@ function simple_hotel_crm_render_booking_detail_page() {
             echo '<td>' . esc_html( (string) $item['quantity'] ) . '</td>';
             echo '<td>' . esc_html( number_format( (float) $item['unit_price'], 2, '.', '' ) ) . '</td>';
             echo '<td>' . esc_html( number_format( $item_total, 2, '.', '' ) ) . '</td>';
-            echo '<td>' . ( $room_label ? esc_html( $room_label ) : '<em>' . esc_html__( 'Booking', 'simple-hotel-crm' ) . '</em>' ) . '</td>';
-            echo '<td>' . ( ! empty( $item['stay_date'] ) ? esc_html( (string) $item['stay_date'] ) : '<em>' . esc_html__( '—', 'simple-hotel-crm' ) . '</em>' ) . '</td>';
+            echo '<td><select name="edit_item_room[' . esc_attr( (string) $item['id'] ) . ']"><option value="">' . esc_html__( '— Booking —', 'simple-hotel-crm' ) . '</option>';
+            foreach ( $rooms as $r ) {
+                $rid = (string) ( $r['id'] ?? '' );
+                $rlabel = (string) ( $r['room_code'] ?? '' ) . ' - ' . (string) ( $r['room_name'] ?? '' );
+                $selected = ( $rid === (string) $item['booking_room_id'] ) ? ' selected' : '';
+                echo '<option value="' . esc_attr( $rid ) . '"' . $selected . '>' . esc_html( $rlabel ) . '</option>';
+            }
+            echo '</select></td>';
+            echo '<td><input type="date" name="edit_item_date[' . esc_attr( (string) $item['id'] ) . ']" value="' . esc_attr( (string) ( $item['stay_date'] ?? '' ) ) . '" min="' . esc_attr( (string) $booking['check_in_date'] ) . '" max="' . esc_attr( (string) $booking['check_out_date'] ) . '" style="width:140px;" /></td>';
             echo '<td><label><input type="checkbox" name="delete_booking_item[' . esc_attr( (string) $item['id'] ) . ']" value="1" /> ' . esc_html__( 'Remove', 'simple-hotel-crm' ) . '</label></td>';
             echo '</tr>';
         }
