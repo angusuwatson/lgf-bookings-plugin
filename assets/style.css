@@ -318,9 +318,9 @@ body.shc-fullscreen #wpbody-content {
 .simple-hotel-crm .calendar-grid .occupancy-row .room-label-cell,
 .simple-hotel-crm .calendar-grid .occupancy-row td,
 .simple-hotel-crm .calendar-grid .extras-row .room-label-cell,
-.simple-hotel-crm .calendar-grid .extras-row td,
+.simple-hotel-crm .calendar-grid .extras-row td { background: var(--room-fill, transparent); color: #1a1a1a; font-size: 10px; height: 13px; text-align: right; }
 .simple-hotel-crm .calendar-grid .tarif-row .room-label-cell,
-.simple-hotel-crm .calendar-grid .tarif-row td { background: var(--room-fill, transparent); color: #1a1a1a; font-size: 10px; height: 13px; }
+.simple-hotel-crm .calendar-grid .tarif-row td { background: var(--room-fill, transparent); color: #1a1a1a; font-size: 10px; height: 13px; font-weight: 700; text-align: right; }
 
 .simple-hotel-crm .calendar-grid .commission-row .room-label-cell,
 .simple-hotel-crm .calendar-grid .commission-row td,
@@ -329,6 +329,7 @@ body.shc-fullscreen #wpbody-content {
     background: #ffffff !important;
     color: #161616;
     font-size: 10px;
+    text-align: right;
 }
 
 .simple-hotel-crm .calendar-grid .room-label-text { display: block; font-weight: 700; }
