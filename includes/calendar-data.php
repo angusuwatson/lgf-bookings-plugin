@@ -277,6 +277,7 @@ function simple_hotel_crm_build_daily_summary( $calendar_data ) {
         $income_day = 0.0;
         $commission_day = 0.0;
         $extras_total_day = 0.0;
+        $rate_day = 0.0;
         $rooms_count = 0;
         $extras_count = 0;
         $tax_adults = 0;
@@ -301,6 +302,7 @@ function simple_hotel_crm_build_daily_summary( $calendar_data ) {
             $tax_children += (int) ( $booking->children ?? 0 );
 
             $nights = max( 1, (int) round( ( strtotime( $booking->check_out ) - strtotime( $booking->check_in ) ) / DAY_IN_SECONDS ) );
+            $rate_day += (float) ( $booking->tarif ?? 0 ) / $nights;
             $extras_total_day += (float) ( $booking->extras_total ?? 0 );
             $income_day += (float) ( $booking->tarif ?? 0 ) / $nights + (float) ( $booking->extras_total ?? 0 );
             $commission_day += (float) ( $booking->commission ?? 0 ) / $nights;
@@ -313,6 +315,7 @@ function simple_hotel_crm_build_daily_summary( $calendar_data ) {
             'income_day' => $income_day,
             'income_accumulated' => $previous_income + $income_day,
             'extras_day' => $extras_total_day,
+            'rate_day' => $rate_day,
             'rooms' => $rooms_count,
             'table_dhotes' => $extras_count,
             'tourist_tax_adults' => $tax_adults,
