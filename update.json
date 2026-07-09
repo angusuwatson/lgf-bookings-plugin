@@ -1,7 +1,7 @@
 {
     "name": "LGF Bookings",
     "slug": "simple-hotel-crm",
-    "version": "1.9.3.11",
+    "version": "1.9.3.12",
     "homepage": "https://github.com/angusuwatson/lgf-bookings-plugin",
     "download_url": "https://github.com/angusuwatson/lgf-bookings-plugin/archive/refs/heads/master.zip",
     "requires": "6.0",
