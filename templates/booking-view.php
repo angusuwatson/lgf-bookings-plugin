@@ -38,12 +38,14 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                             <span class="calendar-day-number"><?php echo esc_html( $day ); ?></span>
                         </th>
                     <?php endforeach; ?>
+                    <th class="totals-header"><?php esc_html_e( 'Total', 'simple-hotel-crm' ); ?></th>
                 </tr>
                 <tr class="dow-row weekday-row">
                     <th class="label sticky-col room-header-spacer"></th>
                     <?php foreach ( $days as $day ) : $date_str = sprintf( '%04d-%02d-%02d', $year, $month, $day ); ?>
                         <th><span class="calendar-weekday"><?php echo esc_html( date_i18n( 'l', strtotime( $date_str ) ) ); ?></span></th>
                     <?php endforeach; ?>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -54,9 +56,10 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                             <input type="text" class="calendar-note-input" data-note-date="<?php echo esc_attr( $note_date ); ?>" value="<?php echo esc_attr( $daily_notes[ $note_date ] ?? '' ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Note for %s', 'simple-hotel-crm' ), $note_date ) ); ?>" />
                         </td>
                     <?php endforeach; ?>
+                    <td class="totals-cell"></td>
                 </tr>
                 <?php if ( empty( $rooms ) ) : ?>
-                    <tr><td colspan="<?php echo esc_attr( 1 + $days_in_month ); ?>"><?php esc_html_e( 'No rooms found.', 'simple-hotel-crm' ); ?></td></tr>
+                    <tr><td colspan="<?php echo esc_attr( 2 + $days_in_month ); ?>"><?php esc_html_e( 'No rooms found.', 'simple-hotel-crm' ); ?></td></tr>
                 <?php else : ?>
                     <?php foreach ( $rooms as $index => $room ) :
                         $room_id = $room->id;
@@ -129,6 +132,33 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                                     <?php endif; ?>
                                 </td>
                             <?php endforeach; ?>
+                            <?php
+                            $total_display = '';
+                            if ( in_array( $row['class'], [ 'extras-row', 'tarif-row', 'commission-row' ], true ) ) {
+                                $raw_total = 0;
+                                $has_total = false;
+                                foreach ( $days as $d ) {
+                                    $d_str = sprintf( '%04d-%02d-%02d', $year, $month, $d );
+                                    $e = $matrix[ $room_id ][ $d_str ] ?? null;
+                                    $bkg = $e['booking'] ?? null;
+                                    if ( ! $bkg ) { continue; }
+                                    if ( 'extras-row' === $row['class'] && null !== $bkg->extras_total && '' !== $bkg->extras_total && (float) $bkg->extras_total > 0 ) {
+                                        $raw_total += (float) $bkg->extras_total;
+                                        $has_total = true;
+                                    } elseif ( 'tarif-row' === $row['class'] && isset( $bkg->tarif ) && '' !== $bkg->tarif && null !== $bkg->tarif ) {
+                                        $raw_total += (float) $bkg->tarif;
+                                        $has_total = true;
+                                    } elseif ( 'commission-row' === $row['class'] && isset( $bkg->commission ) && '' !== $bkg->commission && null !== $bkg->commission && (float) $bkg->commission > 0 ) {
+                                        $raw_total += (float) $bkg->commission;
+                                        $has_total = true;
+                                    }
+                                }
+                                if ( $has_total ) {
+                                    $total_display = number_format( $raw_total, 2, ',', ' ' ) . ' €';
+                                }
+                            }
+                            ?>
+                            <td class="totals-cell"><?php echo $total_display ? esc_html( $total_display ) : ''; ?></td>
                         </tr>
                     <?php endforeach; endforeach; ?>
                 <?php endif; ?>
@@ -138,6 +168,7 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                     <?php foreach ( $days as $day ) : ?>
                         <td></td>
                     <?php endforeach; ?>
+                    <td class="totals-cell"></td>
                 </tr>
 
                 <?php
@@ -159,6 +190,16 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                         ?>
                             <td><?php echo esc_html( (string) $display ); ?></td>
                         <?php endforeach; ?>
+                        <?php
+                        $footer_raw = 0;
+                        foreach ( $days as $day ) {
+                            $footer_raw += (float) ( $summary[ $day ][ $key ] ?? 0 );
+                        }
+                        $footer_display = in_array( $key, [ 'income_day', 'income_accumulated', 'booking_payment', 'booking_accumulated' ], true )
+                            ? number_format( $footer_raw, 2, ',', ' ' ) . ' €'
+                            : (string) $footer_raw;
+                        ?>
+                        <td class="totals-cell"><?php echo esc_html( $footer_display ); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
