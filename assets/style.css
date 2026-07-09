@@ -378,10 +378,7 @@ body.shc-fullscreen #wpbody-content {
 .simple-hotel-crm .calendar-grid tr.calendar-spacer-row td { background: #ffffff; height: 14px; }
 .simple-hotel-crm .calendar-grid tr.summary-row td { background: #f6f6f7; height: 21px; color: #161616; }
 .simple-hotel-crm .calendar-grid tr.summary-row .summary-label-cell { background: #e9e9ec; font-weight: 700; }
-.simple-hotel-crm .calendar-grid tr.summary-income-day td,
-.simple-hotel-crm .calendar-grid tr.summary-income-accumulated td,
-.simple-hotel-crm .calendar-grid tr.summary-booking-payment td,
-.simple-hotel-crm .calendar-grid tr.summary-booking-accumulated td { text-align: right; }
+.simple-hotel-crm .calendar-grid tr.summary-row td { text-align: right; }
 
 .simple-hotel-crm .calendar-grid .totals-header {
     min-width: 90px;
@@ -399,10 +396,8 @@ body.shc-fullscreen #wpbody-content {
     text-align: right;
     padding: 0 6px;
 }
-.simple-hotel-crm .calendar-grid .extras-row td.totals-cell,
-.simple-hotel-crm .calendar-grid .tarif-row td.totals-cell,
-.simple-hotel-crm .calendar-grid .commission-row td.totals-cell { text-align: right; font-weight: 600; }
-.simple-hotel-crm .calendar-grid tr.summary-row td.totals-cell { text-align: right; font-weight: 700; background: #e9e9ec; }
+.simple-hotel-crm .calendar-grid .tarif-row td.totals-cell { font-weight: 700; }
+.simple-hotel-crm .calendar-grid tr.summary-row td.totals-cell { font-weight: 700; background: #e9e9ec; }
 
  .calendar-booking-link {
     color: inherit;
