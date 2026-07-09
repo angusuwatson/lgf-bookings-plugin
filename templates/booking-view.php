@@ -174,6 +174,9 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                 <?php
                 $footer_rows = [
                     'Income Day' => 'income_day',
+                    'Extras' => 'extras_day',
+                    'Rooms' => 'rooms',
+                    'Commission' => 'booking_payment',
                     'Adults' => 'tourist_tax_adults',
                     'Children' => 'tourist_tax_children',
                 ];
@@ -184,7 +187,7 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                         <?php foreach ( $days as $day ) :
                             $value = $summary[ $day ][ $key ] ?? '';
                             $display = $value;
-                            if ( in_array( $key, [ 'income_day', 'income_accumulated', 'booking_payment', 'booking_accumulated' ], true ) ) {
+                            if ( in_array( $key, [ 'income_day', 'extras_day', 'income_accumulated', 'booking_payment', 'booking_accumulated' ], true ) ) {
                                 $display = number_format( (float) $value, 2, ',', ' ' ) . ' €';
                             }
                         ?>
@@ -195,7 +198,7 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                         foreach ( $days as $day ) {
                             $footer_raw += (float) ( $summary[ $day ][ $key ] ?? 0 );
                         }
-                        $footer_display = in_array( $key, [ 'income_day', 'income_accumulated', 'booking_payment', 'booking_accumulated' ], true )
+                        $footer_display = in_array( $key, [ 'income_day', 'extras_day', 'income_accumulated', 'booking_payment', 'booking_accumulated' ], true )
                             ? number_format( $footer_raw, 2, ',', ' ' ) . ' €'
                             : (string) $footer_raw;
                         ?>
