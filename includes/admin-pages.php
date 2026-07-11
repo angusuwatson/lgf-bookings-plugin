@@ -4905,6 +4905,7 @@ function simple_hotel_crm_render_settings_page() {
         echo '<tr><th scope="row"><label for="simple_hotel_crm_invoice_ninja_token">' . esc_html__( 'API Token', 'simple-hotel-crm' ) . '</label></th>';
         echo '<td><input type="password" id="simple_hotel_crm_invoice_ninja_token" name="simple_hotel_crm_invoice_ninja_token" value="' . esc_attr( $api_token ) . '" class="regular-text" /></td></tr>';
         echo '</table>';
+        submit_button( __( 'Save Invoice Ninja Settings', 'simple-hotel-crm' ), 'primary', 'simple_hotel_crm_submit' );
         echo '</form>';
 
         echo '<form method="post" style="margin-top:12px;">';
