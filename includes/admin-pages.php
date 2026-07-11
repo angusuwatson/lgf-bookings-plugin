@@ -684,17 +684,17 @@ function simple_hotel_crm_render_bookings_page() {
         return '<a href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>';
     };
     echo '<table class="widefat striped"><thead><tr>';
-    echo '<th><input type="checkbox" onclick="jQuery(\'.booking-bulk-cb\').prop(\'checked\', this.checked)" /></th>';
-    echo '<th>' . $header_link( 'id', __( 'ID', 'simple-hotel-crm' ) ) . '</th>';
+    echo '<th style="width:32px;"><input type="checkbox" onclick="jQuery(\'.booking-bulk-cb\').prop(\'checked\', this.checked)" /></th>';
+    echo '<th style="width:44px;">' . $header_link( 'id', __( 'ID', 'simple-hotel-crm' ) ) . '</th>';
     echo '<th>' . $header_link( 'guest', __( 'Guest', 'simple-hotel-crm' ) ) . '</th>';
-    echo '<th>' . $header_link( 'check_in', __( 'Check-in', 'simple-hotel-crm' ) ) . '</th>';
-    echo '<th>' . $header_link( 'check_out', __( 'Check-out', 'simple-hotel-crm' ) ) . '</th>';
-    echo '<th>' . $header_link( 'rooms', __( 'Rooms (codes)', 'simple-hotel-crm' ) ) . '</th>';
-    echo '<th>' . $header_link( 'status', __( 'Status', 'simple-hotel-crm' ) ) . '</th>';
-    echo '<th>' . $header_link( 'channel', __( 'Channel', 'simple-hotel-crm' ) ) . '</th>';
-    echo '<th>' . esc_html__( 'Room Day Extras', 'simple-hotel-crm' ) . '</th>';
-    echo '<th>' . $header_link( 'commission', __( 'Commission', 'simple-hotel-crm' ) ) . '</th>';
-    echo '<th>' . $header_link( 'total', __( 'Total', 'simple-hotel-crm' ) ) . '</th>';
+    echo '<th style="width:105px;">' . $header_link( 'check_in', __( 'Check-in', 'simple-hotel-crm' ) ) . '</th>';
+    echo '<th style="width:105px;">' . $header_link( 'check_out', __( 'Check-out', 'simple-hotel-crm' ) ) . '</th>';
+    echo '<th style="width:62px;">' . $header_link( 'rooms', __( 'Rooms', 'simple-hotel-crm' ) ) . '</th>';
+    echo '<th style="width:64px;">' . $header_link( 'status', __( 'Status', 'simple-hotel-crm' ) ) . '</th>';
+    echo '<th style="width:72px;">' . $header_link( 'channel', __( 'Channel', 'simple-hotel-crm' ) ) . '</th>';
+    echo '<th style="width:56px;">' . esc_html__( 'Extras', 'simple-hotel-crm' ) . '</th>';
+    echo '<th style="width:56px;">' . $header_link( 'commission', __( 'Comm.', 'simple-hotel-crm' ) ) . '</th>';
+    echo '<th style="width:68px;">' . $header_link( 'total', __( 'Total', 'simple-hotel-crm' ) ) . '</th>';
     echo '<th>' . esc_html__( 'Actions', 'simple-hotel-crm' ) . '</th>';
     echo '</tr></thead><tbody>';
     $invoice_status_labels = [
@@ -2436,6 +2436,19 @@ function simple_hotel_crm_render_booking_detail_page() {
         }
     }
 
+    if ( isset( $_POST['simple_hotel_crm_clear_invoice_id'] ) ) {
+        check_admin_referer( 'simple_hotel_crm_clear_invoice_id_' . $booking_id );
+        $update_data = [ 'invoice_ninja_invoice_id' => null ];
+        $update_format = [ '%s' ];
+        if ( simple_hotel_crm_table_has_column( $bookings_table, 'invoice_status' ) ) {
+            $update_data['invoice_status'] = null;
+            $update_format[] = '%s';
+        }
+        $wpdb->update( $bookings_table, $update_data, [ 'id' => $booking_id ], $update_format, [ '%d' ] );
+        echo '<div class="notice notice-success"><p>' . esc_html__( 'Invoice Ninja ID cleared.', 'simple-hotel-crm' ) . '</p></div>';
+        $booking = $wpdb->get_row( $wpdb->prepare( "SELECT b.*, g.first_name, g.last_name, g.phone, g.email, g.id AS guest_id FROM {$bookings_table} b JOIN {$guests_table} g ON g.id = b.guest_id WHERE b.id = %d AND b.is_deleted = 0 LIMIT 1", $booking_id ), ARRAY_A );
+    }
+
     if ( isset( $_POST['simple_hotel_crm_save_booking'] ) && $booking ) {
         check_admin_referer( 'simple_hotel_crm_save_booking' );
         $posted_room_lines = array_values( array_filter( $posted_room_lines, function( $line ) {
@@ -2620,7 +2633,7 @@ function simple_hotel_crm_render_booking_detail_page() {
         echo '</ul>';
     }
     echo '<h2>' . esc_html__( 'Rooms', 'simple-hotel-crm' ) . '</h2>';
-    echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Remove', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Room', 'simple-hotel-crm' ) . '</th><th>A</th><th>C</th><th>BB</th><th>' . esc_html__( 'Rate', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Discount', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Discount value', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Extras total', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Tax', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Comm', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Total', 'simple-hotel-crm' ) . '</th></tr></thead><tbody>';
+    echo '<table class="widefat striped" style="table-layout:auto;"><thead><tr><th>' . esc_html__( 'Remove', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Room', 'simple-hotel-crm' ) . '</th><th style="width:28px;">A</th><th style="width:28px;">C</th><th style="width:32px;">BB</th><th style="width:72px;">' . esc_html__( 'Rate', 'simple-hotel-crm' ) . '</th><th style="width:66px;">' . esc_html__( 'Disc.', 'simple-hotel-crm' ) . '</th><th style="width:60px;">' . esc_html__( 'Disc. val.', 'simple-hotel-crm' ) . '</th><th style="width:60px;">' . esc_html__( 'Extras', 'simple-hotel-crm' ) . '</th><th style="width:50px;">' . esc_html__( 'Tax', 'simple-hotel-crm' ) . '</th><th style="width:56px;">' . esc_html__( 'Comm.', 'simple-hotel-crm' ) . '</th><th style="width:64px;">' . esc_html__( 'Total', 'simple-hotel-crm' ) . '</th></tr></thead><tbody>';
     foreach ( $rooms as $index => $room ) {
         echo '<tr>';
         echo '<td><input type="checkbox" name="room_lines[' . esc_attr( $index ) . '][remove]" value="1" /></td>';
@@ -2759,7 +2772,7 @@ function simple_hotel_crm_render_booking_detail_page() {
 </script>';
     echo '<p class="description">' . esc_html__( 'Add items like dinners, drinks, or other charges. Use "Add item" to queue multiple items, then click Save Booking once.', 'simple-hotel-crm' ) . '</p>';
     $display_items_total = round( array_sum( array_map( function( $item ) { return (float) $item['quantity'] * (float) $item['unit_price']; }, $booking_items ) ), 2 );
-    echo '<p><strong>' . esc_html__( 'Extras total', 'simple-hotel-crm' ) . ':</strong> ' . esc_html( number_format( $display_items_total, 2, '.', '' ) ) . ' €</p>';
+    echo '<p><strong>' . esc_html__( 'Extras', 'simple-hotel-crm' ) . ':</strong> ' . esc_html( number_format( $display_items_total, 2, '.', '' ) ) . ' €</p>';
     echo ' ';
     submit_button( __( 'Save Booking', 'simple-hotel-crm' ), 'primary', 'simple_hotel_crm_save_booking', false );
     echo '</form>';
@@ -2835,6 +2848,18 @@ function simple_hotel_crm_render_booking_detail_page() {
         submit_button( __( 'Transfer Booking', 'simple-hotel-crm' ), 'secondary', 'simple_hotel_crm_transfer_booking' );
     } else {
         echo esc_html__( 'No other guests available', 'simple-hotel-crm' );
+    }
+    echo '</form>';
+
+    $current_invoice_id = (string) ( $booking['invoice_ninja_invoice_id'] ?? '' );
+    echo '<h2>' . esc_html__( 'Invoice Ninja', 'simple-hotel-crm' ) . '</h2>';
+    echo '<form method="post" style="margin:12px 0;padding:12px;background:#fff;border:1px solid #ccd0d4;">';
+    wp_nonce_field( 'simple_hotel_crm_clear_invoice_id_' . $booking_id );
+    echo '<p>' . esc_html__( 'Current Invoice Ninja Invoice ID:', 'simple-hotel-crm' ) . ' <strong>' . ( $current_invoice_id !== '' ? esc_html( $current_invoice_id ) : esc_html__( '(none)', 'simple-hotel-crm' ) ) . '</strong></p>';
+    if ( $current_invoice_id !== '' ) {
+        echo '<button type="submit" name="simple_hotel_crm_clear_invoice_id" class="button button-secondary" onclick="return confirm(\'' . esc_js( __( 'Are you sure? This will allow re-creating an invoice.', 'simple-hotel-crm' ) ) . '\');">' . esc_html__( 'Clear Invoice Ninja ID', 'simple-hotel-crm' ) . '</button>';
+    } else {
+        echo '<p class="description">' . esc_html__( 'No Invoice Ninja ID set. Create an invoice from the bookings list.', 'simple-hotel-crm' ) . '</p>';
     }
     echo '</form>';
 
@@ -3351,7 +3376,7 @@ function simple_hotel_crm_render_add_booking_page() {
         echo '<p><label>' . esc_html__( 'Room rate total', 'simple-hotel-crm' ) . ' <input type="text" name="room_lines[' . esc_attr( $line_index ) . '][room_rate_amount]" value="' . esc_attr( (string) ( $line['room_rate_amount'] ?? '0.00' ) ) . '" /></label> ';
         echo '<label>' . esc_html__( 'Discount', 'simple-hotel-crm' ) . ' <select name="room_lines[' . esc_attr( $line_index ) . '][discount_type]"><option value="none"' . selected( (string) ( $line['discount_type'] ?? 'none' ), 'none', false ) . '>None</option><option value="percent"' . selected( (string) ( $line['discount_type'] ?? 'none' ), 'percent', false ) . '>Percent</option><option value="amount"' . selected( (string) ( $line['discount_type'] ?? 'none' ), 'amount', false ) . '>Amount</option></select></label> ';
         echo '<label>' . esc_html__( 'Discount value', 'simple-hotel-crm' ) . ' <input type="text" name="room_lines[' . esc_attr( $line_index ) . '][discount_value]" value="' . esc_attr( (string) ( $line['discount_value'] ?? '0.00' ) ) . '" /></label> ';
-        echo '<label>' . esc_html__( 'Extras total', 'simple-hotel-crm' ) . ' <input type="text" name="room_lines[' . esc_attr( $line_index ) . '][extras_amount]" value="' . esc_attr( (string) ( $line['extras_amount'] ?? '0.00' ) ) . '" /></label> ';
+        echo '<label>' . esc_html__( 'Extras', 'simple-hotel-crm' ) . ' <input type="text" name="room_lines[' . esc_attr( $line_index ) . '][extras_amount]" value="' . esc_attr( (string) ( $line['extras_amount'] ?? '0.00' ) ) . '" /></label> ';
         echo '<span class="description simple-hotel-crm-price-preview" style="display:inline-block;min-width:180px;">' . esc_html__( 'Total preview updates below.', 'simple-hotel-crm' ) . '</span></p>';
         echo '</fieldset>';
     }
