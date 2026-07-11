@@ -210,6 +210,7 @@ function simple_hotel_crm_install_tables() {
         invoice_ninja_client_id varchar(191) NULL,
         invoice_ninja_invoice_id varchar(191) NULL,
         invoiced_at datetime NULL,
+        invoice_status varchar(32) NULL,
         is_deleted tinyint(1) NOT NULL DEFAULT 0,
         deleted_at datetime NULL,
         created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -360,6 +361,8 @@ function simple_hotel_crm_install_tables() {
     simple_hotel_crm_migrate_catalog_items();
     simple_hotel_crm_migrate_room_status_column();
     simple_hotel_crm_migrate_booking_type_column();
+    simple_hotel_crm_migrate_invoice_status_column();
+    simple_hotel_crm_migrate_dinner_catalog_name();
 
     update_option( 'simple_hotel_crm_db_version', SIMPLE_HOTEL_CRM_DB_VERSION );
 }
@@ -1695,6 +1698,30 @@ function simple_hotel_crm_migrate_booking_type_column() {
         foreach ( $defaults as $type ) {
             $wpdb->insert( $types_table, $type, [ '%s', '%s', '%d' ] );
         }
+    }
+}
+
+function simple_hotel_crm_migrate_invoice_status_column() {
+    global $wpdb;
+    $bookings_table = simple_hotel_crm_bookings_table();
+    if ( ! simple_hotel_crm_table_has_column( $bookings_table, 'invoice_status' ) ) {
+        $wpdb->query( "ALTER TABLE {$bookings_table} ADD COLUMN invoice_status varchar(32) NULL AFTER invoiced_at" );
+    }
+}
+
+function simple_hotel_crm_migrate_dinner_catalog_name() {
+    global $wpdb;
+    $table = simple_hotel_crm_catalog_items_table();
+    $old = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE item_name = %s", 'Dinner' ) );
+    if ( $old ) {
+        $wpdb->update( $table, [ 'item_name' => 'Diner (17.50€)' ], [ 'id' => (int) $old ], [ '%s' ], [ '%d' ] );
+        $wpdb->update(
+            simple_hotel_crm_booking_items_table(),
+            [ 'item_name' => 'Diner (17.50€)' ],
+            [ 'item_name' => 'Dinner' ],
+            [ '%s' ],
+            [ '%s' ]
+        );
     }
 }
 

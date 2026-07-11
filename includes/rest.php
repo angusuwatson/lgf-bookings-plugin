@@ -38,6 +38,20 @@ add_action( 'rest_api_init', function() {
         ],
     ] );
 
+    register_rest_route( 'simple-hotel-crm/v1', '/refresh-invoice-status', [
+        'methods'  => 'POST',
+        'callback' => 'simple_hotel_crm_rest_refresh_invoice_status',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+        'args'     => [
+            'booking_id' => [
+                'validate_callback' => function( $param ) {
+                    return is_numeric( $param ) && $param > 0;
+                },
+                'required' => true,
+            ],
+        ],
+    ] );
+
     register_rest_route( 'simple-hotel-crm/v1', '/quick-booking', [
         'methods'  => 'GET',
         'callback' => 'simple_hotel_crm_rest_get_quick_booking',
@@ -1202,6 +1216,7 @@ function simple_hotel_crm_rest_ticket_finances( WP_REST_Request $request ) {
         SELECT
             COALESCE(SUM(brn.room_rate_amount),0)    AS room_revenue,
             COALESCE(SUM(brn.extras_amount),0)       AS extras_revenue,
+            COALESCE(SUM(brn.commission_amount),0)   AS commission_revenue,
             COALESCE(SUM(brn.tourist_tax_amount),0)  AS taxe_sejour,
             COALESCE(SUM(brn.total_amount),0)        AS total_room_revenue,
             COALESCE(SUM(brn.adults),0)              AS total_adults,
@@ -1300,6 +1315,7 @@ function simple_hotel_crm_rest_ticket_finances( WP_REST_Request $request ) {
             MONTH(brn.stay_date) AS m,
             COALESCE(SUM(brn.room_rate_amount),0)   AS room_revenue,
             COALESCE(SUM(brn.extras_amount),0)      AS extras_revenue,
+            COALESCE(SUM(brn.commission_amount),0)  AS commission_revenue,
             COALESCE(SUM(brn.tourist_tax_amount),0)  AS taxe_sejour,
             COALESCE(SUM(brn.total_amount),0)        AS total
         FROM {$booking_nights_table} brn
@@ -1343,45 +1359,65 @@ function simple_hotel_crm_rest_ticket_finances( WP_REST_Request $request ) {
         }
         $rm  = $found ? round( (float) $found['room_revenue'], 2 ) : 0;
         $ex  = $found ? round( (float) $found['extras_revenue'], 2 ) : 0;
+        $cm  = $found ? round( (float) $found['commission_revenue'], 2 ) : 0;
         $tax = $found ? round( (float) $found['taxe_sejour'], 2 ) : 0;
         $it  = isset( $items_by_month[ $m ] ) ? round( $items_by_month[ $m ], 2 ) : 0;
         $yearly[] = [
-            'month'         => $m,
-            'room_revenue'  => $rm,
-            'extras_revenue'=> $ex,
-            'taxe_sejour'   => $tax,
-            'items_revenue' => $it,
-            'total'         => $rm + $ex + $tax + $it,
+            'month'             => $m,
+            'room_revenue'      => $rm,
+            'extras_revenue'    => $ex,
+            'commission_revenue'=> $cm,
+            'taxe_sejour'       => $tax,
+            'items_revenue'     => $it,
+            'total'             => $rm + $ex + $tax + $it,
         ];
     }
 
     $month_labels = [ '', 'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec' ];
 
+    // ---- All 4 quarters, total excluding tax ----
+    $quarters = [];
+    for ( $q = 1; $q <= 4; $q++ ) {
+        $room_extras = 0;
+        $items       = 0;
+        $tax         = 0;
+        foreach ( $yearly as $ym ) {
+            $m = $ym['month'];
+            if ( (int) ceil( $m / 3 ) === $q ) {
+                $room_extras += $ym['room_revenue'] + $ym['extras_revenue'];
+                $items       += $ym['items_revenue'];
+                $tax         += $ym['taxe_sejour'];
+            }
+        }
+        $quarters[] = [
+            'quarter'         => $q,
+            'label'           => 'Q' . $q . ' ' . $year,
+            'total_excl_tax'  => round( $room_extras + $items, 2 ),
+            'taxe_sejour'     => round( $tax, 2 ),
+        ];
+    }
+
     return rest_ensure_response( [
         'month' => [
-            'year'          => $year,
-            'month'         => $month,
-            'label'         => $month_labels[ $month ] . ' ' . $year,
-            'room_revenue'  => round( $room_revenue, 2 ),
-            'extras_revenue'=> round( (float) $monthly['extras_revenue'], 2 ),
-            'items_revenue' => round( $items_revenue, 2 ),
-            'taxe_sejour'   => round( (float) $monthly['taxe_sejour'], 2 ),
-            'total_income'  => round( (float) $monthly['total_room_revenue'] + $items_revenue, 2 ),
-            'paid'          => round( $paid_amount, 2 ),
-            'pending'       => round( $pending_amount, 2 ),
-            'occupied_nights' => $occupied_nights,
-            'total_nights'  => $max_possible,
-            'occupancy_pct' => $occupancy_pct,
-            'adr'           => $adr,
-            'adults'        => (int) $monthly['total_adults'],
-            'children'      => (int) $monthly['total_children'],
+            'year'              => $year,
+            'month'             => $month,
+            'label'             => $month_labels[ $month ] . ' ' . $year,
+            'room_revenue'      => round( $room_revenue, 2 ),
+            'extras_revenue'    => round( (float) $monthly['extras_revenue'], 2 ),
+            'commission_revenue'=> round( (float) $monthly['commission_revenue'], 2 ),
+            'items_revenue'     => round( $items_revenue, 2 ),
+            'taxe_sejour'       => round( (float) $monthly['taxe_sejour'], 2 ),
+            'total_income'      => round( (float) $monthly['total_room_revenue'] + $items_revenue, 2 ),
+            'paid'              => round( $paid_amount, 2 ),
+            'pending'           => round( $pending_amount, 2 ),
+            'occupied_nights'   => $occupied_nights,
+            'total_nights'      => $max_possible,
+            'occupancy_pct'     => $occupancy_pct,
+            'adr'               => $adr,
+            'adults'            => (int) $monthly['total_adults'],
+            'children'          => (int) $monthly['total_children'],
         ],
-        'trimester' => [
-            'label'     => 'Q' . $quarter . ' ' . $year,
-            'income'    => round( $tri_income, 2 ),
-            'last_year' => round( $ly_tri_income, 2 ),
-            'change_pct'=> $tri_change_pct,
-        ],
+        'quarters' => $quarters,
         'yearly' => $yearly,
     ] );
 }
@@ -1533,6 +1569,7 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
                COALESCE(brn.babies, br.babies, 0) AS babies,
                COALESCE(brn.guest_count, br.guest_count, 0) AS guest_count,
                brn.room_rate_amount,
+               brn.extras_amount,
                b.id AS booking_id, b.status_code, b.check_in_date, b.check_out_date,
                b.source_channel,
                g.first_name, g.last_name
@@ -1567,6 +1604,46 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
         }
     }
 
+    // Build extras map: date-room_id => extras_amount from booking_nights + items
+    $extras_map = [];
+    foreach ( $occupancy as $occ ) {
+        $key = $occ['stay_date'] . '-' . $occ['room_id'];
+        $extras_map[ $key ] = (float) ( $occ['extras_amount'] ?? 0 );
+    }
+    if ( ! empty( $occupancy ) ) {
+        $bids = array_unique( array_column( $occupancy, 'booking_id' ) );
+        $items_table = simple_hotel_crm_booking_items_table();
+        $placeholders = implode( ',', array_fill( 0, count( $bids ), '%d' ) );
+        $items_results = $wpdb->get_results( $wpdb->prepare( "
+            SELECT bi.booking_id, bi.stay_date, SUM(bi.quantity * bi.unit_price) AS items_total
+            FROM {$items_table} bi
+            WHERE bi.booking_id IN ({$placeholders})
+              AND bi.stay_date IS NOT NULL
+            GROUP BY bi.booking_id, bi.stay_date
+        ", $bids ), ARRAY_A );
+        // Match items to occupancy by date+room (items don't have room_id, so add to all rooms for that booking on that date)
+        $occ_by_booking_date = [];
+        foreach ( $occupancy as $occ ) {
+            $bd_key = $occ['booking_id'] . '-' . $occ['stay_date'];
+            if ( ! isset( $occ_by_booking_date[ $bd_key ] ) ) {
+                $occ_by_booking_date[ $bd_key ] = [];
+            }
+            $occ_by_booking_date[ $bd_key ][] = $occ['room_id'];
+        }
+        foreach ( $items_results as $ir ) {
+            $bd_key = $ir['booking_id'] . '-' . $ir['stay_date'];
+            if ( isset( $occ_by_booking_date[ $bd_key ] ) ) {
+                foreach ( $occ_by_booking_date[ $bd_key ] as $rid ) {
+                    $key = $ir['stay_date'] . '-' . $rid;
+                    if ( ! isset( $extras_map[ $key ] ) ) {
+                        $extras_map[ $key ] = 0;
+                    }
+                    $extras_map[ $key ] += (float) $ir['items_total'];
+                }
+            }
+        }
+    }
+
     $daily_notes_table = simple_hotel_crm_daily_notes_table();
     $daily_notes = $wpdb->get_results( $wpdb->prepare( "
         SELECT note_date, note_text FROM {$daily_notes_table}
@@ -1581,6 +1658,7 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
         'occupancy'  => $occupancy,
         'daily_notes' => $daily_notes,
         'dinner_counts' => $dinner_counts,
+        'extras_map' => $extras_map,
     ] );
 }
 

@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="LGF Orders">
+<meta name="apple-mobile-web-app-title" content="LGF Dashboard">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-152.png" type="image/png">
 <link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
 <link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
-<title>LGF Orders</title>
+<title>LGF Dashboard</title>
 <style>
 :root{--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#f1f5f9;--muted:#94a3b8;--accent:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;--hover-bg:rgba(59,130,246,.15);--error-bg:rgba(239,68,68,.15);--success-bg:rgba(34,197,94,.15)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -106,8 +106,9 @@ input,select{font-family:inherit;font-size:16px}
 .cal-today{font-weight:700;border-color:var(--accent)!important}
 .cal-guest-name{font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .cal-occ-line{font-size:10px;display:block;color:#000;opacity:.9;text-align:right}
-.cal-bottom-line{display:flex;justify-content:space-between;font-size:10px;color:#000;opacity:.6}
-.cal-price{text-align:right}
+.cal-bottom-line{display:flex;justify-content:space-between;font-size:10px;color:#000;opacity:.6;align-items:flex-end}
+.cal-price{text-align:right;font-weight:700;color:#000;opacity:.95}
+.cal-extras-price{font-size:9px;opacity:.6;text-align:right}
 .cal-channel{display:inline-block;font-size:9px;font-weight:700;background:rgba(0,0,0,.15);border-radius:3px;padding:0 4px;margin-left:2px;line-height:14px}
 /* Dashboard */
 .dash-scroll{flex:1;overflow-y:auto;padding:12px;background:var(--card);-webkit-overflow-scrolling:touch}
@@ -335,7 +336,7 @@ input,select{font-family:inherit;font-size:16px}
       <input type="search" id="gs-input" placeholder="Search" class="gs-input" autocomplete="off">
     </div>
     <button class="view-btn active" data-view="dash" id="view-dash">Dash</button>
-    <button class="view-btn" data-view="list" id="view-list">List</button>
+    <button class="view-btn" data-view="list" id="view-list">Tickets</button>
     <button class="view-btn" data-view="cal" id="view-cal">Cal</button>
     <button class="view-btn" data-view="fin" id="view-fin">Fin</button>
     <button class="view-btn" data-view="maint" id="view-maint">Maint</button>
@@ -350,7 +351,7 @@ input,select{font-family:inherit;font-size:16px}
     <div class="hm-menu" id="hm-menu">
       <input type="search" id="hm-search" placeholder="Search" class="hm-search" autocomplete="off">
       <button class="view-btn active" data-view="dash" id="hm-view-dash">📊 Dash</button>
-      <button class="view-btn" data-view="list" id="hm-view-list">📋 List</button>
+      <button class="view-btn" data-view="list" id="hm-view-list">📋 Tickets</button>
       <button class="view-btn" data-view="cal" id="hm-view-cal">📅 Calendar</button>
       <button class="view-btn" data-view="fin" id="hm-view-fin">💰 Fin</button>
       <button class="view-btn" data-view="maint" id="hm-view-maint">🔧 Maintenance</button>
@@ -418,7 +419,7 @@ input,select{font-family:inherit;font-size:16px}
 <!-- Login screen -->
 <div id="login-overlay">
   <div class="login-box">
-    <h2>LGF Orders</h2>
+    <h2>LGF Dashboard</h2>
     <p>Sign in with your WordPress admin account.</p>
     <input type="text" id="login-user" placeholder="Username" autocomplete="off">
     <input type="password" id="login-pass" placeholder="Password" autocomplete="off">
@@ -561,9 +562,12 @@ var state = {
     calRooms: [],
     calOccupancy: [],
     calDailyNotes: [],
+    calDinnerCounts: {},
+    calExtrasMap: {},
     finYear: 0,
     finMonth: 0,
     finData: null,
+    finQtrs: [],
     maintNotes: [],
     dailyNotes: [],
     occupancy: [],
@@ -795,13 +799,14 @@ function fetchFinances(){
 function renderFinances(){
     var d=state.finData;
     if(!d){fetchFinances();return;}
-    var m=d.month, t=d.trimester, yl=d.yearly;
+    var m=d.month, yl=d.yearly;
+    state.finQtrs=d.quarters||[];
     var root=document.getElementById('fin-content');
 
     var cards=[
         el('div',{className:'fin-card'},[
-            el('div',{className:'fin-card-title'},['Total Income']),
-            el('div',{className:'fin-card-amount green'},[m.total_income.toFixed(2)+'\u20AC']),
+            el('div',{className:'fin-card-title'},['Total Income (excl. TdS)']),
+            el('div',{className:'fin-card-amount green'},[(m.total_income-m.taxe_sejour).toFixed(2)+'\u20AC']),
             el('div',{className:'fin-card-sub'},[m.label]),
         ]),
         el('div',{className:'fin-card'},[
@@ -810,9 +815,29 @@ function renderFinances(){
             el('div',{className:'fin-card-sub'},[m.adults+' adults \u00B7 '+m.children+' children']),
         ]),
         el('div',{className:'fin-card'},[
-            el('div',{className:'fin-card-title'},['Paid']),
-            el('div',{className:'fin-card-amount green'},[m.paid.toFixed(2)+'\u20AC']),
-            el('div',{className:'fin-card-sub'},['Pending: '+m.pending.toFixed(2)+'\u20AC']),
+            el('div',{className:'fin-card-title'},['Last Quarter']),
+            el('div',{className:'fin-card-amount green'},[
+                (function(){
+                    var curQ=Math.ceil(m.month/3);
+                    var prevQIdx=curQ-2;
+                    var qtrs=state.finQtrs||[];
+                    if(prevQIdx>=0&&prevQIdx<qtrs.length){
+                        return qtrs[prevQIdx].total_excl_tax.toFixed(2)+'\u20AC';
+                    }
+                    return '\u2014';
+                })()
+            ]),
+            el('div',{className:'fin-card-sub'},[
+                (function(){
+                    var curQ=Math.ceil(m.month/3);
+                    var prevQIdx=curQ-2;
+                    var qtrs=state.finQtrs||[];
+                    if(prevQIdx>=0&&prevQIdx<qtrs.length){
+                        return qtrs[prevQIdx].label;
+                    }
+                    return 'N/A (prev. year)';
+                })()
+            ]),
         ]),
         el('div',{className:'fin-card'},[
             el('div',{className:'fin-card-title'},['Occupancy']),
@@ -825,32 +850,27 @@ function renderFinances(){
         el('div',{className:'fin-card-title'},['Revenue Breakdown']),
         el('div',{className:'fin-breakdown'},[
             el('div',{className:'bd-item'},[el('span',{className:'bd-label'},['Room revenue']),el('span',{className:'bd-val'},[m.room_revenue.toFixed(2)+'\u20AC'])]),
-            el('div',{className:'bd-item'},[el('span',{className:'bd-label'},['Extras']),el('span',{className:'bd-val'},[m.extras_revenue.toFixed(2)+'\u20AC'])]),
+            el('div',{className:'bd-item'},[el('span',{className:'bd-label'},['Commission']),el('span',{className:'bd-val'},['-'+(m.commission_revenue||0).toFixed(2)+'\u20AC'])]),
             el('div',{className:'bd-item'},[el('span',{className:'bd-label'},['Items (dinner, etc.)']),el('span',{className:'bd-val'},[m.items_revenue.toFixed(2)+'\u20AC'])]),
             el('div',{className:'bd-item'},[el('span',{className:'bd-label'},['Taxe de s\u00e9jour']),el('span',{className:'bd-val'},[m.taxe_sejour.toFixed(2)+'\u20AC'])]),
-            el('div',{className:'bd-item',style:'border-top:1px solid var(--border);padding-top:4px;margin-top:4px;font-weight:700'},[el('span',{className:'bd-label'},['Total']),el('span',{className:'bd-val'},[m.total_income.toFixed(2)+'\u20AC'])]),
+            el('div',{className:'bd-item',style:'border-top:1px solid var(--border);padding-top:4px;margin-top:4px;font-weight:700'},[el('span',{className:'bd-label'},['Total (excl. TdS)']),el('span',{className:'bd-val'},[(m.total_income-m.taxe_sejour).toFixed(2)+'\u20AC'])]),
         ]),
     ]);
 
-    // Trimester card
-    var triChangeCls=t.change_pct>=0?'fin-change-up':'fin-change-down';
-    var triArrow=t.change_pct>=0?'\u25B2 ':'\u25BC ';
-    var triCard=el('div',{className:'fin-card',style:'grid-column:1/-1'},[
-        el('div',{className:'fin-card-title'},['Trimester — '+t.label]),
-        el('div',{style:'display:flex;gap:24px;align-items:baseline;flex-wrap:wrap'},[
-            el('div',{},[
-                el('div',{className:'fin-row-label'},['This year']),
-                el('div',{className:'fin-row-amount green'},[t.income.toFixed(2)+'\u20AC']),
-            ]),
-            el('div',{},[
-                el('div',{className:'fin-row-label'},['Last year']),
-                el('div',{className:'fin-row-amount',style:'color:var(--muted)'},[t.last_year.toFixed(2)+'\u20AC']),
-            ]),
-            el('div',{},[
-                el('div',{className:'fin-row-label'},['Change']),
-                el('div',{className:'fin-row-amount '+triChangeCls},[triArrow+Math.abs(t.change_pct)+'%']),
-            ]),
-        ]),
+    // Quarters card
+    var qtrs=state.finQtrs||[];
+    var yrQtrTotal=qtrs.reduce(function(s,q){return s+q.total_excl_tax;},0);
+    var qtrCard=el('div',{className:'fin-card',style:'grid-column:1/-1'},[
+        el('div',{className:'fin-card-title'},['Quarters — '+state.finYear+' (excl. TdS)']),
+        el('div',{style:'display:flex;gap:12px;text-align:center'},qtrs.map(function(q){
+            return el('div',{style:'flex:1;min-width:0'},[
+                el('div',{className:'fin-row-label'},[q.label]),
+                el('div',{className:'fin-row-amount green'},[q.total_excl_tax.toFixed(2)+'\u20AC']),
+            ]);
+        }).concat(el('div',{style:'flex:1;min-width:0'},[
+            el('div',{className:'fin-row-label'},['Year Total']),
+            el('div',{className:'fin-row-amount green'},[yrQtrTotal.toFixed(2)+'\u20AC']),
+        ]))),
     ]);
 
     // Year-to-date table
@@ -860,14 +880,14 @@ function renderFinances(){
         return el('tr',{className:isCur?'':'',style:isCur?'font-weight:700;color:var(--text)':''},[
             el('td',{},[months[ym.month]]),
             el('td',{className:'num'},[ym.room_revenue.toFixed(2)]),
-            el('td',{className:'num'},[ym.extras_revenue.toFixed(2)]),
             el('td',{className:'num'},[ym.items_revenue.toFixed(2)]),
+            el('td',{className:'num'},[(ym.commission_revenue||0).toFixed(2)]),
             el('td',{className:'num'},[ym.taxe_sejour.toFixed(2)]),
-            el('td',{className:'num'},[ym.total.toFixed(2)]),
+            el('td',{className:'num'},[(ym.room_revenue+ym.items_revenue).toFixed(2)]),
         ]);
     });
 
-    var yrTotal=yl.reduce(function(s,ym){return s+ym.total;},0);
+    var yrTotal=yl.reduce(function(s,ym){return s+ym.room_revenue+ym.items_revenue;},0);
     yrRows.push(el('tr',{style:'font-weight:700;border-top:2px solid var(--border)'},[
         el('td',{},['Total']),
         el('td',{className:'num'},['']),
@@ -883,17 +903,17 @@ function renderFinances(){
             el('thead',{},[el('tr',{},[
                 el('th',{},['Month']),
                 el('th',{className:'num'},['Room']),
-                el('th',{className:'num'},['Extras']),
                 el('th',{className:'num'},['Items']),
-                el('th',{className:'num'},['Tax']),
-                el('th',{className:'num'},['Total']),
+                el('th',{className:'num'},['Commission']),
+                el('th',{className:'num'},['Taxe de S\u00e9jour']),
+                el('th',{className:'num'},['Total (excl. TdS)']),
             ])]),
             el('tbody',{},yrRows),
         ]),
     ]);
 
     root.innerHTML='';
-    var grid=el('div',{className:'fin-grid'},[].concat(cards,[breakdown,triCard,yrCard]));
+    var grid=el('div',{className:'fin-grid'},[].concat(cards,[breakdown,qtrCard,yrCard]));
     root.appendChild(grid);
 }
 
@@ -1328,6 +1348,7 @@ function fetchCalendarData(){
         state.calOccupancy=data.occupancy||[];
         state.calDailyNotes=data.daily_notes||[];
         state.calDinnerCounts=data.dinner_counts||{};
+        state.calExtrasMap=data.extras_map||{};
         renderCalendar();
     }).catch(function(err){
         if(err.message!=='unauthorized') showError('Calendar load failed.');
@@ -1387,7 +1408,8 @@ function renderCalendar(){
     });
     html+='</div>';
 
-    // Room rows
+        // Room rows
+    var extrasMap=state.calExtrasMap||{};
     state.calRooms.forEach(function(room){
         if(!room.active) return;
         var color=room.color||'var(--border)';
@@ -1413,11 +1435,15 @@ function renderCalendar(){
                 if(parseInt(occ.children)) occLine+=' '+parseInt(occ.children)+'C';
                 if(parseInt(occ.babies)) occLine+=' '+parseInt(occ.babies)+'B';
                 if(parseInt(dinnerMap[occ.booking_id],10)>0) occLine+=' \uD83C\uDF7D';
+                var extrasAmt=extrasMap[date+'-'+room.id]||0;
                 extra='<span class="cal-guest-name">'+name.slice(0,18)+'</span>'+
                     '<span class="cal-occ-line">'+occLine+'</span>'+
                     '<div class="cal-bottom-line">'+
-                        (channelAbbr?'<span class="cal-channel">'+channelAbbr+'</span>':'<span></span>')+
-                        '<span class="cal-price">'+(parseFloat(occ.room_rate_amount)||0).toFixed(0)+'\u20AC</span>'+
+                        '<span class="cal-channel">'+(channelAbbr?channelAbbr:'')+'</span>'+
+                        '<div>'+
+                            '<span class="cal-price">'+(parseFloat(occ.room_rate_amount)||0).toFixed(0)+'\u20AC</span>'+
+                            (extrasAmt>0?'<div class="cal-extras-price">+'+(extrasAmt).toFixed(0)+'\u20AC</div>':'')+
+                        '</div>'+
                     '</div>';
             }
             html+='<div class="'+cls+'" data-bid="'+bookingId+'">'+extra+'</div>';
