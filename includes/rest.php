@@ -29,12 +29,6 @@ add_action( 'rest_api_init', function() {
                 },
                 'required' => true,
             ],
-            'reserved_room_id' => [
-                'validate_callback' => function( $param ) {
-                    return is_numeric( $param ) && $param > 0;
-                },
-                'required' => true,
-            ],
         ],
     ] );
 

@@ -559,27 +559,6 @@ function simple_hotel_crm_render_bookings_page() {
         }
     }
 
-    if ( isset( $_GET['create_invoice'] ) ) {
-        check_admin_referer( 'simple_hotel_crm_create_invoice_' . absint( $_GET['create_invoice'] ) );
-        $booking_id = absint( $_GET['create_invoice'] );
-        $result = simple_hotel_crm_create_invoice_ninja_invoice( $booking_id );
-        if ( is_wp_error( $result ) ) {
-            echo '<div class="notice notice-error"><p>' . esc_html( sprintf( __( 'Invoice creation failed for booking #%d: %s', 'simple-hotel-crm' ), $booking_id, $result->get_error_message() ) ) . '</p></div>';
-        } else {
-            echo '<div class="notice notice-success"><p>' . esc_html( sprintf( __( 'Invoice created for booking #%d — %s (%s)', 'simple-hotel-crm' ), $booking_id, $result['invoice_number'], number_format( (float) $result['amount'], 2 ) . ' €' ) ) . '</p></div>';
-        }
-    }
-
-    if ( isset( $_GET['refresh_invoice_status'] ) ) {
-        check_admin_referer( 'simple_hotel_crm_refresh_invoice_status_' . absint( $_GET['refresh_invoice_status'] ) );
-        $result = simple_hotel_crm_refresh_invoice_status( absint( $_GET['refresh_invoice_status'] ) );
-        if ( is_wp_error( $result ) ) {
-            echo '<div class="notice notice-error"><p>' . esc_html( $result->get_error_message() ) . '</p></div>';
-        } else {
-            echo '<div class="notice notice-success"><p>' . esc_html( sprintf( __( 'Invoice status refreshed: %s', 'simple-hotel-crm' ), $result['invoice_status'] ) ) . '</p></div>';
-        }
-    }
-
     $has_commission_amount = simple_hotel_crm_table_has_column( $booking_rooms_table, 'commission_amount' );
     $commission_select = $has_commission_amount ? 'COALESCE(SUM(br.commission_amount), 0)' : '0';
 
@@ -733,12 +712,7 @@ function simple_hotel_crm_render_bookings_page() {
             $delete_url = wp_nonce_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&delete_booking=' . absint( $row['id'] ) . '&view=' . $view ), 'simple_hotel_crm_delete_booking_' . absint( $row['id'] ) );
             $restore_url = wp_nonce_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&restore_booking=' . absint( $row['id'] ) . '&view=' . $view ), 'simple_hotel_crm_restore_booking_' . absint( $row['id'] ) );
             $archive_restore_url = wp_nonce_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&restore_booking=' . absint( $row['id'] ) . '&view=archive' ), 'simple_hotel_crm_restore_booking_' . absint( $row['id'] ) );
-            $invoice_url = empty( $row['invoice_ninja_invoice_id'] ) && in_array( (string) $row['status_code'], [ 'confirmed', 'checked_in', 'checked_out' ], true )
-                ? wp_nonce_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&create_invoice=' . absint( $row['id'] ) . '&view=' . $view ), 'simple_hotel_crm_create_invoice_' . absint( $row['id'] ) )
-                : '';
-            $refresh_inv_url = ! empty( $row['invoice_ninja_invoice_id'] )
-                ? wp_nonce_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&refresh_invoice_status=' . absint( $row['id'] ) . '&view=' . $view ), 'simple_hotel_crm_refresh_invoice_status_' . absint( $row['id'] ) )
-                : '';
+            $can_invoice = empty( $row['invoice_ninja_invoice_id'] ) && in_array( (string) $row['status_code'], [ 'confirmed', 'checked_in', 'checked_out' ], true );
             $inv_status_label = ! empty( $row['invoice_status'] ) ? ( $invoice_status_labels[ (string) $row['invoice_status'] ] ?? 'Status ' . $row['invoice_status'] ) : '';
             echo '<tr>';
             echo '<td><input class="booking-bulk-cb" type="checkbox" name="booking_ids[]" value="' . esc_attr( (string) $row['id'] ) . '" /></td>';
@@ -752,16 +726,17 @@ function simple_hotel_crm_render_bookings_page() {
             echo '<td>' . ( (float) $row['room_day_extras'] > 0 ? esc_html( number_format( (float) $row['room_day_extras'], 2, '.', '' ) ) : '' ) . '</td>';
             echo '<td>' . ( (float) $row['commission_amount'] > 0 ? esc_html( number_format( (float) $row['commission_amount'], 2, '.', '' ) ) : '' ) . '</td>';
             echo '<td>' . esc_html( number_format( (float) $row['display_total_amount'], 2, '.', '' ) ) . '</td>';
-            echo '<td><a class="button button-small" href="' . esc_url( $detail_url ) . '">' . esc_html__( 'View / Edit', 'simple-hotel-crm' ) . '</a> ';
-            if ( '' !== $invoice_url ) {
-                echo '<a class="button button-small" href="' . esc_url( $invoice_url ) . '">' . esc_html__( 'Invoice', 'simple-hotel-crm' ) . '</a> ';
+            echo '<td>';
+            echo '<a class="button button-small" href="' . esc_url( $detail_url ) . '">' . esc_html__( 'View / Edit', 'simple-hotel-crm' ) . '</a> ';
+            echo '<span class="invoice-actions" data-booking-id="' . esc_attr( (string) $row['id'] ) . '">';
+            if ( $can_invoice ) {
+                echo '<button type="button" class="button button-small button-create-invoice">' . esc_html__( 'Invoice', 'simple-hotel-crm' ) . '</button> ';
             }
             if ( '' !== $inv_status_label ) {
                 echo '<span class="simple-hotel-crm-invoice-status">' . esc_html( $inv_status_label ) . '</span> ';
+                echo '<button type="button" class="button button-small button-refresh-invoice" title="' . esc_attr__( 'Refresh invoice status', 'simple-hotel-crm' ) . '">&#8635;</button> ';
             }
-            if ( '' !== $refresh_inv_url ) {
-                echo '<a class="button button-small" href="' . esc_url( $refresh_inv_url ) . '" title="' . esc_attr__( 'Refresh invoice status', 'simple-hotel-crm' ) . '">&#8635;</a> ';
-            }
+            echo '</span></td>';
             echo ( 'trash' === $view ? '<a class="button button-small" href="' . esc_url( $restore_url ) . '">' . esc_html__( 'Restore', 'simple-hotel-crm' ) . '</a> <a class="button button-small button-link-delete" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Permanently delete this booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete Permanently', 'simple-hotel-crm' ) . '</a>' : ( 'archive' === $view ? '<a class="button button-small" href="' . esc_url( $archive_restore_url ) . '">' . esc_html__( 'Restore from archive', 'simple-hotel-crm' ) . '</a> <a class="button button-small button-link-delete" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Permanently delete this archived booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete Permanently', 'simple-hotel-crm' ) . '</a>' : '<a class="button button-small" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Delete this booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete', 'simple-hotel-crm' ) . '</a>' ) ) . '</td>';
             echo '</tr>';
         }
@@ -790,6 +765,78 @@ function simple_hotel_crm_render_bookings_page() {
         echo '</span></div></div>';
     }
     echo '</div>';
+    $inv_labels_json = wp_json_encode( $invoice_status_labels );
+    ?>
+<script>
+(function(){
+    var restUrl = <?php echo wp_json_encode( rest_url( 'simple-hotel-crm/v1/' ) ); ?>;
+    var nonce = <?php echo wp_json_encode( wp_create_nonce( 'wp_rest' ) ); ?>;
+    var statusLabels = <?php echo $inv_labels_json; ?>;
+
+    document.querySelector('.wrap').addEventListener('click', function(e){
+        var btn = e.target.closest('.button-create-invoice');
+        if (btn) {
+            e.preventDefault();
+            var container = btn.closest('.invoice-actions');
+            var bookingId = container.dataset.bookingId;
+            btn.disabled = true;
+            btn.textContent = '...';
+            fetch(restUrl + 'create-invoice', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-WP-Nonce': nonce},
+                body: 'booking_id=' + bookingId
+            })
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if (data.invoice_number) {
+                    container.innerHTML = '<span class="simple-hotel-crm-invoice-status">Draft</span> ' +
+                        '<button type="button" class="button button-small button-refresh-invoice" title="<?php echo esc_attr__( 'Refresh invoice status', 'simple-hotel-crm' ); ?>">&#8635;</button> ';
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = '<?php echo esc_html__( 'Invoice', 'simple-hotel-crm' ); ?>';
+                    alert(data.message || '<?php echo esc_html__( 'Error creating invoice.', 'simple-hotel-crm' ); ?>');
+                }
+            })
+            .catch(function(){
+                btn.disabled = false;
+                btn.textContent = '<?php echo esc_html__( 'Invoice', 'simple-hotel-crm' ); ?>';
+                alert('<?php echo esc_html__( 'Network error creating invoice.', 'simple-hotel-crm' ); ?>');
+            });
+        }
+
+        var refreshBtn = e.target.closest('.button-refresh-invoice');
+        if (refreshBtn) {
+            e.preventDefault();
+            var container = refreshBtn.closest('.invoice-actions');
+            var bookingId = container.dataset.bookingId;
+            refreshBtn.disabled = true;
+            fetch(restUrl + 'refresh-invoice-status', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-WP-Nonce': nonce},
+                body: 'booking_id=' + bookingId
+            })
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if (data.invoice_status) {
+                    var label = statusLabels[data.invoice_status] || 'Status ' + data.invoice_status;
+                    var badge = container.querySelector('.simple-hotel-crm-invoice-status');
+                    if (badge) {
+                        badge.textContent = label;
+                    }
+                } else {
+                    alert(data.message || '<?php echo esc_html__( 'Error refreshing invoice status.', 'simple-hotel-crm' ); ?>');
+                }
+                refreshBtn.disabled = false;
+            })
+            .catch(function(){
+                refreshBtn.disabled = false;
+                alert('<?php echo esc_html__( 'Network error refreshing invoice status.', 'simple-hotel-crm' ); ?>');
+            });
+        }
+    });
+})();
+</script>
+<?php
 }
 
 function simple_hotel_crm_render_rooms_page() {
