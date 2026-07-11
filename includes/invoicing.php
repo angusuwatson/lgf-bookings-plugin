@@ -294,7 +294,7 @@ function simple_hotel_crm_sync_past_bookings_to_invoice_ninja() {
     $results = [];
     $bookings = $wpdb->get_results(
         $wpdb->prepare(
-            "SELECT id FROM {$bookings_table} WHERE is_deleted = 0 AND invoice_ninja_invoice_id IS NULL AND status_code IN ( 'checked-in', 'checked-out', 'confirmed' ) ORDER BY check_in_date ASC"
+            "SELECT id FROM {$bookings_table} WHERE is_deleted = 0 AND invoice_ninja_invoice_id IS NULL AND status_code IN ( 'checked_in', 'checked_out', 'confirmed' ) ORDER BY check_in_date ASC"
         ),
         ARRAY_A
     );

@@ -733,7 +733,7 @@ function simple_hotel_crm_render_bookings_page() {
             $delete_url = wp_nonce_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&delete_booking=' . absint( $row['id'] ) . '&view=' . $view ), 'simple_hotel_crm_delete_booking_' . absint( $row['id'] ) );
             $restore_url = wp_nonce_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&restore_booking=' . absint( $row['id'] ) . '&view=' . $view ), 'simple_hotel_crm_restore_booking_' . absint( $row['id'] ) );
             $archive_restore_url = wp_nonce_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&restore_booking=' . absint( $row['id'] ) . '&view=archive' ), 'simple_hotel_crm_restore_booking_' . absint( $row['id'] ) );
-            $invoice_url = empty( $row['invoice_ninja_invoice_id'] ) && in_array( (string) $row['status_code'], [ 'confirmed', 'checked-in', 'checked-out' ], true )
+            $invoice_url = empty( $row['invoice_ninja_invoice_id'] ) && in_array( (string) $row['status_code'], [ 'confirmed', 'checked_in', 'checked_out' ], true )
                 ? wp_nonce_url( admin_url( 'admin.php?page=simple-hotel-crm-bookings&create_invoice=' . absint( $row['id'] ) . '&view=' . $view ), 'simple_hotel_crm_create_invoice_' . absint( $row['id'] ) )
                 : '';
             $refresh_inv_url = ! empty( $row['invoice_ninja_invoice_id'] )
@@ -4918,7 +4918,7 @@ function simple_hotel_crm_render_settings_page() {
         $gt = simple_hotel_crm_guests_table();
         $uninvoiced_bookings = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT b.id, b.check_in_date, b.check_out_date, b.total_amount, g.first_name, g.last_name FROM {$bt} b LEFT JOIN {$gt} g ON g.id = b.guest_id WHERE b.is_deleted = 0 AND b.invoice_ninja_invoice_id IS NULL AND b.status_code IN ( 'confirmed', 'checked-in', 'checked-out' ) ORDER BY b.check_in_date DESC LIMIT 100"
+                "SELECT b.id, b.check_in_date, b.check_out_date, b.total_amount, g.first_name, g.last_name FROM {$bt} b LEFT JOIN {$gt} g ON g.id = b.guest_id WHERE b.is_deleted = 0 AND b.invoice_ninja_invoice_id IS NULL AND b.status_code IN ( 'confirmed', 'checked_in', 'checked_out' ) ORDER BY b.check_in_date DESC LIMIT 100"
             ),
             ARRAY_A
         );
