@@ -5130,7 +5130,7 @@ function simple_hotel_crm_render_settings_page() {
         </form>
 
         <table class="widefat striped">
-            <thead><tr><th><?php esc_html_e( 'Name', 'simple-hotel-crm' ); ?></th><th><?php esc_html_e( 'Price', 'simple-hotel-crm' ); ?></th><th><?php esc_html_e( 'Category', 'simple-hotel-crm' ); ?></th><th><?php esc_html_e_  ( 'Actions', 'simple-hotel-crm' ); ?></th></tr></thead>
+            <thead><tr><th><?php esc_html_e( 'Name', 'simple-hotel-crm' ); ?></th><th><?php esc_html_e( 'Price', 'simple-hotel-crm' ); ?></th><th><?php esc_html_e( 'Category', 'simple-hotel-crm' ); ?></th><th><?php esc_html_e( 'Actions', 'simple-hotel-crm' ); ?></th></tr></thead>
             <tbody>
                 <?php if ( empty( $catalog_items ) ) : ?>
                     <tr><td colspan="4"><em><?php esc_html_e( 'No catalog items yet.', 'simple-hotel-crm' ); ?></em></td></tr>
