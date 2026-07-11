@@ -250,6 +250,7 @@ function simple_hotel_crm_create_invoice_ninja_invoice( $booking_id ) {
         'client_id' => $client_id,
         'line_items' => $line_items,
         'amount' => round( $total_amount, 2 ),
+        'date' => (string) $booking['check_in_date'],
         'is_amount_discount' => false,
         'discount' => 0,
         'tax_name1' => 'TVA',
@@ -283,7 +284,7 @@ function simple_hotel_crm_create_invoice_ninja_invoice( $booking_id ) {
     return [
         'success' => true,
         'invoice_id' => $invoice_id,
-        'invoice_number' => $result['data']['invoice_number'] ?? '',
+        'invoice_number' => $result['data']['invoice_number'] ?? $result['data']['number'] ?? '',
         'amount' => $result['data']['amount'] ?? $total_amount,
     ];
 }

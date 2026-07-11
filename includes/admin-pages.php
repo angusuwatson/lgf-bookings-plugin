@@ -788,7 +788,7 @@ function simple_hotel_crm_render_bookings_page() {
             })
             .then(function(r){ return r.json(); })
             .then(function(data){
-                if (data.invoice_number) {
+                if (data.success) {
                     container.innerHTML = '<span class="simple-hotel-crm-invoice-status">Draft</span> ' +
                         '<button type="button" class="button button-small button-refresh-invoice" title="<?php echo esc_attr__( 'Refresh invoice status', 'simple-hotel-crm' ); ?>">&#8635;</button> ';
                 } else {
