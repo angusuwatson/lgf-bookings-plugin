@@ -583,9 +583,12 @@ function simple_hotel_crm_render_bookings_page() {
     $has_commission_amount = simple_hotel_crm_table_has_column( $booking_rooms_table, 'commission_amount' );
     $commission_select = $has_commission_amount ? 'COALESCE(SUM(br.commission_amount), 0)' : '0';
 
+    $has_invoice_ninja_id = simple_hotel_crm_table_has_column( $bookings_table, 'invoice_ninja_invoice_id' );
+    $has_invoice_status = simple_hotel_crm_table_has_column( $bookings_table, 'invoice_status' );
+
     $rows = $wpdb->get_results(
         $wpdb->prepare(
-            "SELECT b.id, b.guest_id, b.status_code, b.check_in_date, b.check_out_date, b.source_channel, b.total_amount, b.created_at, b.invoice_ninja_invoice_id, b.invoice_status,
+            "SELECT b.id, b.guest_id, b.status_code, b.check_in_date, b.check_out_date, b.source_channel, b.total_amount, b.created_at" . ( $has_invoice_ninja_id ? ', b.invoice_ninja_invoice_id' : '' ) . ( $has_invoice_status ? ', b.invoice_status' : '' ) . ",
                     COALESCE(CONCAT(g.first_name, ' ', g.last_name), '') AS guest_name,
                     COUNT(br.id) AS room_count,
                     COALESCE(GROUP_CONCAT(r.room_code ORDER BY r.room_code ASC SEPARATOR ','), '') AS room_codes,
