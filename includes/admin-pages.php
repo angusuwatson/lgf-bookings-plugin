@@ -727,7 +727,16 @@ function simple_hotel_crm_render_bookings_page() {
             echo '<td>' . ( (float) $row['commission_amount'] > 0 ? esc_html( number_format( (float) $row['commission_amount'], 2, '.', '' ) ) : '' ) . '</td>';
             echo '<td>' . esc_html( number_format( (float) $row['display_total_amount'], 2, '.', '' ) ) . '</td>';
             echo '<td>';
-            echo '<a class="button button-small" href="' . esc_url( $detail_url ) . '">' . esc_html__( 'View / Edit', 'simple-hotel-crm' ) . '</a> ';
+            echo '<a class="button button-small" href="' . esc_url( $detail_url ) . '">' . esc_html__( 'Edit', 'simple-hotel-crm' ) . '</a> ';
+            if ( 'trash' === $view ) {
+                echo '<a class="button button-small" href="' . esc_url( $restore_url ) . '">' . esc_html__( 'Restore', 'simple-hotel-crm' ) . '</a> ';
+                echo '<a class="button button-small button-link-delete" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Permanently delete this booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete Permanently', 'simple-hotel-crm' ) . '</a>';
+            } elseif ( 'archive' === $view ) {
+                echo '<a class="button button-small" href="' . esc_url( $archive_restore_url ) . '">' . esc_html__( 'Restore from archive', 'simple-hotel-crm' ) . '</a> ';
+                echo '<a class="button button-small button-link-delete" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Permanently delete this archived booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete Permanently', 'simple-hotel-crm' ) . '</a>';
+            } else {
+                echo '<a class="button button-small" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Delete this booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete', 'simple-hotel-crm' ) . '</a>';
+            }
             echo '<span class="invoice-actions" data-booking-id="' . esc_attr( (string) $row['id'] ) . '">';
             if ( $can_invoice ) {
                 echo '<button type="button" class="button button-small button-create-invoice">' . esc_html__( 'Invoice', 'simple-hotel-crm' ) . '</button> ';
@@ -737,7 +746,6 @@ function simple_hotel_crm_render_bookings_page() {
                 echo '<button type="button" class="button button-small button-refresh-invoice" title="' . esc_attr__( 'Refresh invoice status', 'simple-hotel-crm' ) . '">&#8635;</button> ';
             }
             echo '</span></td>';
-            echo ( 'trash' === $view ? '<a class="button button-small" href="' . esc_url( $restore_url ) . '">' . esc_html__( 'Restore', 'simple-hotel-crm' ) . '</a> <a class="button button-small button-link-delete" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Permanently delete this booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete Permanently', 'simple-hotel-crm' ) . '</a>' : ( 'archive' === $view ? '<a class="button button-small" href="' . esc_url( $archive_restore_url ) . '">' . esc_html__( 'Restore from archive', 'simple-hotel-crm' ) . '</a> <a class="button button-small button-link-delete" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Permanently delete this archived booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete Permanently', 'simple-hotel-crm' ) . '</a>' : '<a class="button button-small" href="' . esc_url( $delete_url ) . '" onclick="return confirm(' . wp_json_encode( __( 'Delete this booking?', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Delete', 'simple-hotel-crm' ) . '</a>' ) ) . '</td>';
             echo '</tr>';
         }
     }
