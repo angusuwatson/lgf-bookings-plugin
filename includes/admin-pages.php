@@ -3525,7 +3525,7 @@ upd(false);
 
 function shcFetchAvailableRooms(checkIn, checkOut){
     var url=(window.simpleHotelCrmRestUrl||'/wp-json/simple-hotel-crm/v1/')+'available-rooms?check_in='+encodeURIComponent(checkIn)+'&check_out='+encodeURIComponent(checkOut);
-    return fetch(url).then(function(r){return r.json();}).then(function(d){return d.available||[];}).catch(function(){return[];});
+    return fetch(url,{headers:{'X-WP-Nonce':window.simpleHotelCrmNonce||''}}).then(function(r){return r.json();}).then(function(d){return d.available||[];}).catch(function(){return[];});
 }
 function shcPopulateRoomSelects(availableIds){
     var container=document.getElementById('shc-rooms-container');
@@ -3662,6 +3662,7 @@ if(createBtn) createBtn.addEventListener('click',function(){
         debounceTimer = setTimeout(function(){
             var xhr = new XMLHttpRequest();
             xhr.open('GET', (window.simpleHotelCrmRestUrl || '/wp-json/simple-hotel-crm/v1/') + 'ticket-guest-search?q=' + encodeURIComponent(q));
+            xhr.setRequestHeader('X-WP-Nonce', window.simpleHotelCrmNonce || '');
             xhr.onload = function(){
                 if(xhr.status !== 200) return;
                 var data;
@@ -3746,7 +3747,7 @@ if(createBtn) createBtn.addEventListener('click',function(){
 })();
 })();
 JS;
-    echo '<script>window.simpleHotelCrmRoomPricing=' . $pricing_json . ';window.simpleHotelCrmBookingComCommissionPercent=' . wp_json_encode( (float) get_option( 'simple_hotel_crm_booking_com_commission_percent', 15 ) ) . ';window.simpleHotelCrmRestUrl=' . wp_json_encode( $rest_url ) . ';window.simpleHotelCrmAllRooms=' . $all_rooms_json . ';' . $combined_script . '</script>';
+    echo '<script>window.simpleHotelCrmRoomPricing=' . $pricing_json . ';window.simpleHotelCrmBookingComCommissionPercent=' . wp_json_encode( (float) get_option( 'simple_hotel_crm_booking_com_commission_percent', 15 ) ) . ';window.simpleHotelCrmRestUrl=' . wp_json_encode( $rest_url ) . ';window.simpleHotelCrmAllRooms=' . $all_rooms_json . ';window.simpleHotelCrmNonce=' . wp_json_encode( wp_create_nonce( 'wp_rest' ) ) . ';' . $combined_script . '</script>';
     echo '</div>';
 }
 
