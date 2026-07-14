@@ -3351,18 +3351,17 @@ function simple_hotel_crm_render_add_booking_page() {
     echo '<form method="post">';
     wp_nonce_field( 'simple_hotel_crm_add_booking', 'simple_hotel_crm_add_booking_nonce' );
     echo '<table class="form-table">';
-    echo '<tr><th><label for="check_in">' . esc_html__( 'Check-in', 'simple-hotel-crm' ) . '</label></th><td><input required type="date" name="check_in" id="check_in" value="' . esc_attr( $check_in_value ) . '" onchange="var o=document.getElementById(\'check_out\');if(this.value&&o&&(!o.value||o.value<=this.value)){var d=new Date(this.value+\'T00:00:00\');d.setDate(d.getDate()+1);o.value=d.toISOString().slice(0,10);} this.form.submit();" /></td></tr>';
-    echo '<tr><th><label for="check_out">' . esc_html__( 'Check-out', 'simple-hotel-crm' ) . '</label></th><td><input required type="date" name="check_out" id="check_out" value="' . esc_attr( $check_out_value ) . '" onchange="this.form.submit();" /></td></tr>';
+    echo '<tr><th><label for="check_in">' . esc_html__( 'Check-in', 'simple-hotel-crm' ) . '</label></th><td><input required type="date" name="check_in" id="check_in" value="' . esc_attr( $check_in_value ) . '" onchange="shcOnDateChange(this)" /></td></tr>';
+    echo '<tr><th><label for="check_out">' . esc_html__( 'Check-out', 'simple-hotel-crm' ) . '</label></th><td><input required type="date" name="check_out" id="check_out" value="' . esc_attr( $check_out_value ) . '" onchange="shcOnDateChange(this)" /></td></tr>';
     echo '<tr><th scope="row">' . esc_html__( 'Rooms', 'simple-hotel-crm' ) . '</th><td>';
+    echo '<div id="shc-rooms-container">';
     $selected_room_ids = [];
     foreach ( (array) $form_data['room_lines'] as $line_index => $line ) {
-        echo '<fieldset style="margin:0 0 16px 0;padding:12px;border:1px solid #ccd0d4;">';
+        echo '<fieldset data-shc-index="' . esc_attr( (string) $line_index ) . '" style="margin:0 0 16px 0;padding:12px;border:1px solid #ccd0d4;">';
         echo '<legend><strong>' . esc_html( sprintf( __( 'Room %d', 'simple-hotel-crm' ), $line_index + 1 ) ) . '</strong>';
-        if ( count( (array) $form_data['room_lines'] ) > 1 ) {
-            echo ' <button type="submit" class="button button-small" name="lgf_remove_room_line" value="' . esc_attr( (string) $line_index ) . '">' . esc_html__( 'Remove room', 'simple-hotel-crm' ) . '</button>';
-        }
+        echo ' <button type="button" class="button button-small shc-remove-room">' . esc_html__( 'Remove room', 'simple-hotel-crm' ) . '</button>';
         echo '</legend>';
-        echo '<p><label>' . esc_html__( 'Room', 'simple-hotel-crm' ) . ' <select name="room_lines[' . esc_attr( $line_index ) . '][room_sync_id]" ' . ( $dates_ready ? '' : 'disabled' ) . '>';
+        echo '<p><label>' . esc_html__( 'Room', 'simple-hotel-crm' ) . ' <select class="shc-room-select" name="room_lines[' . esc_attr( $line_index ) . '][room_sync_id]" ' . ( $dates_ready ? '' : 'disabled' ) . '>';
         echo '<option value="">' . esc_html__( $dates_ready ? 'Select an available room' : 'Choose dates first', 'simple-hotel-crm' ) . '</option>';
         foreach ( $rooms as $room ) {
             $room_id_value = (string) $room['id'];
@@ -3389,9 +3388,12 @@ function simple_hotel_crm_render_add_booking_page() {
         echo '</fieldset>';
     }
     if ( $dates_ready && empty( $rooms ) ) {
-        echo '<p class="description">' . esc_html__( 'No rooms are available for those dates.', 'simple-hotel-crm' ) . '</p>';
+        echo '<p class="description" id="shc-no-rooms-msg">' . esc_html__( 'No rooms are available for those dates.', 'simple-hotel-crm' ) . '</p>';
+    } else {
+        echo '<p class="description" id="shc-no-rooms-msg" style="display:none;">' . esc_html__( 'No rooms are available for those dates.', 'simple-hotel-crm' ) . '</p>';
     }
-    submit_button( __( 'Add another room', 'simple-hotel-crm' ), 'secondary', 'lgf_add_room_line', false );
+    echo '</div>'; // shc-rooms-container
+    echo '<button type="button" class="button button-secondary" id="shc-add-room">' . esc_html__( 'Add another room', 'simple-hotel-crm' ) . '</button>';
     echo '</td></tr>';
     echo '<tr><th><label for="contacted_date">' . esc_html__( 'Contacted date', 'simple-hotel-crm' ) . '</label></th><td><input type="date" name="contacted_date" id="contacted_date" value="' . esc_attr( (string) $form_data['contacted_date'] ) . '" /> &nbsp; <label for="source_channel" style="margin-left:8px;">' . esc_html__( 'Channel', 'simple-hotel-crm' ) . '</label> <select name="source_channel" id="source_channel">';
     foreach ( $channels as $code => $label ) {
@@ -3434,84 +3436,214 @@ function simple_hotel_crm_render_add_booking_page() {
     echo '<p><strong>' . esc_html__( 'Booking total preview', 'simple-hotel-crm' ) . ':</strong> <span class="simple-hotel-crm-booking-total-preview">0.00</span></p>';
     submit_button( __( 'Create Booking', 'simple-hotel-crm' ), 'primary', 'lgf_add_booking_submit' );
     echo '</form>';
+    $all_rooms_table = simple_hotel_crm_rooms_table();
+    $all_rooms_rows = $wpdb->get_results( "SELECT id, room_code, room_name FROM {$all_rooms_table} WHERE active = 1 ORDER BY sort_order ASC, room_name ASC", ARRAY_A );
+    $all_rooms_for_js = [];
+    foreach ( $all_rooms_rows as $r ) {
+        $all_rooms_for_js[ (int) $r['id'] ] = [
+            'display' => simple_hotel_crm_get_room_display_number( $r['room_code'] ) . ' - ' . $r['room_name'],
+        ];
+    }
     $pricing_json = wp_json_encode( $room_pricing_map );
-    $pricing_script = <<<'JS'
+    $all_rooms_json = wp_json_encode( $all_rooms_for_js );
+    $rest_url = rest_url( 'simple-hotel-crm/v1/' );
+    $combined_script = <<<'JS'
 (function(){
-    function num(v){
-        v=(v||"0").toString().replace(/,/g, ".");
-        var n=parseFloat(v);
-        return isNaN(n)?0:n;
+function num(v){
+    v=(v||"0").toString().replace(/,/g, ".");
+    var n=parseFloat(v);
+    return isNaN(n)?0:n;
+}
+function commissionPercent(channel){
+    return channel === 'booking_com' ? num(window.simpleHotelCrmBookingComCommissionPercent || 0) : 0;
+}
+function rateSource(box, nights){
+    var room=box.querySelector('.shc-room-select') || box.querySelector("select[name*='[room_sync_id]']");
+    var adults=box.querySelector("input[name*='[adults]']");
+    var children=box.querySelector("input[name*='[children]']");
+    var occupancy=(parseInt(adults&&adults.value||0,10)||0)+(parseInt(children&&children.value||0,10)||0);
+    var base=((window.simpleHotelCrmRoomPricing||{})[room&&room.value]||{})[occupancy]||0;
+    return {base:base,total:base>0?(base*nights):0};
+}
+function upd(forceAuto){
+    window.shcUpd=upd;
+    var form=document.querySelector(".wrap form");
+    if(!form) return;
+    var ci=form.querySelector("#check_in");
+    var co=form.querySelector("#check_out");
+    var totalPreview=form.querySelector(".simple-hotel-crm-booking-total-preview");
+    var channelField=form.querySelector("#source_channel");
+    var bookingTotal=0;
+    var nights=1;
+    if(ci&&co&&ci.value&&co.value){
+        nights=Math.max(1,Math.round((new Date(co.value)-new Date(ci.value))/86400000));
     }
-    function commissionPercent(channel){
-        return channel === 'booking_com' ? num(window.simpleHotelCrmBookingComCommissionPercent || 0) : 0;
-    }
-    function rateSource(box, nights){
-        var room=box.querySelector("select[name*='[room_sync_id]']");
-        var adults=box.querySelector("input[name*='[adults]']");
-        var children=box.querySelector("input[name*='[children]']");
-        var occupancy=(parseInt(adults&&adults.value||0,10)||0)+(parseInt(children&&children.value||0,10)||0);
-        var base=((window.simpleHotelCrmRoomPricing||{})[room&&room.value]||{})[occupancy]||0;
-        return {base:base,total:base>0?(base*nights):0};
-    }
-    function upd(forceAuto){
-        var form=document.querySelector(".wrap form");
-        if(!form) return;
-        var ci=form.querySelector("#check_in");
-        var co=form.querySelector("#check_out");
-        var totalPreview=form.querySelector(".simple-hotel-crm-booking-total-preview");
-        var channelField=form.querySelector("#source_channel");
-        var bookingTotal=0;
-        var nights=1;
-        if(ci&&co&&ci.value&&co.value){
-            nights=Math.max(1,Math.round((new Date(co.value)-new Date(ci.value))/86400000));
-        }
-        form.querySelectorAll("fieldset").forEach(function(fs){
-            var room=fs.querySelector("select[name*='[room_sync_id]']");
-            var adults=fs.querySelector("input[name*='[adults]']");
-            var rate=fs.querySelector("input[name*='[room_rate_amount]']");
-            var dtype=fs.querySelector("select[name*='[discount_type]']");
-            var dval=fs.querySelector("input[name*='[discount_value]']");
-            var extras=fs.querySelector("input[name*='[extras_amount]']");
-            var preview=fs.querySelector(".simple-hotel-crm-price-preview");
-            if(!room||!adults||!rate||!preview) return;
-            var src=rateSource(fs,nights);
-            if(src.base>0 && (forceAuto || rate.dataset.manualOverride!=="1")) rate.value=src.total.toFixed(2);
-            var roomRate=num(rate.value);
-            var discount=0;
-            if(dtype&&dtype.value==="percent") discount=roomRate*(Math.min(100,num(dval&&dval.value))/100);
-            if(dtype&&dtype.value==="amount") discount=Math.min(roomRate,num(dval&&dval.value));
-            var netRoom=Math.max(0,roomRate-discount);
-            var tax=(parseInt(adults.value||0,10)*0.8*nights);
-            var total=netRoom+num(extras&&extras.value)+tax;
-            var commission=netRoom*(commissionPercent(channelField&&channelField.value)/100);
-            bookingTotal+=total;
-            preview.textContent="Preview: room " + netRoom.toFixed(2) + " € + extras " + num(extras&&extras.value).toFixed(2) + " € + tax " + tax.toFixed(2) + " € = " + total.toFixed(2) + " € | commission " + commission.toFixed(2) + " €";
-        });
-        if(totalPreview){totalPreview.textContent=bookingTotal.toFixed(2) + " €";}
-    }
-    document.addEventListener("input", function(e){
-        if(e.target && e.target.matches("input[name*='[room_rate_amount]']")) e.target.dataset.manualOverride="1";
-        upd(false);
+    form.querySelectorAll("fieldset").forEach(function(fs){
+        var room=fs.querySelector('.shc-room-select') || fs.querySelector("select[name*='[room_sync_id]']");
+        var adults=fs.querySelector("input[name*='[adults]']");
+        var rate=fs.querySelector("input[name*='[room_rate_amount]']");
+        var dtype=fs.querySelector("select[name*='[discount_type]']");
+        var dval=fs.querySelector("input[name*='[discount_value]']");
+        var extras=fs.querySelector("input[name*='[extras_amount]']");
+        var preview=fs.querySelector(".simple-hotel-crm-price-preview");
+        if(!room||!adults||!rate||!preview) return;
+        var src=rateSource(fs,nights);
+        if(src.base>0 && (forceAuto || rate.dataset.manualOverride!=="1")) rate.value=src.total.toFixed(2);
+        var roomRate=num(rate.value);
+        var discount=0;
+        if(dtype&&dtype.value==="percent") discount=roomRate*(Math.min(100,num(dval&&dval.value))/100);
+        if(dtype&&dtype.value==="amount") discount=Math.min(roomRate,num(dval&&dval.value));
+        var netRoom=Math.max(0,roomRate-discount);
+        var tax=(parseInt(adults.value||0,10)*0.8*nights);
+        var total=netRoom+num(extras&&extras.value)+tax;
+        var commission=netRoom*(commissionPercent(channelField&&channelField.value)/100);
+        bookingTotal+=total;
+        preview.textContent="Preview: room " + netRoom.toFixed(2) + " € + extras " + num(extras&&extras.value).toFixed(2) + " € + tax " + tax.toFixed(2) + " € = " + total.toFixed(2) + " € | commission " + commission.toFixed(2) + " €";
     });
-    document.addEventListener("change", function(e){
-        if(e.target && e.target.matches("select[name*='[room_sync_id]'], input[name*='[adults]'], input[name*='[children]']")){
-            var box=e.target.closest('fieldset');
-            var rate=box&&box.querySelector("input[name*='[room_rate_amount]']");
-            if(rate) delete rate.dataset.manualOverride;
-            upd(true);
-            return;
-        }
-        if(e.target && e.target.matches("#check_in, #check_out")){
-            document.querySelectorAll("input[name*='[room_rate_amount]']").forEach(function(rate){ if(rate.dataset.manualOverride!=="1") delete rate.dataset.manualOverride; });
-            upd(true);
-            return;
-        }
-        upd(false);
-    });
+    if(totalPreview){totalPreview.textContent=bookingTotal.toFixed(2) + " €";}
+}
+document.addEventListener("input", function(e){
+    if(e.target && e.target.matches("input[name*='[room_rate_amount]']")) e.target.dataset.manualOverride="1";
     upd(false);
+});
+document.addEventListener("change", function(e){
+    if(e.target && e.target.matches(".shc-room-select, select[name*='[room_sync_id]'], input[name*='[adults]'], input[name*='[children]']")){
+        var box=e.target.closest('fieldset');
+        var rate=box&&box.querySelector("input[name*='[room_rate_amount]']");
+        if(rate) delete rate.dataset.manualOverride;
+        upd(true);
+        return;
+    }
+    if(e.target && e.target.matches("#check_in, #check_out")){
+        document.querySelectorAll("input[name*='[room_rate_amount]']").forEach(function(rate){ if(rate.dataset.manualOverride!=="1") delete rate.dataset.manualOverride; });
+        upd(true);
+        return;
+    }
+    upd(false);
+});
+upd(false);
+
+function shcFetchAvailableRooms(checkIn, checkOut){
+    var url=(window.simpleHotelCrmRestUrl||'/wp-json/simple-hotel-crm/v1/')+'available-rooms?check_in='+encodeURIComponent(checkIn)+'&check_out='+encodeURIComponent(checkOut);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){return d.available||[];}).catch(function(){return[];});
+}
+function shcPopulateRoomSelects(availableIds){
+    var container=document.getElementById('shc-rooms-container');
+    if(!container) return;
+    var fieldsets=container.querySelectorAll('fieldset');
+    var msg=document.getElementById('shc-no-rooms-msg');
+    var allRooms=window.simpleHotelCrmAllRooms||{};
+    fieldsets.forEach(function(fs){
+        var sel=fs.querySelector('.shc-room-select');
+        if(!sel) return;
+        var currentVal=sel.value;
+        sel.disabled=false;
+        while(sel.options.length>1) sel.remove(1);
+        availableIds.forEach(function(id){
+            var room=allRooms[id];
+            if(!room) return;
+            var opt=document.createElement('option');
+            opt.value=String(id);
+            opt.textContent=room.display;
+            if(String(id)===currentVal) opt.selected=true;
+            sel.appendChild(opt);
+        });
+        if(currentVal && !availableIds.some(function(a){return String(a)===currentVal;})){
+            sel.value='';
+        }
+    });
+    if(msg){msg.style.display=availableIds.length===0?'':'none';}
+    if(window.shcUpd) window.shcUpd(true);
+}
+window.shcOnDateChange=function(el){
+    var form=document.querySelector('.wrap form');
+    if(!form) return;
+    var ci=form.querySelector('#check_in');
+    var co=form.querySelector('#check_out');
+    if(el===ci && ci.value){
+        if(!co.value||co.value<=ci.value){
+            var d=new Date(ci.value+'T00:00:00');
+            d.setDate(d.getDate()+1);
+            co.value=d.toISOString().slice(0,10);
+        }
+    }
+    if(!ci.value||!co.value||co.value<=ci.value) return;
+    shcFetchAvailableRooms(ci.value,co.value).then(shcPopulateRoomSelects);
+};
+
+// Add room
+var addBtn=document.getElementById('shc-add-room');
+if(addBtn) addBtn.addEventListener('click',function(){
+    var container=document.getElementById('shc-rooms-container');
+    if(!container) return;
+    var fieldsets=container.querySelectorAll('fieldset');
+    if(!fieldsets.length) return;
+    var tpl=fieldsets[0].cloneNode(true);
+    tpl.querySelectorAll('input,select,textarea').forEach(function(el){
+        if(el.tagName==='SELECT'){el.selectedIndex=0;el.value='';}else{el.value='';}
+    });
+    var idx=fieldsets.length;
+    tpl.setAttribute('data-shc-index',String(idx));
+    tpl.querySelectorAll('input,select,textarea').forEach(function(el){
+        if(el.name) el.name=el.name.replace(/room_lines\[\d+\]/, 'room_lines['+idx+']');
+    });
+    var lg=tpl.querySelector('legend strong');
+    if(lg) lg.textContent='Room '+(idx+1);
+    var ci=document.getElementById('check_in'), co=document.getElementById('check_out');
+    var sel=tpl.querySelector('.shc-room-select');
+    if(sel){
+        var datesOk=ci&&co&&ci.value&&co.value&&co.value>ci.value;
+        sel.disabled=!datesOk;
+        if(!datesOk){
+            sel.innerHTML='<option value="">Choose dates first</option>';
+        }
+    }
+    container.appendChild(tpl);
+    if(window.shcUpd) window.shcUpd(true);
+});
+document.addEventListener('click',function(e){
+    var btn=e.target;
+    if(btn&&btn.classList.contains('shc-remove-room')){
+        var fs=btn.closest('fieldset');
+        if(!fs) return;
+        var container=document.getElementById('shc-rooms-container');
+        if(!container) return;
+        if(container.querySelectorAll('fieldset').length<=1) return;
+        fs.parentNode.removeChild(fs);
+        // Renumber
+        container.querySelectorAll('fieldset').forEach(function(f,i){
+            f.setAttribute('data-shc-index',String(i));
+            f.querySelectorAll('input,select,textarea').forEach(function(el){
+                if(el.name) el.name=el.name.replace(/room_lines\[\d+\]/, 'room_lines['+i+']');
+            });
+            var legend=f.querySelector('legend strong');
+            if(legend) legend.textContent='Room '+(i+1);
+        });
+        if(window.shcUpd) window.shcUpd(true);
+    }
+});
+// Reindex rooms before Create Booking submit
+var createBtn=document.querySelector('form button[name="lgf_add_booking_submit"]');
+if(createBtn) createBtn.addEventListener('click',function(){
+    var container=document.getElementById('shc-rooms-container');
+    if(!container) return;
+    container.querySelectorAll('fieldset').forEach(function(f,i){
+        f.setAttribute('data-shc-index',String(i));
+        f.querySelectorAll('input,select,textarea').forEach(function(el){
+            if(el.name) el.name=el.name.replace(/room_lines\[\d+\]/, 'room_lines['+i+']');
+        });
+    });
+});
+
+// Initial room fetch if dates are already set
+(function(){
+    var ci=document.getElementById('check_in'),co=document.getElementById('check_out');
+    if(ci&&co&&ci.value&&co.value&&co.value>ci.value){
+        shcFetchAvailableRooms(ci.value,co.value).then(shcPopulateRoomSelects);
+    }
 })();
-JS;
-    $guest_search_script = <<<'JS'
+
+// Guest search
 (function(){
     var searchInput = document.getElementById('guest_search');
     var guestIdInput = document.getElementById('guest_id');
@@ -3612,9 +3744,9 @@ JS;
         }
     });
 })();
+})();
 JS;
-    $rest_url = rest_url( 'simple-hotel-crm/v1/' );
-    echo '<script>window.simpleHotelCrmRoomPricing=' . $pricing_json . ';window.simpleHotelCrmBookingComCommissionPercent=' . wp_json_encode( (float) get_option( 'simple_hotel_crm_booking_com_commission_percent', 15 ) ) . ';window.simpleHotelCrmRestUrl=' . wp_json_encode( $rest_url ) . ';' . $pricing_script . $guest_search_script . '</script>';
+    echo '<script>window.simpleHotelCrmRoomPricing=' . $pricing_json . ';window.simpleHotelCrmBookingComCommissionPercent=' . wp_json_encode( (float) get_option( 'simple_hotel_crm_booking_com_commission_percent', 15 ) ) . ';window.simpleHotelCrmRestUrl=' . wp_json_encode( $rest_url ) . ';window.simpleHotelCrmAllRooms=' . $all_rooms_json . ';' . $combined_script . '</script>';
     echo '</div>';
 }
 

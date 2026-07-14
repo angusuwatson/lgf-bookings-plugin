@@ -204,6 +204,22 @@ add_action( 'rest_api_init', function() {
         'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
     ] );
 
+    register_rest_route( 'simple-hotel-crm/v1', '/available-rooms', [
+        'methods'  => 'GET',
+        'callback' => 'simple_hotel_crm_rest_available_rooms',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+        'args' => [
+            'check_in' => [
+                'required' => true,
+                'validate_callback' => function($v) { return (bool) preg_match( '/^\d{4}-\d{2}-\d{2}$/', $v ); },
+            ],
+            'check_out' => [
+                'required' => true,
+                'validate_callback' => function($v) { return (bool) preg_match( '/^\d{4}-\d{2}-\d{2}$/', $v ); },
+            ],
+        ],
+    ] );
+
     register_rest_route( 'simple-hotel-crm/v1', '/ticket-room-status', [
         'methods'  => 'GET',
         'callback' => 'simple_hotel_crm_rest_ticket_get_room_statuses',
@@ -1783,6 +1799,26 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
         'booking_id' => $booking_id,
         'guest_id'   => $guest_id,
     ] );
+}
+
+function simple_hotel_crm_rest_available_rooms( WP_REST_Request $request ) {
+    $check_in = $request->get_param( 'check_in' );
+    $check_out = $request->get_param( 'check_out' );
+
+    if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $check_in ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $check_out ) || $check_out <= $check_in ) {
+        return rest_ensure_response( [ 'available' => [] ] );
+    }
+
+    $rooms = simple_hotel_crm_get_room_options( $check_in, $check_out );
+    if ( is_wp_error( $rooms ) ) {
+        return rest_ensure_response( [ 'available' => [] ] );
+    }
+
+    $ids = [];
+    foreach ( $rooms as $room ) {
+        $ids[] = (int) $room['id'];
+    }
+    return rest_ensure_response( [ 'available' => $ids ] );
 }
 
 function simple_hotel_crm_rest_ticket_guest_search( WP_REST_Request $request ) {
