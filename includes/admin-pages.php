@@ -4033,8 +4033,12 @@ function simple_hotel_crm_import_booking_rooms_csv( $rows, $dry_run = false ) {
         if ( ! $room && '' !== $room_code ) {
             $room = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM {$rooms_table} WHERE room_code = %s LIMIT 1", $room_code ), ARRAY_A );
         }
-        if ( ! $booking || ! $room ) {
-            $summary['errors'][] = sprintf( __( 'Room row %d: booking or room not found.', 'simple-hotel-crm' ), $index + 2 );
+        if ( ! $booking ) {
+            $summary['errors'][] = sprintf( __( 'Room row %d: booking not found.', 'simple-hotel-crm' ), $index + 2 );
+            continue;
+        }
+        if ( ! $room ) {
+            $summary['errors'][] = sprintf( __( 'Room row %d: room not found.', 'simple-hotel-crm' ), $index + 2 );
             continue;
         }
         $exists = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$booking_rooms_table} WHERE booking_id = %d AND room_id = %d LIMIT 1", $booking['id'], $room['id'] ) );
@@ -4229,8 +4233,12 @@ function simple_hotel_crm_repair_booking_rooms_csv( $rows, $dry_run = false ) {
         } elseif ( ! empty( $row['room_code'] ) ) {
             $room_id = simple_hotel_crm_find_crm_room_id( 0, [ 'room_code' => $row['room_code'], 'room_name' => $row['room_name'] ?? '' ] );
         }
-        if ( ! $booking || $room_id <= 0 ) {
-            $summary['errors'][] = sprintf( __( 'Repair room row %d: booking or room not found.', 'simple-hotel-crm' ), $index + 2 );
+        if ( ! $booking ) {
+            $summary['errors'][] = sprintf( __( 'Repair room row %d: booking not found.', 'simple-hotel-crm' ), $index + 2 );
+            continue;
+        }
+        if ( $room_id <= 0 ) {
+            $summary['errors'][] = sprintf( __( 'Repair room row %d: room not found.', 'simple-hotel-crm' ), $index + 2 );
             continue;
         }
         $booking_room = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$booking_rooms_table} WHERE booking_id = %d AND room_id = %d LIMIT 1", (int) $booking['id'], $room_id ), ARRAY_A );
