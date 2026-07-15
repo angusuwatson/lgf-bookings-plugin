@@ -4038,7 +4038,7 @@ function simple_hotel_crm_import_booking_rooms_csv( $rows, $dry_run = false ) {
             continue;
         }
         if ( ! $room ) {
-            $summary['errors'][] = sprintf( __( 'Room row %d: room not found.', 'simple-hotel-crm' ), $index + 2 );
+            $summary['errors'][] = sprintf( __( 'Room row %d: room not found (room_id=%d, room_code=%s).', 'simple-hotel-crm' ), $index + 2, $room_id_input, $room_code ?: '(empty)' );
             continue;
         }
         $exists = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$booking_rooms_table} WHERE booking_id = %d AND room_id = %d LIMIT 1", $booking['id'], $room['id'] ) );
@@ -4238,7 +4238,7 @@ function simple_hotel_crm_repair_booking_rooms_csv( $rows, $dry_run = false ) {
             continue;
         }
         if ( $room_id <= 0 ) {
-            $summary['errors'][] = sprintf( __( 'Repair room row %d: room not found.', 'simple-hotel-crm' ), $index + 2 );
+            $summary['errors'][] = sprintf( __( 'Repair room row %d: room not found (room_id=%d, room_code=%s).', 'simple-hotel-crm' ), $index + 2, (int) ( $row['room_id'] ?? 0 ), ! empty( $row['room_code'] ) ? $row['room_code'] : '(empty)' );
             continue;
         }
         $booking_room = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$booking_rooms_table} WHERE booking_id = %d AND room_id = %d LIMIT 1", (int) $booking['id'], $room_id ), ARRAY_A );
