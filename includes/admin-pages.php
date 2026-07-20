@@ -3309,7 +3309,7 @@ function simple_hotel_crm_render_add_booking_page() {
     $check_in_value = (string) $form_data['check_in'];
     $check_out_value = (string) $form_data['check_out'];
     if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $check_in_value ) && ( '' === $check_out_value || $check_out_value <= $check_in_value ) ) {
-        $check_out_value = gmdate( 'Y-m-d', strtotime( $check_in_value . ' +1 day' ) );
+        $check_out_value = date( 'Y-m-d', strtotime( $check_in_value . ' +1 day' ) );
         $form_data['check_out'] = $check_out_value;
     }
 
@@ -3575,8 +3575,9 @@ window.shcOnDateChange=function(el){
     var co=form.querySelector('#check_out');
     if(el===ci && ci.value){
         if(!co.value||co.value<=ci.value){
-            var d=new Date(ci.value+'T00:00:00');
-            d.setDate(d.getDate()+1);
+            var p=ci.value.split('-');
+            var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));
+            d.setUTCDate(d.getUTCDate()+1);
             co.value=d.toISOString().slice(0,10);
         }
     }
