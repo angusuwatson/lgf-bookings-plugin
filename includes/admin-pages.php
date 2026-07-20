@@ -3525,7 +3525,20 @@ upd(false);
 
 function shcFetchAvailableRooms(checkIn, checkOut){
     var url=(window.simpleHotelCrmRestUrl||'/wp-json/simple-hotel-crm/v1/')+'available-rooms?check_in='+encodeURIComponent(checkIn)+'&check_out='+encodeURIComponent(checkOut);
-    return fetch(url,{headers:{'X-WP-Nonce':window.simpleHotelCrmNonce||''}}).then(function(r){return r.json();}).then(function(d){return d.available||[];}).catch(function(){return[];});
+    console.log('shcFetchAvailableRooms: fetching', url);
+    return fetch(url,{headers:{'X-WP-Nonce':window.simpleHotelCrmNonce||''}}).then(function(r){
+        console.log('shcFetchAvailableRooms: status', r.status, r.statusText);
+        return r.json();
+    }).then(function(d){
+        console.log('shcFetchAvailableRooms: response', d);
+        if(!d.available){
+            console.error('shcFetchAvailableRooms: no "available" key in response', d);
+        }
+        return d.available||[];
+    }).catch(function(e){
+        console.error('shcFetchAvailableRooms: fetch error', e);
+        return[];
+    });
 }
 function shcPopulateRoomSelects(availableIds){
     var container=document.getElementById('shc-rooms-container');
