@@ -6,6 +6,9 @@
         var dailyNotesUrl = simpleHotelCrm.dailyNotesUrl;
         var quickBookingUrl = simpleHotelCrm.quickBookingUrl;
         var roomDayNoteUrl = simpleHotelCrm.roomDayNoteUrl;
+        var roomDayExtrasUrl = simpleHotelCrm.roomDayExtrasUrl;
+        var guestSearchUrl = simpleHotelCrm.guestSearchUrl;
+        var transferBookingUrl = simpleHotelCrm.transferBookingUrl;
         var nonce = simpleHotelCrm.nonce;
         var saveTimers = {};
 
@@ -85,6 +88,15 @@
             });
         }
 
+        function resetTransferArea() {
+            var $area = $('.simple-hotel-crm-quick-booking-transfer-area');
+            $area.hide();
+            $area.find('.simple-hotel-crm-quick-booking-transfer-results').hide().empty();
+            $area.find('.simple-hotel-crm-transfer-confirm').hide();
+            $area.find('[name="target_guest_id"]').val('');
+            $area.find('.simple-hotel-crm-transfer-search').val('');
+        }
+
         function getModal() {
             return $('.simple-hotel-crm-modal');
         }
@@ -144,6 +156,7 @@
                     $form.find('[name="babies"]').val(occRoom ? (parseInt(occRoom.babies, 10) || 0) : 0);
                     $modal.find('.simple-hotel-crm-open-full-booking').attr('href', response.detail_url || '#');
                     $modal.find('.simple-hotel-crm-open-guest').attr('href', response.guest_url || '#');
+                    resetTransferArea();
                     $message.text('');
                 },
                 error: function(xhr) {
@@ -412,5 +425,115 @@
         }
         document.addEventListener('fullscreenchange', calendarFsChange);
         document.addEventListener('webkitfullscreenchange', calendarFsChange);
+
+        // Transfer booking toggle
+        $(document).on('click', '.simple-hotel-crm-transfer-toggle', function() {
+            var $area = $('.simple-hotel-crm-quick-booking-transfer-area');
+            $area.toggle();
+            if ($area.is(':visible')) {
+                $area.find('.simple-hotel-crm-transfer-search').trigger('focus');
+            }
+        });
+
+        // Guest search for transfer
+        var transferSearchTimer;
+        $(document).on('input', '.simple-hotel-crm-transfer-search', function() {
+            var $input = $(this);
+            var q = $input.val().trim();
+            var $area = $input.closest('.simple-hotel-crm-quick-booking-transfer-area');
+            var $results = $area.find('.simple-hotel-crm-quick-booking-transfer-results');
+            var $confirm = $area.find('.simple-hotel-crm-transfer-confirm');
+            $confirm.hide().find('[name="target_guest_id"]').val('');
+
+            clearTimeout(transferSearchTimer);
+
+            if (q.length < 2) {
+                $results.hide().empty();
+                return;
+            }
+
+            transferSearchTimer = setTimeout(function() {
+                request({
+                    url: guestSearchUrl,
+                    method: 'GET',
+                    data: { q: q, _: Date.now() },
+                    success: function(response) {
+                        $results.empty();
+                        if (response && response.guests && response.guests.length > 0) {
+                            $.each(response.guests, function(i, g) {
+                                var name = (g.first_name || '') + ' ' + (g.last_name || '');
+                                var $item = $('<div class="guest-result-item"></div>');
+                                $item.data('guest-id', g.id);
+                                $item.data('guest-name', name.trim());
+                                $item.text(name.trim());
+                                if (g.phone) $item.append(' — ' + g.phone);
+                                if (g.email) $item.append(' — ' + g.email);
+                                $results.append($item);
+                            });
+                            $results.show();
+                        } else {
+                            $results.html('<div style="padding:6px 10px;color:#666;">No guests found.</div>').show();
+                        }
+                    },
+                    error: function() {
+                        $results.html('<div style="padding:6px 10px;color:#c00;">Search failed.</div>').show();
+                    }
+                });
+            }, 300);
+        });
+
+        // Select guest from results
+        $(document).on('click', '.guest-result-item', function() {
+            var $item = $(this);
+            var $area = $item.closest('.simple-hotel-crm-quick-booking-transfer-area');
+            $area.find('.guest-result-item').removeClass('selected');
+            $item.addClass('selected');
+            $area.find('.simple-hotel-crm-quick-booking-transfer-results').hide();
+            $area.find('[name="target_guest_id"]').val($item.data('guest-id'));
+            $area.find('.simple-hotel-crm-transfer-target-name').text($item.data('guest-name'));
+            $area.find('.simple-hotel-crm-transfer-confirm').show();
+        });
+
+        // Execute transfer
+        $(document).on('click', '.simple-hotel-crm-transfer-execute', function() {
+            var $btn = $(this);
+            var $area = $btn.closest('.simple-hotel-crm-quick-booking-transfer-area');
+            var targetGuestId = $area.find('[name="target_guest_id"]').val();
+            var $form = $('.simple-hotel-crm-quick-booking-form');
+            var bookingId = $form.find('[name="booking_id"]').val();
+            var $message = $('.simple-hotel-crm-quick-booking-message');
+
+            if (!bookingId || !targetGuestId) {
+                $message.addClass('error').text('Select a guest first.');
+                return;
+            }
+
+            $btn.prop('disabled', true);
+            $message.removeClass('error success').text('Transferring...');
+
+            request({
+                url: transferBookingUrl,
+                method: 'POST',
+                data: { booking_id: bookingId, target_guest_id: targetGuestId },
+                success: function(response) {
+                    if (response && response.success) {
+                        $message.addClass('success').text('Transferred! Reloading...');
+                        resetTransferArea();
+                        setTimeout(function() {
+                            var params = new URLSearchParams(window.location.search);
+                            loadMonth(params.get('month') || new Date().getMonth() + 1, params.get('year') || new Date().getFullYear(), false);
+                        }, 600);
+                    } else {
+                        $message.addClass('error').text('Transfer failed.');
+                        $btn.prop('disabled', false);
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    $message.addClass('error').text((xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Transfer failed.');
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
     });
 })(jQuery);

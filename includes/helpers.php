@@ -32,13 +32,15 @@ function simple_hotel_crm_enqueue_shared_assets( $context = 'frontend' ) {
 
     wp_register_script( 'simple-hotel-crm', plugin_dir_url( dirname( __DIR__ ) . '/simple-hotel-crm.php' ) . 'assets/calendar-navigation.js', [ 'jquery' ], SIMPLE_HOTEL_CRM_VERSION, true );
     wp_localize_script( 'simple-hotel-crm', 'simpleHotelCrm', [
-        'restUrl'        => esc_url_raw( rest_url( 'simple-hotel-crm/v1/table' ) ),
-        'dailyNotesUrl'  => esc_url_raw( rest_url( 'simple-hotel-crm/v1/daily-note' ) ),
-        'quickBookingUrl'=> esc_url_raw( rest_url( 'simple-hotel-crm/v1/quick-booking' ) ),
-        'roomDayNoteUrl'=> esc_url_raw( rest_url( 'simple-hotel-crm/v1/room-day-note' ) ),
-        'nonce'          => wp_create_nonce( 'wp_rest' ),
-        'context'        => $context,
-        'adminPageUrl'   => admin_url( 'admin.php?page=simple-hotel-crm' ),
+        'restUrl'            => esc_url_raw( rest_url( 'simple-hotel-crm/v1/table' ) ),
+        'dailyNotesUrl'      => esc_url_raw( rest_url( 'simple-hotel-crm/v1/daily-note' ) ),
+        'quickBookingUrl'    => esc_url_raw( rest_url( 'simple-hotel-crm/v1/quick-booking' ) ),
+        'roomDayNoteUrl'     => esc_url_raw( rest_url( 'simple-hotel-crm/v1/room-day-note' ) ),
+        'guestSearchUrl'     => esc_url_raw( rest_url( 'simple-hotel-crm/v1/ticket-guest-search' ) ),
+        'transferBookingUrl' => esc_url_raw( rest_url( 'simple-hotel-crm/v1/transfer-booking' ) ),
+        'nonce'              => wp_create_nonce( 'wp_rest' ),
+        'context'            => $context,
+        'adminPageUrl'       => admin_url( 'admin.php?page=simple-hotel-crm' ),
     ] );
     wp_enqueue_script( 'simple-hotel-crm' );
 }
