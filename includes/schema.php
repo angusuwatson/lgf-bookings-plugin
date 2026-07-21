@@ -1413,11 +1413,13 @@ function simple_hotel_crm_import_sync_data_to_crm() {
 
         $booking = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT b.* FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_channel = %s AND (b.source_booking_id = %s OR b.source_booking_id = %s) AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL) LIMIT 1",
+                "SELECT b.* FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_channel = %s AND (b.source_booking_id = %s OR b.source_booking_id = %s) AND b.check_in_date < %s AND b.check_out_date > %s AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL) LIMIT 1",
                 $crm_room_id,
                 (string) $booking_group['source_channel'],
                 (string) ( $booking_group['source_booking_id'] ?: '' ),
-                (string) $booking_group['external_booking_id']
+                (string) $booking_group['external_booking_id'],
+                (string) $booking_group['check_out_date'],
+                (string) $booking_group['check_in_date']
             ),
             ARRAY_A
         );

@@ -552,7 +552,7 @@ function simple_hotel_crm_import_booking_com_ics_feeds() {
             if ( ! in_array( $source_booking_id, $summary['seen_uids'], true ) ) {
                 $summary['seen_uids'][] = $source_booking_id;
             }
-            $external_booking_id = abs( crc32( $source_booking_id ) );
+            $external_booking_id = abs( crc32( $source_booking_id . '|' . $check_in . '|' . $check_out ) );
             $external_booking_room_id = abs( crc32( $room_id . '|' . $source_booking_id ) );
             $guest_name = '' !== $summary_text ? $summary_text : ( '' !== $description ? $description : __( 'Booking.com guest', 'simple-hotel-crm' ) );
             $nights = max( 1, (int) round( ( strtotime( $check_out ) - strtotime( $check_in ) ) / DAY_IN_SECONDS ) );
