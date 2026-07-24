@@ -331,9 +331,122 @@ function simple_hotel_crm_install_tables() {
         UNIQUE KEY type_key (type_key)
     ) {$charset_collate};";
 
+    $crm_pricing_rules_table = simple_hotel_crm_pricing_rules_table();
+    $crm_pricing_seasons_table = simple_hotel_crm_pricing_seasons_table();
+    $crm_pricing_audit_table = simple_hotel_crm_pricing_audit_table();
+    $crm_pricing_overrides_table = simple_hotel_crm_pricing_overrides_table();
+    $crm_local_events_table = simple_hotel_crm_local_events_table();
+    $crm_promo_banners_table = simple_hotel_crm_promo_banners_table();
+
+    $sql_pricing_rules = "CREATE TABLE {$crm_pricing_rules_table} (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        room_id bigint(20) unsigned NULL COMMENT 'NULL = applies to all rooms',
+        base_price decimal(10,2) NOT NULL DEFAULT 0.00,
+        min_price decimal(10,2) NOT NULL DEFAULT 0.00,
+        max_price decimal(10,2) NOT NULL DEFAULT 0.00,
+        multiplier_weekday decimal(5,3) NOT NULL DEFAULT 1.000,
+        multiplier_friday decimal(5,3) NOT NULL DEFAULT 1.000,
+        multiplier_saturday decimal(5,3) NOT NULL DEFAULT 1.000,
+        multiplier_sunday decimal(5,3) NOT NULL DEFAULT 1.000,
+        active tinyint(1) NOT NULL DEFAULT 1,
+        created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id),
+        KEY room_id (room_id)
+    ) {$charset_collate};";
+
+    $sql_pricing_seasons = "CREATE TABLE {$crm_pricing_seasons_table} (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        season_name varchar(255) NOT NULL,
+        date_from date NOT NULL,
+        date_to date NOT NULL,
+        price_override decimal(10,2) NULL,
+        price_multiplier decimal(5,3) NULL,
+        priority int(11) NOT NULL DEFAULT 0,
+        recurring tinyint(1) NOT NULL DEFAULT 0,
+        active tinyint(1) NOT NULL DEFAULT 1,
+        created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id),
+        KEY date_range (date_from, date_to)
+    ) {$charset_collate};";
+
+    $sql_pricing_audit = "CREATE TABLE {$crm_pricing_audit_table} (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        room_id bigint(20) unsigned NULL,
+        target_date date NOT NULL,
+        old_price decimal(10,2) NOT NULL DEFAULT 0.00,
+        new_price decimal(10,2) NOT NULL DEFAULT 0.00,
+        reason varchar(255) NOT NULL DEFAULT '',
+        source varchar(50) NOT NULL DEFAULT 'manual' COMMENT 'manual, rule, event, season',
+        rules_triggered text NULL,
+        user_id bigint(20) unsigned NULL,
+        created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id),
+        KEY room_date (room_id, target_date),
+        KEY target_date (target_date)
+    ) {$charset_collate};";
+
+    $sql_local_events = "CREATE TABLE {$crm_local_events_table} (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        event_name varchar(255) NOT NULL,
+        description text NULL,
+        date_from date NOT NULL,
+        date_to date NOT NULL,
+        price_adjustment decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT 'absolute amount added/subtracted',
+        price_multiplier decimal(5,3) NULL COMMENT 'multiplier applied (overrides adjustment if set)',
+        demand_level varchar(20) NOT NULL DEFAULT 'medium' COMMENT 'low, medium, high, very_high',
+        priority int(11) NOT NULL DEFAULT 0,
+        banner_enabled tinyint(1) NOT NULL DEFAULT 0,
+        banner_title varchar(255) NULL,
+        recurring tinyint(1) NOT NULL DEFAULT 0,
+        active tinyint(1) NOT NULL DEFAULT 1,
+        created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id),
+        KEY date_range (date_from, date_to)
+    ) {$charset_collate};";
+
+    $sql_promo_banners = "CREATE TABLE {$crm_promo_banners_table} (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        title varchar(255) NOT NULL,
+        subtitle varchar(255) NULL,
+        button_text varchar(100) NULL,
+        button_url varchar(500) NULL,
+        date_from date NULL,
+        date_to date NULL,
+        bg_color varchar(20) NOT NULL DEFAULT '#1a5276',
+        image_url varchar(500) NULL,
+        room_ids text NULL COMMENT 'JSON array of room IDs, NULL = all rooms',
+        languages varchar(100) NOT NULL DEFAULT 'en',
+        active tinyint(1) NOT NULL DEFAULT 1,
+        created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id)
+    ) {$charset_collate};";
+
+    $sql_pricing_overrides = "CREATE TABLE {$crm_pricing_overrides_table} (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        room_id bigint(20) unsigned NOT NULL,
+        occupancy_adults int(11) NOT NULL DEFAULT 1,
+        stay_date date NOT NULL,
+        price decimal(10,2) NOT NULL DEFAULT 0.00,
+        created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id),
+        UNIQUE KEY room_occ_date (room_id, occupancy_adults, stay_date),
+        KEY stay_date (stay_date)
+    ) {$charset_collate};";
+
     dbDelta( $sql_room_closures );
     dbDelta( $sql_guest_preferences );
     dbDelta( $sql_booking_types );
+    dbDelta( $sql_pricing_rules );
+    dbDelta( $sql_pricing_seasons );
+    dbDelta( $sql_pricing_audit );
+    dbDelta( $sql_pricing_overrides );
+    dbDelta( $sql_local_events );
+    dbDelta( $sql_promo_banners );
 
     dbDelta( $sql_daily_notes );
     dbDelta( $sql_booking_notes );
@@ -1725,5 +1838,35 @@ function simple_hotel_crm_migrate_dinner_catalog_name() {
             [ '%s' ]
         );
     }
+}
+
+function simple_hotel_crm_pricing_rules_table() {
+    global $wpdb;
+    return $wpdb->prefix . 'simple_hotel_crm_pricing_rules';
+}
+
+function simple_hotel_crm_pricing_seasons_table() {
+    global $wpdb;
+    return $wpdb->prefix . 'simple_hotel_crm_pricing_seasons';
+}
+
+function simple_hotel_crm_pricing_audit_table() {
+    global $wpdb;
+    return $wpdb->prefix . 'simple_hotel_crm_pricing_audit';
+}
+
+function simple_hotel_crm_local_events_table() {
+    global $wpdb;
+    return $wpdb->prefix . 'simple_hotel_crm_local_events';
+}
+
+function simple_hotel_crm_promo_banners_table() {
+    global $wpdb;
+    return $wpdb->prefix . 'simple_hotel_crm_promo_banners';
+}
+
+function simple_hotel_crm_pricing_overrides_table() {
+    global $wpdb;
+    return $wpdb->prefix . 'simple_hotel_crm_pricing_overrides';
 }
 

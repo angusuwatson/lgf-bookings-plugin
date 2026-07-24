@@ -305,6 +305,101 @@ add_action( 'rest_api_init', function() {
             'month' => [ 'type' => 'integer' ],
         ],
     ] );
+
+    // Pricing module endpoints
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-calendar', [
+        'methods'             => 'GET',
+        'callback'            => 'simple_hotel_crm_rest_pricing_calendar',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+        'args'                => [
+            'year'  => [ 'type' => 'integer' ],
+            'month' => [ 'type' => 'integer' ],
+        ],
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-rules', [
+        'methods'             => 'GET',
+        'callback'            => 'simple_hotel_crm_rest_pricing_rules',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-rules', [
+        'methods'             => 'POST',
+        'callback'            => 'simple_hotel_crm_rest_pricing_rules_save',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-seasons', [
+        'methods'             => 'GET',
+        'callback'            => 'simple_hotel_crm_rest_pricing_seasons',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-seasons', [
+        'methods'             => 'POST',
+        'callback'            => 'simple_hotel_crm_rest_pricing_seasons_save',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-seasons/(?P<id>\d+)', [
+        'methods'             => 'DELETE',
+        'callback'            => 'simple_hotel_crm_rest_pricing_seasons_delete',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-events', [
+        'methods'             => 'GET',
+        'callback'            => 'simple_hotel_crm_rest_pricing_events',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-events', [
+        'methods'             => 'POST',
+        'callback'            => 'simple_hotel_crm_rest_pricing_events_save',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-events/(?P<id>\d+)', [
+        'methods'             => 'DELETE',
+        'callback'            => 'simple_hotel_crm_rest_pricing_events_delete',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-apply', [
+        'methods'             => 'POST',
+        'callback'            => 'simple_hotel_crm_rest_pricing_apply',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-clear', [
+        'methods'             => 'POST',
+        'callback'            => 'simple_hotel_crm_rest_pricing_clear',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-apply-bulk', [
+        'methods'             => 'POST',
+        'callback'            => 'simple_hotel_crm_rest_pricing_apply_bulk',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-audit', [
+        'methods'             => 'GET',
+        'callback'            => 'simple_hotel_crm_rest_pricing_audit',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+        'args'                => [
+            'room_id' => [ 'type' => 'integer' ],
+            'date_from' => [ 'type' => 'string' ],
+            'date_to' => [ 'type' => 'string' ],
+            'limit' => [ 'type' => 'integer' ],
+        ],
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/pricing-banner', [
+        'methods'             => 'GET',
+        'callback'            => 'simple_hotel_crm_rest_pricing_banner',
+        'permission_callback' => '__return_true',
+    ] );
 } );
 
 function simple_hotel_crm_rest_dashboard( WP_REST_Request $request ) {
@@ -1178,7 +1273,7 @@ function simple_hotel_crm_rest_ticket_checkout_status( WP_REST_Request $request 
             delete_post_meta( $booking_id, '_pending_checkout_skip_receipt' );
             delete_post_meta( $booking_id, '_pending_checkout_action_id' );
             if ( $lower === 'completed' ) {
-                simple_hotel_crm_square_handle_payment_complete( $booking_id, $checkout_id );
+                simple_hotel_crm_square_handle_payment_complete( $booking_id, $checkout_id, '', true );
             }
         }
     }
@@ -2107,5 +2202,599 @@ function simple_hotel_crm_rest_ticket_auth( WP_REST_Request $request ) {
 function simple_hotel_crm_rest_debug_ics() {
     $data = simple_hotel_crm_debug_ics_feeds();
     return rest_ensure_response( $data );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Pricing Module REST Endpoints
+   ────────────────────────────────────────────────────────────── */
+
+function simple_hotel_crm_rest_pricing_calendar( WP_REST_Request $request ) {
+    global $wpdb;
+
+    $month = intval( $request->get_param( 'month' ) ?: current_time( 'n' ) );
+    $year  = intval( $request->get_param( 'year' ) ?: current_time( 'Y' ) );
+
+    $start_date = sprintf( '%04d-%02d-01', $year, $month );
+    $end_date   = date( 'Y-m-t', strtotime( $start_date ) );
+    $days_in_month = intval( date( 't', strtotime( $start_date ) ) );
+
+    $rooms_table       = simple_hotel_crm_rooms_table();
+    $room_pricing_table = simple_hotel_crm_room_pricing_table();
+    $rules_table       = simple_hotel_crm_pricing_rules_table();
+    $seasons_table     = simple_hotel_crm_pricing_seasons_table();
+    $events_table      = simple_hotel_crm_local_events_table();
+    $overrides_table   = simple_hotel_crm_pricing_overrides_table();
+
+    // Get active rooms
+    $rooms = $wpdb->get_results(
+        "SELECT id, room_code, room_name, color
+         FROM {$rooms_table} WHERE active = 1 ORDER BY sort_order ASC"
+    );
+
+    // Get pricing rules (room-specific and all-room defaults)
+    $rules = $wpdb->get_results(
+        "SELECT * FROM {$rules_table} WHERE active = 1 ORDER BY room_id IS NULL DESC, room_id ASC"
+    );
+    $rules_indexed = [];
+    foreach ( (array) $rules as $rule ) {
+        $key = $rule->room_id ?: '_default';
+        $rules_indexed[ $key ] = $rule;
+    }
+
+    // Get active seasons that overlap this month
+    $seasons = $wpdb->get_results( $wpdb->prepare(
+        "SELECT * FROM {$seasons_table}
+         WHERE active = 1 AND date_from <= %s AND date_to >= %s
+         ORDER BY priority DESC, date_from ASC",
+        $end_date, $start_date
+    ) );
+
+    // Get active events that overlap this month
+    $events = $wpdb->get_results( $wpdb->prepare(
+        "SELECT * FROM {$events_table}
+         WHERE active = 1 AND date_from <= %s AND date_to >= %s
+         ORDER BY priority DESC, date_from ASC",
+        $end_date, $start_date
+    ) );
+
+    // Get occupancy base rates per room (1A–4A from room_pricing table)
+    $occ_rows = $wpdb->get_results(
+        "SELECT room_id, occupancy_adults, price_amount
+         FROM {$room_pricing_table} WHERE active = 1
+         ORDER BY room_id ASC, occupancy_adults ASC"
+    );
+    $occ_map = []; // [room_id] => [occupancy_adults => price_amount]
+    foreach ( (array) $occ_rows as $row ) {
+        $rid = intval( $row->room_id );
+        $occ = intval( $row->occupancy_adults );
+        if ( $occ >= 1 && $occ <= 4 ) {
+            $occ_map[ $rid ][ $occ ] = floatval( $row->price_amount );
+        }
+    }
+
+    // Pre-fetch pricing overrides (manual actual prices) for the month
+    $overrides = $wpdb->get_results( $wpdb->prepare(
+        "SELECT room_id, occupancy_adults, stay_date, price
+         FROM {$overrides_table}
+         WHERE stay_date >= %s AND stay_date <= %s",
+        $start_date, $end_date
+    ) );
+    $overrides_indexed = []; // [room_id_occ_adults_date] => price
+    foreach ( (array) $overrides as $row ) {
+        $key = intval( $row->room_id ) . '_' . intval( $row->occupancy_adults ) . '_' . $row->stay_date;
+        $overrides_indexed[ $key ] = floatval( $row->price );
+    }
+
+    // Build day labels
+    $day_labels = [];
+    for ( $d = 1; $d <= $days_in_month; $d++ ) {
+        $date_str = sprintf( '%04d-%02d-%02d', $year, $month, $d );
+        $dow      = intval( date( 'w', strtotime( $date_str ) ) );
+        $day_labels[] = [
+            'day'  => $d,
+            'dow'  => $dow,
+            'date' => $date_str,
+        ];
+    }
+
+    // Build calendar: for each room × occupancy tier, compute suggested prices
+    $room_calendars = [];
+    foreach ( $rooms as $room ) {
+        $rule = $rules_indexed[ $room->id ] ?? $rules_indexed[ '_default' ] ?? null;
+        $min  = $rule ? floatval( $rule->min_price ) : 80.00 * 0.7;
+        $max  = $rule ? floatval( $rule->max_price ) : 80.00 * 2.0;
+
+        // Active occupancy tiers for this room (1A–4A, only those with a price set)
+        $tiers = $occ_map[ $room->id ] ?? [];
+        if ( empty( $tiers ) ) {
+            // Fallback: show a single row using the rule's base_price if no occupancy pricing exists
+            $base = $rule ? floatval( $rule->base_price ) : 80.00;
+            $tiers = [ 1 => $base ];
+        }
+
+        foreach ( $tiers as $occ_adults => $base ) {
+            $day_prices = [];
+            for ( $d = 1; $d <= $days_in_month; $d++ ) {
+                $date_str = sprintf( '%04d-%02d-%02d', $year, $month, $d );
+                $dow      = intval( date( 'w', strtotime( $date_str ) ) );
+
+                // 1. Base × day multiplier
+                if ( $rule ) {
+                    switch ( $dow ) {
+                        case 5: $mult = floatval( $rule->multiplier_friday ); break;
+                        case 6: $mult = floatval( $rule->multiplier_saturday ); break;
+                        case 0: $mult = floatval( $rule->multiplier_sunday ); break;
+                        default: $mult = floatval( $rule->multiplier_weekday ); break;
+                    }
+                } else {
+                    $mult = ( $dow == 0 || $dow == 6 ) ? 1.2 : 1.0;
+                }
+                $price = $base * $mult;
+
+                // 2. Season overrides (first match by priority)
+                foreach ( (array) $seasons as $season ) {
+                    if ( $date_str >= $season->date_from && $date_str <= $season->date_to ) {
+                        if ( $season->price_override !== null ) {
+                            $price = floatval( $season->price_override );
+                        } elseif ( $season->price_multiplier !== null ) {
+                            $price = $price * floatval( $season->price_multiplier );
+                        }
+                        break; // first match wins
+                    }
+                }
+
+                // 3. Event adjustments
+                foreach ( (array) $events as $event ) {
+                    if ( $date_str >= $event->date_from && $date_str <= $event->date_to ) {
+                        if ( $event->price_multiplier !== null ) {
+                            $price = $price * floatval( $event->price_multiplier );
+                        } else {
+                            $price = $price + floatval( $event->price_adjustment );
+                        }
+                    }
+                }
+
+                // 4. Clamp to min/max (shared per room)
+                $price = max( $min, min( $max, $price ) );
+                $price = round( $price, 2 );
+
+                // 5. Manual override from pricing_overrides table
+                $override_key = $room->id . '_' . $occ_adults . '_' . $date_str;
+                $actual = isset( $overrides_indexed[ $override_key ] ) ? $overrides_indexed[ $override_key ] : null;
+
+                $day_prices[] = [
+                    'date'      => $date_str,
+                    'dow'       => $dow,
+                    'suggested' => $price,
+                    'actual'    => $actual,
+                    'has_rule'  => true,
+                ];
+            }
+
+            $room_calendars[] = [
+                'id'               => $room->id,
+                'room_number'      => $room->room_code,
+                'room_name'        => $room->room_name,
+                'occupancy_adults' => $occ_adults,
+                'base'             => $base,
+                'min'              => $min,
+                'max'              => $max,
+                'theme_color'      => $room->color,
+                'prices'           => $day_prices,
+            ];
+        }
+    }
+
+    return rest_ensure_response( [
+        'year'          => $year,
+        'month'         => $month,
+        'days_in_month' => $days_in_month,
+        'day_labels'    => $day_labels,
+        'rooms'         => $room_calendars,
+        'seasons'       => array_map( function( $s ) {
+            return [
+                'id' => intval( $s->id ),
+                'name' => $s->season_name,
+                'from' => $s->date_from,
+                'to' => $s->date_to,
+                'price_override' => $s->price_override !== null ? floatval( $s->price_override ) : null,
+                'multiplier' => $s->price_multiplier !== null ? floatval( $s->price_multiplier ) : null,
+                'priority' => intval( $s->priority ),
+                'recurring' => (bool) $s->recurring,
+                'active' => (bool) $s->active,
+            ];
+        }, (array) $seasons ),
+        'events'      => array_map( function( $e ) {
+            return [
+                'id' => intval( $e->id ),
+                'name' => $e->event_name,
+                'description' => $e->description,
+                'from' => $e->date_from,
+                'to' => $e->date_to,
+                'adjustment' => floatval( $e->price_adjustment ),
+                'multiplier' => $e->price_multiplier !== null ? floatval( $e->price_multiplier ) : null,
+                'demand_level' => $e->demand_level,
+                'priority' => intval( $e->priority ),
+                'banner_enabled' => (bool) $e->banner_enabled,
+                'recurring' => (bool) $e->recurring,
+                'active' => (bool) $e->active,
+            ];
+        }, (array) $events ),
+    ] );
+}
+
+function simple_hotel_crm_rest_pricing_rules( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_pricing_rules_table();
+    $rules = $wpdb->get_results(
+        "SELECT r.*, rm.room_code, rm.room_name
+         FROM {$table} r
+         LEFT JOIN " . simple_hotel_crm_rooms_table() . " rm ON r.room_id = rm.id
+         WHERE r.active = 1
+         ORDER BY r.room_id IS NULL DESC, rm.sort_order ASC"
+    );
+    return rest_ensure_response( $rules );
+}
+
+function simple_hotel_crm_rest_pricing_rules_save( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_pricing_rules_table();
+    $params = $request->get_json_params();
+
+    $data = [
+        'room_id'             => $params['room_id'] ? intval( $params['room_id'] ) : null,
+        'base_price'          => floatval( $params['base_price'] ?? 0 ),
+        'min_price'           => floatval( $params['min_price'] ?? 0 ),
+        'max_price'           => floatval( $params['max_price'] ?? 0 ),
+        'multiplier_weekday'  => floatval( $params['multiplier_weekday'] ?? 1.0 ),
+        'multiplier_friday'   => floatval( $params['multiplier_friday'] ?? 1.0 ),
+        'multiplier_saturday' => floatval( $params['multiplier_saturday'] ?? 1.0 ),
+        'multiplier_sunday'   => floatval( $params['multiplier_sunday'] ?? 1.0 ),
+        'active'              => 1,
+    ];
+
+    $id = intval( $params['id'] ?? 0 );
+    if ( $id ) {
+        $wpdb->update( $table, $data, [ 'id' => $id ] );
+    } else {
+        $wpdb->insert( $table, $data );
+        $id = $wpdb->insert_id;
+    }
+
+    return rest_ensure_response( [ 'success' => true, 'id' => $id ] );
+}
+
+function simple_hotel_crm_rest_pricing_seasons( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_pricing_seasons_table();
+    $seasons = $wpdb->get_results(
+        "SELECT * FROM {$table} ORDER BY date_from ASC"
+    );
+    return rest_ensure_response( $seasons );
+}
+
+function simple_hotel_crm_rest_pricing_seasons_save( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_pricing_seasons_table();
+    $params = $request->get_json_params();
+
+    $data = [
+        'season_name'     => sanitize_text_field( $params['season_name'] ?? '' ),
+        'date_from'       => sanitize_text_field( $params['date_from'] ?? '' ),
+        'date_to'         => sanitize_text_field( $params['date_to'] ?? '' ),
+        'price_override'  => $params['price_override'] !== '' && $params['price_override'] !== null
+                            ? floatval( $params['price_override'] ) : null,
+        'price_multiplier'=> $params['price_multiplier'] !== '' && $params['price_multiplier'] !== null
+                            ? floatval( $params['price_multiplier'] ) : null,
+        'priority'        => intval( $params['priority'] ?? 0 ),
+        'recurring'       => isset( $params['recurring'] ) ? intval( $params['recurring'] ) : 0,
+        'active'          => isset( $params['active'] ) ? intval( $params['active'] ) : 1,
+    ];
+
+    $id = intval( $params['id'] ?? 0 );
+    if ( $id ) {
+        $wpdb->update( $table, $data, [ 'id' => $id ] );
+    } else {
+        $wpdb->insert( $table, $data );
+        $id = $wpdb->insert_id;
+    }
+
+    return rest_ensure_response( [ 'success' => true, 'id' => $id ] );
+}
+
+function simple_hotel_crm_rest_pricing_seasons_delete( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_pricing_seasons_table();
+    $id = intval( $request->get_param( 'id' ) );
+    if ( ! $id ) {
+        return new WP_Error( 'missing_id', 'Missing season ID', [ 'status' => 400 ] );
+    }
+    $wpdb->delete( $table, [ 'id' => $id ] );
+    return rest_ensure_response( [ 'success' => true ] );
+}
+
+function simple_hotel_crm_rest_pricing_events( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_local_events_table();
+    $events = $wpdb->get_results(
+        "SELECT * FROM {$table} ORDER BY date_from ASC"
+    );
+    return rest_ensure_response( $events );
+}
+
+function simple_hotel_crm_rest_pricing_events_save( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_local_events_table();
+    $params = $request->get_json_params();
+
+    $data = [
+        'event_name'         => sanitize_text_field( $params['event_name'] ?? '' ),
+        'description'        => sanitize_textarea_field( $params['description'] ?? '' ),
+        'date_from'          => sanitize_text_field( $params['date_from'] ?? '' ),
+        'date_to'            => sanitize_text_field( $params['date_to'] ?? '' ),
+        'price_adjustment'   => floatval( $params['price_adjustment'] ?? 0 ),
+        'price_multiplier'   => $params['price_multiplier'] !== '' && $params['price_multiplier'] !== null
+                               ? floatval( $params['price_multiplier'] ) : null,
+        'demand_level'       => sanitize_text_field( $params['demand_level'] ?? 'medium' ),
+        'priority'           => intval( $params['priority'] ?? 0 ),
+        'banner_enabled'     => isset( $params['banner_enabled'] ) ? intval( $params['banner_enabled'] ) : 0,
+        'banner_title'       => sanitize_text_field( $params['banner_title'] ?? '' ),
+        'recurring'          => isset( $params['recurring'] ) ? intval( $params['recurring'] ) : 0,
+        'active'             => isset( $params['active'] ) ? intval( $params['active'] ) : 1,
+    ];
+
+    $id = intval( $params['id'] ?? 0 );
+    if ( $id ) {
+        $wpdb->update( $table, $data, [ 'id' => $id ] );
+    } else {
+        $wpdb->insert( $table, $data );
+        $id = $wpdb->insert_id;
+    }
+
+    return rest_ensure_response( [ 'success' => true, 'id' => $id ] );
+}
+
+function simple_hotel_crm_rest_pricing_events_delete( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_local_events_table();
+    $id = intval( $request->get_param( 'id' ) );
+    if ( ! $id ) {
+        return new WP_Error( 'missing_id', 'Missing event ID', [ 'status' => 400 ] );
+    }
+    $wpdb->delete( $table, [ 'id' => $id ] );
+    return rest_ensure_response( [ 'success' => true ] );
+}
+
+function simple_hotel_crm_rest_pricing_apply( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_pricing_overrides_table();
+    $audit_table = simple_hotel_crm_pricing_audit_table();
+    $params = $request->get_json_params();
+
+    $room_id        = intval( $params['room_id'] ?? 0 );
+    $occupancy      = max( 1, intval( $params['occupancy_adults'] ?? 1 ) );
+    $target_date    = sanitize_text_field( $params['date'] ?? '' );
+    $new_price      = floatval( $params['price'] ?? 0 );
+
+    if ( ! $room_id || ! $target_date || $new_price <= 0 ) {
+        return new WP_Error( 'invalid_params', 'Missing room_id, date, or price', [ 'status' => 400 ] );
+    }
+
+    // Get old price
+    $old = $wpdb->get_var( $wpdb->prepare(
+        "SELECT price FROM {$table} WHERE room_id = %d AND occupancy_adults = %d AND stay_date = %s",
+        $room_id, $occupancy, $target_date
+    ) );
+    $old_price = $old !== null ? floatval( $old ) : 0;
+
+    // Upsert
+    $existing_id = $wpdb->get_var( $wpdb->prepare(
+        "SELECT id FROM {$table} WHERE room_id = %d AND occupancy_adults = %d AND stay_date = %s",
+        $room_id, $occupancy, $target_date
+    ) );
+
+    if ( $existing_id ) {
+        $wpdb->update( $table,
+            [ 'price' => $new_price ],
+            [ 'id' => intval( $existing_id ) ],
+            [ '%f' ], [ '%d' ]
+        );
+    } else {
+        $wpdb->insert( $table, [
+            'room_id'          => $room_id,
+            'occupancy_adults' => $occupancy,
+            'stay_date'        => $target_date,
+            'price'            => $new_price,
+        ], [ '%d', '%d', '%s', '%f' ] );
+    }
+
+    // Audit log
+    $wpdb->insert( $audit_table, [
+        'room_id'    => $room_id,
+        'target_date'=> $target_date,
+        'old_price'  => $old_price,
+        'new_price'  => $new_price,
+        'reason'     => sanitize_text_field( $params['reason'] ?? 'Manual apply' ),
+        'source'     => 'manual',
+        'user_id'    => get_current_user_id(),
+    ], [ '%d', '%s', '%f', '%f', '%s', '%s', '%d' ] );
+
+    return rest_ensure_response( [ 'success' => true, 'old_price' => $old_price, 'new_price' => $new_price ] );
+}
+
+function simple_hotel_crm_rest_pricing_clear( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_pricing_overrides_table();
+    $audit_table = simple_hotel_crm_pricing_audit_table();
+    $params = $request->get_json_params();
+
+    $room_id     = intval( $params['room_id'] ?? 0 );
+    $occupancy   = max( 1, intval( $params['occupancy_adults'] ?? 1 ) );
+    $target_date = sanitize_text_field( $params['date'] ?? '' );
+
+    if ( ! $room_id || ! $target_date ) {
+        return new WP_Error( 'invalid_params', 'Missing room_id or date', [ 'status' => 400 ] );
+    }
+
+    // Get old price before deleting
+    $old = $wpdb->get_var( $wpdb->prepare(
+        "SELECT price FROM {$table} WHERE room_id = %d AND occupancy_adults = %d AND stay_date = %s",
+        $room_id, $occupancy, $target_date
+    ) );
+
+    if ( $old === null ) {
+        return rest_ensure_response( [ 'success' => true, 'cleared' => false ] );
+    }
+
+    // Delete the row
+    $wpdb->delete( $table, [
+        'room_id'          => $room_id,
+        'occupancy_adults' => $occupancy,
+        'stay_date'        => $target_date,
+    ], [ '%d', '%d', '%s' ] );
+
+    // Audit log
+    $wpdb->insert( $audit_table, [
+        'room_id'     => $room_id,
+        'target_date' => $target_date,
+        'old_price'   => floatval( $old ),
+        'new_price'   => 0,
+        'reason'      => sanitize_text_field( $params['reason'] ?? 'Manual clear' ),
+        'source'      => 'clear',
+        'user_id'     => get_current_user_id(),
+    ], [ '%d', '%s', '%f', '%f', '%s', '%s', '%d' ] );
+
+    return rest_ensure_response( [ 'success' => true, 'cleared' => true, 'old_price' => floatval( $old ) ] );
+}
+
+function simple_hotel_crm_rest_pricing_apply_bulk( WP_REST_Request $request ) {
+    global $wpdb;
+    $pricing_table = simple_hotel_crm_pricing_overrides_table();
+    $audit_table   = simple_hotel_crm_pricing_audit_table();
+    $params        = $request->get_json_params();
+    $items         = $params['items'] ?? [];
+    $reason        = sanitize_text_field( $params['reason'] ?? 'Bulk apply' );
+    $user_id       = get_current_user_id();
+
+    if ( ! is_array( $items ) || empty( $items ) ) {
+        return new WP_Error( 'invalid_params', 'No items provided', [ 'status' => 400 ] );
+    }
+
+    $applied = 0;
+    $skipped = 0;
+
+    foreach ( $items as $item ) {
+        $room_id    = intval( $item['room_id'] ?? 0 );
+        $occupancy  = max( 1, intval( $item['occupancy_adults'] ?? 1 ) );
+        $date       = sanitize_text_field( $item['date'] ?? '' );
+        $new_price  = floatval( $item['price'] ?? 0 );
+        $action     = sanitize_text_field( $item['action'] ?? 'apply' ); // 'apply' or 'clear'
+
+        if ( ! $room_id || ! $date ) { $skipped++; continue; }
+
+        if ( $action === 'clear' ) {
+            $old = $wpdb->get_var( $wpdb->prepare(
+                "SELECT price FROM {$pricing_table} WHERE room_id = %d AND occupancy_adults = %d AND stay_date = %s",
+                $room_id, $occupancy, $date
+            ) );
+            if ( $old !== null ) {
+                $wpdb->delete( $pricing_table, [
+                    'room_id' => $room_id, 'occupancy_adults' => $occupancy, 'stay_date' => $date,
+                ], [ '%d', '%d', '%s' ] );
+                $wpdb->insert( $audit_table, [
+                    'room_id' => $room_id, 'target_date' => $date,
+                    'old_price' => floatval( $old ), 'new_price' => 0,
+                    'reason' => $reason, 'source' => 'bulk_clear', 'user_id' => $user_id,
+                ], [ '%d', '%s', '%f', '%f', '%s', '%s', '%d' ] );
+                $applied++;
+            }
+        } else {
+            if ( $new_price <= 0 ) { $skipped++; continue; }
+            $old = $wpdb->get_var( $wpdb->prepare(
+                "SELECT price FROM {$pricing_table} WHERE room_id = %d AND occupancy_adults = %d AND stay_date = %s",
+                $room_id, $occupancy, $date
+            ) );
+            $old_price = $old !== null ? floatval( $old ) : 0;
+
+            $existing_id = $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM {$pricing_table} WHERE room_id = %d AND occupancy_adults = %d AND stay_date = %s",
+                $room_id, $occupancy, $date
+            ) );
+
+            if ( $existing_id ) {
+                $wpdb->update( $pricing_table, [ 'price' => $new_price ], [ 'id' => intval( $existing_id ) ], [ '%f' ], [ '%d' ] );
+            } else {
+                $wpdb->insert( $pricing_table, [
+                    'room_id' => $room_id, 'occupancy_adults' => $occupancy, 'stay_date' => $date, 'price' => $new_price,
+                ], [ '%d', '%d', '%s', '%f' ] );
+            }
+
+            $wpdb->insert( $audit_table, [
+                'room_id' => $room_id, 'target_date' => $date,
+                'old_price' => $old_price, 'new_price' => $new_price,
+                'reason' => $reason, 'source' => 'bulk_apply', 'user_id' => $user_id,
+            ], [ '%d', '%s', '%f', '%f', '%s', '%s', '%d' ] );
+            $applied++;
+        }
+    }
+
+    return rest_ensure_response( [ 'success' => true, 'applied' => $applied, 'skipped' => $skipped ] );
+}
+
+function simple_hotel_crm_rest_pricing_audit( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_pricing_audit_table();
+
+    $where = '1=1';
+    $args  = [];
+
+    if ( $room_id = intval( $request->get_param( 'room_id' ) ) ) {
+        $where .= ' AND a.room_id = %d';
+        $args[] = $room_id;
+    }
+    if ( $df = $request->get_param( 'date_from' ) ) {
+        $where .= ' AND a.target_date >= %s';
+        $args[] = $df;
+    }
+    if ( $dt = $request->get_param( 'date_to' ) ) {
+        $where .= ' AND a.target_date <= %s';
+        $args[] = $dt;
+    }
+
+    $limit = min( max( intval( $request->get_param( 'limit' ) ?: 100 ), 1 ), 500 );
+
+    $sql = "SELECT a.*, rm.room_code, rm.room_name
+            FROM {$table} a
+            LEFT JOIN " . simple_hotel_crm_rooms_table() . " rm ON a.room_id = rm.id
+            WHERE {$where}
+            ORDER BY a.created_at DESC
+            LIMIT " . $limit;
+
+    $rows = $args ? $wpdb->get_results( $wpdb->prepare( $sql, ...$args ) )
+                  : $wpdb->get_results( $sql );
+
+    return rest_ensure_response( $rows );
+}
+
+function simple_hotel_crm_rest_pricing_banner( WP_REST_Request $request ) {
+    global $wpdb;
+    $table = simple_hotel_crm_promo_banners_table();
+    $today = current_time( 'Y-m-d' );
+
+    $banners = $wpdb->get_results( $wpdb->prepare(
+        "SELECT * FROM {$table}
+         WHERE active = 1
+           AND (date_from IS NULL OR date_from <= %s)
+           AND (date_to IS NULL OR date_to >= %s)
+         ORDER BY id ASC",
+        $today, $today
+    ) );
+
+    // Parse JSON room_ids
+    foreach ( $banners as &$b ) {
+        $b->room_ids = $b->room_ids ? json_decode( $b->room_ids, true ) : null;
+    }
+
+    return rest_ensure_response( $banners );
 }
 

@@ -248,7 +248,8 @@ input,select{font-family:inherit;font-size:16px}
 .ticket-header #ticket-heading{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ticket-header .th-edit{background:none;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:12px;min-height:32px;color:var(--muted)}
 .ticket-header .th-edit:active{background:var(--hover-bg)}
-.ticket-header small{font-weight:400;font-size:12px;color:var(--muted)}
+.ticket-header .th-receipt{background:none;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:14px;min-height:32px;color:var(--muted);cursor:pointer;line-height:1}
+.ticket-header .th-receipt:active{background:var(--hover-bg)}
 .th-close{background:none;border:none;font-size:28px;color:var(--muted);cursor:pointer;line-height:1;padding:4px 8px}
 .th-close:active{color:var(--text)}
 .ticket-items{flex:1;overflow-y:auto;padding:6px 10px;min-height:0;-webkit-overflow-scrolling:touch}
@@ -290,6 +291,8 @@ input,select{font-family:inherit;font-size:16px}
 .pay-item input[type=checkbox]{width:20px;height:20px}
 .pay-item label{flex:1;font-size:15px}
 .pay-amount{font-weight:600;font-size:15px;white-space:nowrap}
+.pay-custom-row{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px;color:var(--muted)}
+.pay-custom-row input{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:16px;max-width:160px}
 .pay-total{font-size:20px;font-weight:700;margin:14px 0;text-align:right}
 .pay-actions{display:flex;gap:10px}
 .pay-actions button{flex:1;padding:14px;border-radius:10px;border:none;font-size:16px;font-weight:700;min-height:48px}
@@ -319,11 +322,90 @@ input,select{font-family:inherit;font-size:16px}
 .dn-bar>div:first-child{display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .dn-label{font-size:13px;font-weight:700;color:var(--muted)}
 .dn-saved{font-size:11px;color:var(--green);display:none}
-.dash-date{font-size:14px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);min-height:28px;margin-left:auto}
+.dash-date{font-size:14px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);min-height:28px}
+.date-nav-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 8px;min-height:28px;line-height:1}
+.date-nav-btn:active{background:var(--hover-bg)}
 #dn-input{width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:var(--bg);color:var(--text)}
 .text-muted{color:var(--muted)}
 .text-sm{font-size:12px}
 .hidden{display:none!important}
+/* Pricing */
+.pricing-scroll{flex:1;overflow-y:auto;padding:10px;background:var(--card);-webkit-overflow-scrolling:touch}
+.pricing-nav{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-shrink:0}
+.pricing-nav button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:18px;font-weight:700;min-height:40px;min-width:44px}
+.pricing-nav button:active{background:#2563eb}
+.pricing-nav span{font-size:16px;font-weight:700;color:var(--text);flex:1;text-align:center}
+.pricing-tabs{display:flex;gap:4px;margin-bottom:12px;overflow-x:auto}
+.pricing-tab{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
+.pricing-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pricing-tab:active{opacity:.8}
+.pricing-cal{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px}
+.pricing-cal th{padding:4px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);text-align:center}
+.pricing-cal th.room-col{text-align:left;min-width:80px}
+.pricing-cal td{padding:4px 6px;border-bottom:1px solid var(--border);text-align:center;font-variant-numeric:tabular-nums}
+.pricing-cal td.room-cell{text-align:left;font-weight:700;font-size:13px;white-space:nowrap}
+.pricing-cal td.weekend{background:rgba(245,158,11,.06)}
+.pricing-cal td.has-actual{font-weight:700;color:var(--green)}
+.pricing-cal td.no-rule{color:var(--muted);opacity:.5}
+.pricing-cal td.suggested{color:var(--text)}
+.pricing-cal tr.pricing-room-header td{background:rgba(0,0,0,.04);font-weight:700;font-size:13px;padding:6px;border-bottom:1px solid var(--border)}
+.pricing-season-card,.pricing-event-card,.pricing-rule-card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--bg)}
+.pricing-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pricing-card-title{font-size:14px;font-weight:700;color:var(--text)}
+.pricing-card-dates{font-size:11px;color:var(--muted)}
+.pricing-card-body{font-size:12px;color:var(--muted);line-height:1.4}
+.pricing-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase}
+.pricing-badge.high{background:#dc2626;color:#fff}
+.pricing-badge.medium{background:#f59e0b;color:#000}
+.pricing-badge.low{background:#22c55e;color:#fff}
+.pricing-add-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px}
+.pricing-add-btn:active{background:#2563eb}
+.pricing-empty{text-align:center;color:var(--muted);padding:30px 0;font-size:13px}
+.pricing-form{border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;background:var(--bg)}
+.pricing-form label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;margin-top:10px}
+.pricing-form input,.pricing-form select,.pricing-form textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--card);color:var(--text);box-sizing:border-box}
+.pricing-form textarea{min-height:60px;resize:vertical}
+.pricing-form .form-row{display:flex;gap:10px}
+.pricing-form .form-row>div{flex:1}
+.pricing-form-actions{display:flex;gap:8px;margin-top:14px}
+.pricing-form-actions button{flex:1;padding:8px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
+.pricing-btn-save{background:var(--accent);color:#fff}
+.pricing-btn-cancel{background:var(--border);color:var(--text)}
+.pricing-btn-del{background:var(--red);color:#fff}
+.pricing-audit-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center}
+.pricing-audit-row:last-child{border-bottom:none}
+.pricing-audit-room{font-weight:700;min-width:50px}
+.pricing-audit-date{color:var(--muted);min-width:80px}
+.pricing-audit-prices{flex:1}
+.pricing-audit-old{color:var(--red);text-decoration:line-through}
+.pricing-audit-new{color:var(--green);font-weight:700}
+.pricing-legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:11px;color:var(--muted)}
+.pricing-legend-item{display:flex;align-items:center;gap:4px}
+.pricing-legend-dot{width:10px;height:10px;border-radius:2px}
+.pricing-cal td{cursor:pointer}
+.pricing-cal td:hover{outline:2px solid var(--accent);outline-offset:-2px}
+.pp-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:900;display:flex;align-items:center;justify-content:center}
+.pp-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;width:300px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.pp-box h3{margin:0 0 10px;font-size:15px;color:var(--text)}
+.pp-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.pp-row:last-child{border-bottom:none}
+.pp-label{color:var(--muted)}
+.pp-val{font-weight:700;font-variant-numeric:tabular-nums}
+.pp-val.suggested{color:var(--accent)}
+.pp-val.actual{color:var(--green)}
+.pp-custom{display:flex;gap:8px;align-items:center;margin:10px 0}
+.pp-custom label{font-size:12px;color:var(--muted);white-space:nowrap}
+.pp-custom input{flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);width:80px}
+.pp-actions{display:flex;gap:8px;margin-top:12px}
+.pp-actions button{flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.pp-apply{background:var(--accent);color:#fff}
+.pp-apply:active{background:#2563eb}
+.pp-close{background:var(--border);color:var(--text)}
+.pp-bulk{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.pp-bulk-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.pp-bulk-btn:active{background:#2563eb}
+.pp-bulk-btn.secondary{background:var(--border);color:var(--text)}
+.pp-bulk-count{font-size:11px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -339,6 +421,7 @@ input,select{font-family:inherit;font-size:16px}
     <button class="view-btn" data-view="list" id="view-list">Tickets</button>
     <button class="view-btn" data-view="cal" id="view-cal">Cal</button>
     <button class="view-btn" data-view="fin" id="view-fin">Fin</button>
+    <button class="view-btn" data-view="pricing" id="view-pricing">💰</button>
     <button class="view-btn" data-view="maint" id="view-maint">Maint</button>
     <button class="view-btn" id="view-refresh" title="Refresh data">↻</button>
     <button class="hamburger" id="hamburger">☰</button>
@@ -354,6 +437,7 @@ input,select{font-family:inherit;font-size:16px}
       <button class="view-btn" data-view="list" id="hm-view-list">📋 Tickets</button>
       <button class="view-btn" data-view="cal" id="hm-view-cal">📅 Calendar</button>
       <button class="view-btn" data-view="fin" id="hm-view-fin">💰 Fin</button>
+      <button class="view-btn" data-view="pricing" id="hm-view-pricing">💲 Pricing</button>
       <button class="view-btn" data-view="maint" id="hm-view-maint">🔧 Maintenance</button>
       <hr style="border:none;border-top:1px solid var(--border);margin:6px 0">
       <button class="view-btn" id="hm-view-refresh" style="color:var(--muted)">↻ Refresh</button>
@@ -367,7 +451,7 @@ input,select{font-family:inherit;font-size:16px}
   <div class="main">
     <div class="left-panel">
       <div class="dn-bar" id="dn-bar">
-        <div><span class="dn-label">&#128203; Daily Note</span><input type="date" id="dash-date" class="dash-date"><span class="dn-saved" id="dn-saved">Saved</span></div>
+        <div><span class="dn-label">&#128203; Daily Note</span><button class="date-nav-btn" id="date-prev">◀</button><input type="date" id="dash-date" class="dash-date"><button class="date-nav-btn" id="date-next">▶</button><span class="dn-saved" id="dn-saved">Saved</span></div>
         <input type="text" id="dn-input" placeholder="Note for today..." autocomplete="off">
       </div>
       <div class="bookings-row" id="booking-cards"></div>
@@ -388,11 +472,27 @@ input,select{font-family:inherit;font-size:16px}
         </div>
         <div id="fin-content"></div>
       </div>
+      <div id="pricing-view" class="pricing-scroll" style="display:none">
+        <div class="pricing-nav">
+          <button id="pricing-prev">‹</button>
+          <span id="pricing-nav-label">May 2026</span>
+          <button id="pricing-next">›</button>
+        </div>
+        <div class="pricing-tabs">
+          <button class="pricing-tab active" data-tab="calendar">Calendar</button>
+          <button class="pricing-tab" data-tab="seasons">Seasons</button>
+          <button class="pricing-tab" data-tab="events">Events</button>
+          <button class="pricing-tab" data-tab="rules">Rules</button>
+          <button class="pricing-tab" data-tab="audit">Audit</button>
+        </div>
+        <div id="pricing-content"></div>
+      </div>
     </div>
 
     <div class="ticket-panel" id="ticket-panel" style="display:none">
       <div class="ticket-header">
         <span id="ticket-heading">Select a booking</span>
+        <button class="th-receipt" id="ticket-receipt-btn" style="display:none" title="Reissue receipt">🖨</button>
         <button class="th-edit" id="ticket-edit-btn" style="display:none">Edit</button>
         <button class="th-close" id="ticket-close">×</button>
       </div>
@@ -435,6 +535,10 @@ input,select{font-family:inherit;font-size:16px}
     <button class="modal-close" id="pay-modal-close">×</button>
     <h2>Confirm Payment</h2>
     <div id="pay-items-list"></div>
+    <div class="pay-custom-row">
+      <label for="pay-custom-amount">Custom amount (€):</label>
+      <input type="number" id="pay-custom-amount" step="0.01" min="0" placeholder="Auto from selection">
+    </div>
     <div class="pay-total" id="pay-total"></div>
     <div id="pay-modal-error"></div>
     <div style="margin:8px 0;">
@@ -568,6 +672,10 @@ var state = {
     finMonth: 0,
     finData: null,
     finQtrs: [],
+    pricingMonth: 0,
+    pricingYear: 0,
+    pricingData: null,
+    pricingTab: 'calendar',
     maintNotes: [],
     dailyNotes: [],
     occupancy: [],
@@ -728,13 +836,13 @@ function apiGet(path){
         });
     });
 }
-function apiPost(path,body){
+function apiPost(path,body,method){
     var key=getAuth();
     body=body||{};
     body.api_key=key;
     var sep=path.indexOf('?')===-1?'?':'&';
     return fetch(REST_BASE+path+sep+'api_key='+encodeURIComponent(key),{
-        method:'POST',
+        method:method||'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify(body),
     }).then(function(r){
@@ -1074,9 +1182,11 @@ function renderDashboard(){
         if(!guestByDate[o.stay_date]){
             guestByDate[o.stay_date]={adults:0,children:0,total:0};
         }
-        guestByDate[o.stay_date].adults+=parseInt(o.adults,10)||0;
-        guestByDate[o.stay_date].children+=parseInt(o.children,10)||0;
-        guestByDate[o.stay_date].total+=parseInt(o.guest_count,10)||0;
+        var a=parseInt(o.adults,10)||0;
+        var c=parseInt(o.children,10)||0;
+        guestByDate[o.stay_date].adults+=a;
+        guestByDate[o.stay_date].children+=c;
+        guestByDate[o.stay_date].total+=a+c;
     });
 
     function fmtDate(ds){
@@ -1157,18 +1267,21 @@ function renderDashboard(){
 
 function render(){
     var dd=document.getElementById('dash-date');
-    if(state.viewMode==='dash'){
+    if(state.viewMode==='dash'||state.viewMode==='list'){
         if(dd) dd.style.display='';
+    }else{
+        if(dd) dd.style.display='none';
+    }
+    if(state.viewMode==='dash'){
         document.getElementById('booking-cards').style.display='none';
         document.getElementById('item-grid').style.display='none';
         document.getElementById('cal-view').style.display='none';
         document.getElementById('cal-nav').style.display='none';
         document.getElementById('maint-view').style.display='none';
         document.getElementById('fin-view').style.display='none';
+        document.getElementById('pricing-view').style.display='none';
         document.getElementById('dash-view').style.display='block';
         renderDashboard();
-    }else{
-        if(dd) dd.style.display='none';
     }
     if(state.viewMode==='list'){
         document.getElementById('booking-cards').style.display='flex';
@@ -1177,6 +1290,7 @@ function render(){
         document.getElementById('cal-nav').style.display='none';
         document.getElementById('maint-view').style.display='none';
         document.getElementById('fin-view').style.display='none';
+        document.getElementById('pricing-view').style.display='none';
         document.getElementById('dash-view').style.display='none';
         renderBookings();
         renderCatalog();
@@ -1187,6 +1301,7 @@ function render(){
         document.getElementById('cal-nav').style.display='flex';
         document.getElementById('maint-view').style.display='none';
         document.getElementById('fin-view').style.display='none';
+        document.getElementById('pricing-view').style.display='none';
         document.getElementById('dash-view').style.display='none';
         loadCalendar();
     }else if(state.viewMode==='maint'){
@@ -1197,6 +1312,7 @@ function render(){
         document.getElementById('maint-view').style.display='block';
         document.getElementById('dash-view').style.display='none';
         document.getElementById('fin-view').style.display='none';
+        document.getElementById('pricing-view').style.display='none';
         loadMaintenanceNotes();
     }else if(state.viewMode==='fin'){
         document.getElementById('booking-cards').style.display='none';
@@ -1205,8 +1321,19 @@ function render(){
         document.getElementById('cal-nav').style.display='none';
         document.getElementById('maint-view').style.display='none';
         document.getElementById('dash-view').style.display='none';
+        document.getElementById('pricing-view').style.display='none';
         document.getElementById('fin-view').style.display='block';
         renderFinances();
+    }else if(state.viewMode==='pricing'){
+        document.getElementById('booking-cards').style.display='none';
+        document.getElementById('item-grid').style.display='none';
+        document.getElementById('cal-view').style.display='none';
+        document.getElementById('cal-nav').style.display='none';
+        document.getElementById('maint-view').style.display='none';
+        document.getElementById('dash-view').style.display='none';
+        document.getElementById('fin-view').style.display='none';
+        document.getElementById('pricing-view').style.display='block';
+        loadPricing();
     }
     renderTicket();
 }
@@ -1329,6 +1456,601 @@ function renderCatalog(){
             ]));
         });
         grid.appendChild(sub);
+    });
+}
+
+/* ---- Pricing ---- */
+function loadPricing(){
+    var d=new Date(state.date+'T12:00:00');
+    if(d.getDate()!==1) d.setDate(1);
+    state.pricingYear=d.getFullYear();
+    state.pricingMonth=d.getMonth()+1;
+    updatePricingNavLabel();
+    fetchPricingData();
+}
+function pricingNavMonth(delta){
+    state.pricingMonth+=delta;
+    if(state.pricingMonth<1){state.pricingMonth=12;state.pricingYear--;}
+    if(state.pricingMonth>12){state.pricingMonth=1;state.pricingYear++;}
+    updatePricingNavLabel();
+    fetchPricingData();
+}
+function updatePricingNavLabel(){
+    var d=new Date(state.pricingYear,state.pricingMonth-1,15);
+    document.getElementById('pricing-nav-label').textContent=
+        d.toLocaleString('en',{month:'long',year:'numeric'});
+}
+function fetchPricingData(){
+    apiGet('pricing-calendar?year='+state.pricingYear+'&month='+state.pricingMonth).then(function(data){
+        state.pricingData=data;
+        renderPricingTab();
+    }).catch(function(err){
+        if(err.message!=='unauthorized') showError('Pricing load failed.');
+    });
+}
+function renderPricingTab(){
+    var root=document.getElementById('pricing-content');
+    if(!root) return;
+    root.innerHTML='';
+    var tab=state.pricingTab||'calendar';
+    if(tab==='calendar') renderPricingCalendar(root);
+    else if(tab==='seasons') renderPricingSeasons(root);
+    else if(tab==='events') renderPricingEvents(root);
+    else if(tab==='rules') renderPricingRules(root);
+    else if(tab==='audit') renderPricingAudit(root);
+}
+
+function renderPricingCalendar(root){
+    var d=state.pricingData;
+    if(!d){root.innerHTML='<div class="pricing-empty">Loading...</div>';return;}
+
+    // Legend
+    var legend=el('div',{className:'pricing-legend'},[
+        el('span',{className:'pricing-legend-item'},[
+            el('span',{className:'pricing-legend-dot',style:'background:#22c55e'}), 'Has rule'
+        ]),
+        el('span',{className:'pricing-legend-item'},[
+            el('span',{className:'pricing-legend-dot',style:'background:var(--muted);opacity:.5'}), 'No rule'
+        ]),
+        el('span',{className:'pricing-legend-item'},[
+            el('span',{className:'pricing-legend-dot',style:'background:#3b82f6'}), 'Actual price set'
+        ]),
+    ]);
+    root.appendChild(legend);
+
+    // Season spans row
+    if(d.seasons && d.seasons.length){
+        var seasonBar=el('div',{style:'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px'});
+        d.seasons.forEach(function(s){
+            var badge=el('span',{className:'pricing-badge',style:'background:#8b5cf6;color:#fff;font-size:10px'},[
+                s.name+': '+s.from+' → '+s.to+(s.multiplier?' ×'+s.multiplier:s.price_override!==null?' =€'+s.price_override:'')
+            ]);
+            seasonBar.appendChild(badge);
+        });
+        root.appendChild(seasonBar);
+    }
+
+    // Bulk apply bar
+    var bulkBar=el('div',{className:'pp-bulk'},[
+        el('button',{className:'pp-bulk-btn',id:'pp-bulk-apply'},['Apply All Suggested']),
+        el('button',{className:'pp-bulk-btn secondary',id:'pp-bulk-clear'},['Clear All Actuals']),
+    ]);
+    root.appendChild(bulkBar);
+
+    // Calendar table
+    var tbl=el('table',{className:'pricing-cal',id:'pricing-cal-table'});
+    var thead=el('thead');
+    var hrow=el('tr');
+    hrow.appendChild(el('th',{className:'room-col'},['Room']));
+    var numDays=d.day_labels?d.day_labels.length:0;
+    for(var i=0;i<numDays;i++){
+        var dl=d.day_labels[i];
+        var isWk=(dl.dow===0||dl.dow===6);
+        hrow.appendChild(el('th',{style:isWk?'color:#f59e0b':''},[''+dl.day]));
+    }
+    thead.appendChild(hrow);
+    tbl.appendChild(thead);
+
+    // Group rooms by room ID, preserving order
+    var actualCount=0;
+    var totalCells=0;
+    var tbody=el('tbody');
+    var roomGroups=[];
+    var seenIds={};
+    if(d.rooms){
+        d.rooms.forEach(function(r){
+            if(!seenIds[r.id]){
+                seenIds[r.id]=[];
+                roomGroups.push({id:r.id,number:r.room_number,name:r.room_name,color:r.theme_color,tiers:[]});
+            }
+            seenIds[r.id].push(r);
+        });
+        // Fill tiers from the flat rooms array
+        roomGroups.forEach(function(g){
+            d.rooms.forEach(function(r){
+                if(r.id===g.id) g.tiers.push(r);
+            });
+        });
+    }
+
+    roomGroups.forEach(function(group){
+        // Room header row
+        var htr=el('tr',{className:'pricing-room-header'});
+        var htd=el('td',{className:'room-cell pricing-room-header-cell',style:'color:'+group.color},[
+            group.number+' '+group.name
+        ]);
+        htd.setAttribute('colspan',''+(numDays+1));
+        htr.appendChild(htd);
+        tbody.appendChild(htr);
+
+        // Occupancy sub-rows
+        group.tiers.forEach(function(tier){
+            var tr=el('tr');
+            var occLabel=tier.occupancy_adults+'A';
+            tr.appendChild(el('td',{className:'room-cell',style:'color:'+group.color+';padding-left:24px;font-size:11px'},[
+                occLabel
+            ]));
+            tier.prices.forEach(function(p){
+                totalCells++;
+                var cls='suggested';
+                if(p.actual!==null){ cls='has-actual'; actualCount++; }
+                if(!p.has_rule) cls='no-rule';
+                var wk=(p.dow===0||p.dow===6)?' weekend':'';
+                var txt=p.actual!==null?p.actual:p.suggested;
+                var td=el('td',{className:cls+wk,'data-room-id':group.id,'data-occupancy':tier.occupancy_adults,'data-date':p.date,'data-suggested':p.suggested,'data-actual':p.actual!==null?p.actual:'','data-room':group.number+' '+group.name},['€'+txt]);
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+    });
+    tbl.appendChild(tbody);
+    root.appendChild(tbl);
+
+    // Count (after table is in DOM)
+    var countEl=el('span',{className:'pp-bulk-count'},[actualCount+' of '+totalCells+' cells have actual prices']);
+    bulkBar.appendChild(countEl);
+
+    // Click handler on calendar cells
+    tbl.addEventListener('click',function(ev){
+        var td=ev.target.closest('td[data-room-id]');
+        if(!td) return;
+        showPricingPopover(td);
+    });
+
+    // Bulk apply
+    document.getElementById('pp-bulk-apply').addEventListener('click',function(){bulkApplyPricing(false);});
+    document.getElementById('pp-bulk-clear').addEventListener('click',function(){bulkApplyPricing(true);});
+
+    // Events list for this month
+    if(d.events && d.events.length){
+        var evTitle=el('div',{className:'fin-section-title'},['Events This Month']);
+        root.appendChild(evTitle);
+        d.events.forEach(function(ev){
+            var demandCls=ev.demand_level==='high'||ev.demand_level==='very_high'?ev.demand_level:'medium';
+            root.appendChild(el('div',{className:'pricing-event-card'},[
+                el('div',{className:'pricing-card-header'},[
+                    el('span',{className:'pricing-card-title'},[ev.name]),
+                    el('span',{className:'pricing-badge '+demandCls},[ev.demand_level]),
+                ]),
+                el('div',{className:'pricing-card-dates'},[ev.from+' → '+ev.to]),
+                el('div',{className:'pricing-card-body'},[
+                    ev.multiplier?'×'+ev.multiplier:(ev.adjustment>=0?'+':'')+ev.adjustment+'€ per night'
+                ]),
+            ]));
+        });
+    }
+}
+
+function showPricingPopover(td){
+    var roomId=parseInt(td.getAttribute('data-room-id'));
+    var occupancy=parseInt(td.getAttribute('data-occupancy'))||1;
+    var date=td.getAttribute('data-date');
+    var suggested=parseFloat(td.getAttribute('data-suggested'))||0;
+    var actual=td.getAttribute('data-actual');
+    var roomName=td.getAttribute('data-room');
+
+    var overlay=el('div',{className:'pp-overlay'});
+    var box=el('div',{className:'pp-box'});
+
+    box.appendChild(el('h3',{},[roomName+' ('+occupancy+'A) — '+date]));
+
+    // Suggested row
+    box.appendChild(el('div',{className:'pp-row'},[
+        el('span',{className:'pp-label'},['Suggested']),
+        el('span',{className:'pp-val suggested'},['€'+suggested.toFixed(2)]),
+    ]));
+
+    // Actual row
+    var actualRow=el('div',{className:'pp-row'},[
+        el('span',{className:'pp-label'},['Current']),
+        el('span',{className:'pp-val'+(actual?' actual':'')},[actual?'€'+parseFloat(actual).toFixed(2):'—']),
+    ]);
+    box.appendChild(actualRow);
+
+    // Custom price input
+    var customWrap=el('div',{className:'pp-custom'},[
+        el('label',{},['Override:']),
+    ]);
+    var customIn=el('input',{type:'number',step:'0.01',placeholder:suggested.toFixed(2),id:'pp-custom-price'});
+    customWrap.appendChild(customIn);
+    box.appendChild(customWrap);
+
+    // Apply + Close
+    var actions=el('div',{className:'pp-actions'});
+    var applyBtn=el('button',{className:'pp-apply'},['Apply']);
+    var closeBtn=el('button',{className:'pp-close'},['Close']);
+    actions.appendChild(applyBtn);
+    actions.appendChild(closeBtn);
+    box.appendChild(actions);
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // Close on overlay click or close button
+    overlay.addEventListener('click',function(ev){
+        if(ev.target===overlay) overlay.remove();
+    });
+    closeBtn.addEventListener('click',function(){overlay.remove();});
+
+    // Apply
+    applyBtn.addEventListener('click',function(){
+        var price=parseFloat(customIn.value);
+        if(isNaN(price)||price<=0){showError('Enter a valid price.');return;}
+        applyBtn.disabled=true;
+        applyBtn.textContent='Applying...';
+        apiPost('pricing-apply',{room_id:roomId,occupancy_adults:occupancy,date:date,price:price,reason:'Manual cell apply'}).then(function(){
+            overlay.remove();
+            // Update local data
+            var d=state.pricingData;
+            if(d) d.rooms.forEach(function(r){
+                if(r.id===roomId && r.occupancy_adults===occupancy) r.prices.forEach(function(p){
+                    if(p.date===date){ p.actual=price; }
+                });
+            });
+            renderPricingTab();
+        }).catch(function(e){
+            applyBtn.disabled=false;
+            applyBtn.textContent='Apply';
+            showError('Apply failed: '+e.message);
+        });
+    });
+}
+
+function bulkApplyPricing(clear){
+    var d=state.pricingData;
+    if(!d||!d.rooms||!d.rooms.length) return;
+    var items=[];
+    d.rooms.forEach(function(room){
+        room.prices.forEach(function(p){
+            if(clear){
+                if(p.actual!==null){
+                    items.push({room_id:room.id,occupancy_adults:room.occupancy_adults,date:p.date,action:'clear'});
+                }
+            }else{
+                if(p.actual===null && p.has_rule){
+                    items.push({room_id:room.id,occupancy_adults:room.occupancy_adults,date:p.date,price:p.suggested,action:'apply'});
+                }
+            }
+        });
+    });
+    if(!items.length){
+        showError(clear?'No actual prices to clear.':'No cells with rules to apply.');
+        return;
+    }
+    var btn=document.getElementById('pp-bulk-apply');
+    var btnC=document.getElementById('pp-bulk-clear');
+    if(btn) btn.disabled=true;
+    if(btnC) btnC.disabled=true;
+    apiPost('pricing-apply-bulk',{items:items,reason:clear?'Bulk clear':'Bulk apply'}).then(function(res){
+        fetchPricingData();
+    }).catch(function(e){
+        if(btn) btn.disabled=false;
+        if(btnC) btnC.disabled=false;
+        showError('Bulk operation failed: '+e.message);
+    });
+}
+
+function renderPricingSeasons(root){
+    var d=state.pricingData;
+    var seasons=d?d.seasons:[];
+
+    root.appendChild(el('button',{className:'pricing-add-btn',id:'ps-add'},['+ Add Season']));
+
+    if(!seasons.length){
+        root.appendChild(el('div',{className:'pricing-empty'},['No seasons defined yet.']));
+    }
+    seasons.forEach(function(s){
+        root.appendChild(el('div',{className:'pricing-season-card'},[
+            el('div',{className:'pricing-card-header'},[
+                el('span',{className:'pricing-card-title'},[s.name]),
+                el('span',{className:'pricing-card-dates'},[s.from+' → '+s.to]),
+            ]),
+            el('div',{className:'pricing-card-body'},[
+                s.multiplier?'×'+s.multiplier+' multiplier':(s.price_override!==null?'€'+s.price_override+' override':'No override'),
+                ' | Priority: '+s.priority+(s.recurring?' | Recurring':''),
+            ]),
+        ]));
+    });
+
+    document.getElementById('ps-add').addEventListener('click',function(){
+        showPricingSeasonForm(root,null);
+    });
+}
+
+function showPricingSeasonForm(root,existing){
+    var formWrap=el('div',{className:'pricing-form',id:'ps-form'});
+    var nameIn=el('input',{type:'text',id:'psf-name',placeholder:'e.g. Summer 2026',value:existing?existing.name:''});
+    var fromIn=el('input',{type:'date',id:'psf-from',value:existing?existing.from:''});
+    var toIn=el('input',{type:'date',id:'psf-to',value:existing?existing.to:''});
+    var overrideIn=el('input',{type:'number',step:'0.01',id:'psf-override',placeholder:'e.g. 89.00',value:existing&&existing.price_override!==null?existing.price_override:''});
+    var multIn=el('input',{type:'number',step:'0.001',id:'psf-mult',placeholder:'e.g. 1.3',value:existing&&existing.multiplier!==null?existing.multiplier:''});
+    var prioIn=el('input',{type:'number',id:'psf-prio',value:existing?existing.priority:'0'});
+    var recurIn=el('input',{type:'checkbox',id:'psf-recur'});
+    if(existing&&existing.recurring) recurIn.checked=true;
+
+    formWrap.appendChild(nameIn);
+    formWrap.appendChild(el('label',{},['From']));
+    formWrap.appendChild(fromIn);
+    formWrap.appendChild(el('label',{},['To']));
+    formWrap.appendChild(toIn);
+
+    var row1=el('div',{className:'form-row'},[
+        el('div',{},[el('label',{},['Price Override (€)']),overrideIn]),
+        el('div',{},[el('label',{},['Multiplier']),multIn]),
+    ]);
+    formWrap.appendChild(row1);
+
+    var row2=el('div',{className:'form-row'},[
+        el('div',{},[el('label',{},['Priority']),prioIn]),
+        el('div',{},[el('label',{},['Recurring']),recurIn]),
+    ]);
+    formWrap.appendChild(row2);
+
+    var actions=el('div',{className:'pricing-form-actions'});
+    var saveBtn=el('button',{className:'pricing-btn-save'},['Save']);
+    var cancelBtn=el('button',{className:'pricing-btn-cancel'},['Cancel']);
+    actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
+    if(existing){
+        var delBtn=el('button',{className:'pricing-btn-del'},['Delete']);
+        actions.appendChild(delBtn);
+        delBtn.addEventListener('click',function(){
+            if(!confirm('Delete season "'+existing.name+'"?')) return;
+            apiPost('pricing-seasons/'+existing.id,{},'DELETE').then(function(){
+                fetchPricingData();
+            });
+        });
+    }
+    formWrap.appendChild(actions);
+    root.insertBefore(formWrap,root.querySelector('.pricing-season-card')||root.querySelector('.pricing-empty')||null);
+
+    saveBtn.addEventListener('click',function(){
+        var payload={
+            season_name:nameIn.value.trim(),
+            date_from:fromIn.value,
+            date_to:toIn.value,
+            price_override:overrideIn.value!==''?parseFloat(overrideIn.value):null,
+            price_multiplier:multIn.value!==''?parseFloat(multIn.value):null,
+            priority:parseInt(prioIn.value)||0,
+            recurring:recurIn.checked?1:0,
+            active:1,
+        };
+        if(existing) payload.id=existing.id;
+        if(!payload.season_name||!payload.date_from||!payload.date_to){showError('Name, from, and to required.');return;}
+        apiPost('pricing-seasons',payload).then(function(){
+            fetchPricingData();
+        }).catch(function(e){showError('Save failed: '+e.message);});
+    });
+    cancelBtn.addEventListener('click',function(){
+        var f=document.getElementById('ps-form');
+        if(f) f.remove();
+    });
+}
+
+function renderPricingEvents(root){
+    var d=state.pricingData;
+    var events=d?d.events:[];
+
+    root.appendChild(el('button',{className:'pricing-add-btn',id:'pe-add'},['+ Add Event']));
+
+    if(!events.length){
+        root.appendChild(el('div',{className:'pricing-empty'},['No events defined yet.']));
+    }
+    events.forEach(function(ev){
+        var demandCls=ev.demand_level==='very_high'?'high':ev.demand_level;
+        root.appendChild(el('div',{className:'pricing-event-card'},[
+            el('div',{className:'pricing-card-header'},[
+                el('span',{className:'pricing-card-title'},[ev.name]),
+                el('span',{className:'pricing-badge '+demandCls},[ev.demand_level]),
+            ]),
+            el('div',{className:'pricing-card-dates'},[ev.from+' → '+ev.to]),
+            el('div',{className:'pricing-card-body'},[
+                ev.multiplier?'×'+ev.multiplier+' multiplier':(ev.adjustment>=0?'+':'')+ev.adjustment+'€',
+                ev.description?' — '+ev.description:'',
+                ev.banner_enabled?' | Banner ON':'',
+            ]),
+        ]));
+    });
+
+    document.getElementById('pe-add').addEventListener('click',function(){
+        showPricingEventForm(root,null);
+    });
+}
+
+function showPricingEventForm(root,existing){
+    var formWrap=el('div',{className:'pricing-form',id:'pe-form'});
+    var nameIn=el('input',{type:'text',id:'pef-name',placeholder:'Event name',value:existing?existing.event_name:''});
+    var descIn=el('textarea',{id:'pef-desc',placeholder:'Description (optional)'},[existing?existing.description:'']);
+    var fromIn=el('input',{type:'date',id:'pef-from',value:existing?existing.from:''});
+    var toIn=el('input',{type:'date',id:'pef-to',value:existing?existing.to:''});
+    var adjIn=el('input',{type:'number',step:'0.01',id:'pef-adj',placeholder:'0',value:existing?existing.adjustment:''});
+    var multIn=el('input',{type:'number',step:'0.001',id:'pef-mult',placeholder:'e.g. 1.2',value:existing&&existing.multiplier!==null?existing.multiplier:''});
+    var demandIn=el('select',{id:'pef-demand'});
+    ['low','medium','high','very_high'].forEach(function(v){
+        var opt=el('option',{value:v},[v]);
+        if(existing&&existing.demand_level===v) opt.selected=true;
+        demandIn.appendChild(opt);
+    });
+    var prioIn=el('input',{type:'number',id:'pef-prio',value:existing?existing.priority:'0'});
+    var bannerIn=el('input',{type:'checkbox',id:'pef-banner'});
+    if(existing&&existing.banner_enabled) bannerIn.checked=true;
+
+    formWrap.appendChild(nameIn);
+    formWrap.appendChild(el('label',{},['Description']));
+    formWrap.appendChild(descIn);
+    formWrap.appendChild(el('label',{},['From']));
+    formWrap.appendChild(fromIn);
+    formWrap.appendChild(el('label',{},['To']));
+    formWrap.appendChild(toIn);
+
+    var row1=el('div',{className:'form-row'},[
+        el('div',{},[el('label',{},['Adjustment (€)']),adjIn]),
+        el('div',{},[el('label',{},['Multiplier']),multIn]),
+    ]);
+    formWrap.appendChild(row1);
+
+    var row2=el('div',{className:'form-row'},[
+        el('div',{},[el('label',{},['Demand Level']),demandIn]),
+        el('div',{},[el('label',{},['Priority']),prioIn]),
+    ]);
+    formWrap.appendChild(row2);
+    formWrap.appendChild(el('label',{},[bannerIn,' Show banner on website']));
+
+    var actions=el('div',{className:'pricing-form-actions'});
+    var saveBtn=el('button',{className:'pricing-btn-save'},['Save']);
+    var cancelBtn=el('button',{className:'pricing-btn-cancel'},['Cancel']);
+    actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
+    if(existing){
+        var delBtn=el('button',{className:'pricing-btn-del'},['Delete']);
+        actions.appendChild(delBtn);
+        delBtn.addEventListener('click',function(){
+            if(!confirm('Delete event "'+existing.name+'"?')) return;
+            apiPost('pricing-events/'+existing.id,{},'DELETE').then(function(){
+                fetchPricingData();
+            });
+        });
+    }
+    formWrap.appendChild(actions);
+    root.insertBefore(formWrap,root.querySelector('.pricing-event-card')||root.querySelector('.pricing-empty')||null);
+
+    saveBtn.addEventListener('click',function(){
+        var payload={
+            event_name:nameIn.value.trim(),
+            description:descIn.value.trim(),
+            date_from:fromIn.value,
+            date_to:toIn.value,
+            price_adjustment:parseFloat(adjIn.value)||0,
+            price_multiplier:multIn.value!==''?parseFloat(multIn.value):null,
+            demand_level:demandIn.value,
+            priority:parseInt(prioIn.value)||0,
+            banner_enabled:bannerIn.checked?1:0,
+            active:1,
+        };
+        if(existing) payload.id=existing.id;
+        if(!payload.event_name||!payload.date_from||!payload.date_to){showError('Name, from, and to required.');return;}
+        apiPost('pricing-events',payload).then(function(){
+            fetchPricingData();
+        }).catch(function(e){showError('Save failed: '+e.message);});
+    });
+    cancelBtn.addEventListener('click',function(){
+        var f=document.getElementById('pe-form');
+        if(f) f.remove();
+    });
+}
+
+function renderPricingRules(root){
+    root.appendChild(el('button',{className:'pricing-add-btn',id:'pr-add'},['+ Add Rule']));
+    root.appendChild(el('div',{className:'pricing-empty'},['Pricing rules control base price and day-of-week multipliers per room. Use the form to define rules.']));
+    document.getElementById('pr-add').addEventListener('click',function(){
+        showPricingRuleForm(root,null);
+    });
+}
+
+function showPricingRuleForm(root,existing){
+    var formWrap=el('div',{className:'pricing-form',id:'pr-form'});
+    var rooms=state.pricingData?state.pricingData.rooms:[];
+    var roomSel=el('select',{id:'prf-room'});
+    var defOpt=el('option',{value:''},['All rooms (default)']);
+    roomSel.appendChild(defOpt);
+    rooms.forEach(function(r){
+        var opt=el('option',{value:r.id},[r.room_number+' '+r.room_name]);
+        roomSel.appendChild(opt);
+    });
+    var baseIn=el('input',{type:'number',step:'0.01',id:'prf-base',placeholder:'Base price €',value:existing?existing.base_price:''});
+    var minIn=el('input',{type:'number',step:'0.01',id:'prf-min',placeholder:'Min €',value:existing?existing.min_price:''});
+    var maxIn=el('input',{type:'number',step:'0.01',id:'prf-max',placeholder:'Max €',value:existing?existing.max_price:''});
+    var wdIn=el('input',{type:'number',step:'0.001',id:'prf-wd',value:existing?existing.multiplier_weekday:'1.0'});
+    var friIn=el('input',{type:'number',step:'0.001',id:'prf-fri',value:existing?existing.multiplier_friday:'1.0'});
+    var satIn=el('input',{type:'number',step:'0.001',id:'prf-sat',value:existing?existing.multiplier_saturday:'1.0'});
+    var sunIn=el('input',{type:'number',step:'0.001',id:'prf-sun',value:existing?existing.multiplier_sunday:'1.0'});
+
+    formWrap.appendChild(el('label',{},['Room']));
+    formWrap.appendChild(roomSel);
+    var row1=el('div',{className:'form-row'},[
+        el('div',{},[el('label',{},['Base Price (€)']),baseIn]),
+        el('div',{},[el('label',{},['Min']),minIn]),
+        el('div',{},[el('label',{},['Max']),maxIn]),
+    ]);
+    formWrap.appendChild(row1);
+    var row2=el('div',{className:'form-row'},[
+        el('div',{},[el('label',{},['Mon-Thu']),wdIn]),
+        el('div',{},[el('label',{},['Friday']),friIn]),
+        el('div',{},[el('label',{},['Saturday']),satIn]),
+        el('div',{},[el('label',{},['Sunday']),sunIn]),
+    ]);
+    formWrap.appendChild(row2);
+
+    var actions=el('div',{className:'pricing-form-actions'});
+    var saveBtn=el('button',{className:'pricing-btn-save'},['Save']);
+    var cancelBtn=el('button',{className:'pricing-btn-cancel'},['Cancel']);
+    actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
+    formWrap.appendChild(actions);
+    root.insertBefore(formWrap,root.firstChild);
+
+    saveBtn.addEventListener('click',function(){
+        var payload={
+            room_id:roomSel.value?parseInt(roomSel.value):null,
+            base_price:parseFloat(baseIn.value)||0,
+            min_price:parseFloat(minIn.value)||0,
+            max_price:parseFloat(maxIn.value)||0,
+            multiplier_weekday:parseFloat(wdIn.value)||1,
+            multiplier_friday:parseFloat(friIn.value)||1,
+            multiplier_saturday:parseFloat(satIn.value)||1,
+            multiplier_sunday:parseFloat(sunIn.value)||1,
+        };
+        if(existing) payload.id=existing.id;
+        apiPost('pricing-rules',payload).then(function(){
+            fetchPricingData();
+            var f=document.getElementById('pr-form');
+            if(f) f.remove();
+        }).catch(function(e){showError('Save failed: '+e.message);});
+    });
+    cancelBtn.addEventListener('click',function(){
+        var f=document.getElementById('pr-form');
+        if(f) f.remove();
+    });
+}
+
+function renderPricingAudit(root){
+    apiGet('pricing-audit?limit=100').then(function(rows){
+        if(!rows||!rows.length){
+            root.appendChild(el('div',{className:'pricing-empty'},['No audit entries yet.']));
+            return;
+        }
+        rows.forEach(function(r){
+            root.appendChild(el('div',{className:'pricing-audit-row'},[
+                el('span',{className:'pricing-audit-room'},[r.room_number||'All']),
+                el('span',{className:'pricing-audit-date'},[r.target_date]),
+                el('span',{className:'pricing-audit-prices'},[
+                    el('span',{className:'pricing-audit-old'},['€'+r.old_price]),
+                    ' → ',
+                    el('span',{className:'pricing-audit-new'},['€'+r.new_price]),
+                ]),
+                el('span',{style:'color:var(--muted);font-size:11px'},[r.source+(r.reason?' — '+r.reason:'')]),
+            ]));
+        });
     });
 }
 
@@ -1697,6 +2419,8 @@ function renderTicket(){
 
     var recBtn=document.getElementById('receipt-ticket');
     recBtn.style.display=(b&&(b.payment_status==='paid'||b.payment_status==='completed'))?'':'none';
+    var hRecBtn=document.getElementById('ticket-receipt-btn');
+    if(hRecBtn) hRecBtn.style.display=(b&&(b.payment_status==='paid'||b.payment_status==='completed'))?'':'none';
 }
 
 /* ---- Interactions ---- */
@@ -1829,12 +2553,18 @@ function showPayModal(){
         });
         list.innerHTML='';
         rows.forEach(function(r){list.appendChild(r);});
+        document.getElementById('pay-custom-amount').value='';
         updatePayTotal();
         document.getElementById('pay-modal').classList.add('active');
     }).catch(function(){});
 }
 
 function updatePayTotal(){
+    var custom=parseFloat(document.getElementById('pay-custom-amount').value);
+    if(custom>0){
+        setText('pay-total','Total: '+custom.toFixed(2)+'\u20AC (custom)');
+        return;
+    }
     var total=0;
     qsa('#pay-items-list input[type=checkbox]:checked').forEach(function(cb){total+=parseFloat(cb.value||0);});
     setText('pay-total','Total: '+total.toFixed(2)+'\u20AC');
@@ -1842,10 +2572,17 @@ function updatePayTotal(){
 
 function sendToTerminal(){
     hidePayError();
-    var checkboxes=qsa('#pay-items-list input[type=checkbox]:checked');
-    if(checkboxes.length===0){showPayError('Select at least one item to charge.');return;}
-    var total=0;
-    checkboxes.forEach(function(cb){total+=parseFloat(cb.value||0);});
+    var custom=parseFloat(document.getElementById('pay-custom-amount').value);
+    var total;
+    if(custom>0){
+        total=custom;
+    }else{
+        var checkboxes=qsa('#pay-items-list input[type=checkbox]:checked');
+        if(checkboxes.length===0){showPayError('Select at least one item or enter a custom amount.');return;}
+        total=0;
+        checkboxes.forEach(function(cb){total+=parseFloat(cb.value||0);});
+    }
+    if(total<=0){showPayError('Amount must be greater than 0.');return;}
     var skipReceipt=document.getElementById('pay-skip-receipt').checked;
     var btn=document.getElementById('pay-confirm');
     btn.disabled=true;
@@ -1867,12 +2604,20 @@ function sendToTerminal(){
         return pollCheckoutStatus(data.checkout_id);
     }).then(function(data){
         if(!data) return;
+        // Update local state immediately so Paid badge shows right away
+        for(var i=0;i<state.bookings.length;i++){
+            if(parseInt(state.bookings[i].id,10)===state.activeBookingId){
+                state.bookings[i].payment_status='paid';
+                break;
+            }
+        }
+        renderBookings();
         setHTML('pay-success','Payment sent to terminal! '+total.toFixed(2)+'\u20AC'+
             ' <button class="btn-receipt" onclick="reissueReceipt('+state.activeBookingId+')" style="margin-left:8px;vertical-align:middle">🖨 Reissue</button>');
         document.getElementById('pay-success').style.display='block';
         btn.textContent='\u2713 '+(total.toFixed(2))+'€';
         clearTimeout(window._paySuccessTimer);
-        window._paySuccessTimer=setTimeout(function(){closePayModal();fetchData();},8000);
+        window._paySuccessTimer=setTimeout(function(){closePayModal();fetchData();},2000);
     }).catch(function(err){
         if(err.message==='unauthorized') return;
         showPayError(err.message||'Failed to send payment.');
@@ -1959,6 +2704,9 @@ function openCheckinModal(bookingId){
     _ciBookingId=bookingId;
     _ciPhotoData='';
     document.getElementById('ci-photo-name').textContent='';
+    var btn=document.getElementById('ci-confirm');
+    btn.disabled=false;
+    btn.textContent='✓ Confirm Check-in';
 
     var b=null;
     for(var i=0;i<state.bookings.length;i++){
@@ -1993,6 +2741,9 @@ function closeCiModal(){
     _ciBookingId=0;
     _ciPhotoData='';
     document.getElementById('ci-photo-name').textContent='';
+    var btn=document.getElementById('ci-confirm');
+    btn.disabled=false;
+    btn.textContent='✓ Confirm Check-in';
 }
 
 function hideCiError(){
@@ -2261,12 +3012,32 @@ document.addEventListener('DOMContentLoaded',function(){
         loadDailyNote();
     }
 
-    dateInput.addEventListener('change',function(){
-        state.date=this.value;
+    function reloadOnDateChange(){
         state.activeBookingId=0;state.activeRoomId=0;state.activeBooking=null;
         state.ticketItems=[];state.savedItems=[];
         fetchData();
         loadDailyNote();
+    }
+
+    dateInput.addEventListener('change',function(){
+        state.date=this.value;
+        reloadOnDateChange();
+    });
+
+    document.getElementById('date-prev').addEventListener('click',function(){
+        var d=new Date(state.date+'T12:00:00');
+        d.setDate(d.getDate()-1);
+        state.date=d.toISOString().slice(0,10);
+        dateInput.value=state.date;
+        reloadOnDateChange();
+    });
+
+    document.getElementById('date-next').addEventListener('click',function(){
+        var d=new Date(state.date+'T12:00:00');
+        d.setDate(d.getDate()+1);
+        state.date=d.toISOString().slice(0,10);
+        dateInput.value=state.date;
+        reloadOnDateChange();
     });
 
     // Search toggle
@@ -2292,11 +3063,13 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('view-cal').addEventListener('click',function(){closeHm();setViewMode('cal');});
     document.getElementById('view-maint').addEventListener('click',function(){closeHm();setViewMode('maint');});
     document.getElementById('view-fin').addEventListener('click',function(){closeHm();setViewMode('fin');});
+    document.getElementById('view-pricing').addEventListener('click',function(){closeHm();setViewMode('pricing');});
     document.getElementById('hm-view-dash').addEventListener('click',function(){closeHm();setViewMode('dash');});
     document.getElementById('hm-view-list').addEventListener('click',function(){closeHm();setViewMode('list');});
     document.getElementById('hm-view-cal').addEventListener('click',function(){closeHm();setViewMode('cal');});
     document.getElementById('hm-view-maint').addEventListener('click',function(){closeHm();setViewMode('maint');});
     document.getElementById('hm-view-fin').addEventListener('click',function(){closeHm();setViewMode('fin');});
+    document.getElementById('hm-view-pricing').addEventListener('click',function(){closeHm();setViewMode('pricing');});
     document.getElementById('hm-view-refresh').addEventListener('click',function(){closeHm();var btn=document.getElementById('view-refresh');btn.classList.add('refreshing');fetchData().then(function(){btn.classList.remove('refreshing');}).catch(function(){btn.classList.remove('refreshing');});});
 
     // Calendar nav
@@ -2306,6 +3079,18 @@ document.addEventListener('DOMContentLoaded',function(){
     // Finances nav
     document.getElementById('fin-prev').addEventListener('click',function(){goFinMonth(-1);});
     document.getElementById('fin-next').addEventListener('click',function(){goFinMonth(1);});
+
+    // Pricing nav
+    document.getElementById('pricing-prev').addEventListener('click',function(){pricingNavMonth(-1);});
+    document.getElementById('pricing-next').addEventListener('click',function(){pricingNavMonth(1);});
+    qsa('.pricing-tab').forEach(function(tab){
+        tab.addEventListener('click',function(){
+            qsa('.pricing-tab').forEach(function(t){t.classList.remove('active');});
+            tab.classList.add('active');
+            state.pricingTab=tab.getAttribute('data-tab');
+            renderPricingTab();
+        });
+    });
 
     // Daily note
     document.getElementById('dn-input').addEventListener('input',function(){saveDailyNote();});
@@ -2341,7 +3126,9 @@ document.addEventListener('DOMContentLoaded',function(){
     });
     document.getElementById('pay-ticket').addEventListener('click',function(){showPayModal();});
     document.getElementById('receipt-ticket').addEventListener('click',function(){reissueReceipt(state.activeBookingId);});
+    document.getElementById('ticket-receipt-btn').addEventListener('click',function(){reissueReceipt(state.activeBookingId);});
     document.getElementById('pay-items-list').addEventListener('change',function(e){if(e.target.type==='checkbox') updatePayTotal();});
+    document.getElementById('pay-custom-amount').addEventListener('input',updatePayTotal);
     document.getElementById('pay-confirm').addEventListener('click',function(){sendToTerminal();});
     document.getElementById('pay-cancel').addEventListener('click',function(){closePayModal();});
     document.getElementById('pay-modal-close').addEventListener('click',function(){closePayModal();});
