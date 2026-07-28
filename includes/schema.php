@@ -1603,6 +1603,70 @@ function simple_hotel_crm_import_sync_data_to_crm() {
                     (int) $booking['id'],
                     $crm_room_id
                 ) );
+
+                // ICS blocks may be wider than the enriched booking (Booking.com merges consecutive reservations).
+                // Create skeleton bookings for uncovered date ranges before and after the enriched booking.
+                $ics_check_in    = (string) $booking_group['check_in_date'];
+                $ics_check_out   = (string) $booking_group['check_out_date'];
+                $book_check_in   = (string) $booking['check_in_date'];
+                $book_check_out  = (string) $booking['check_out_date'];
+
+                $skel_ranges = [];
+                if ( $ics_check_in < $book_check_in ) {
+                    $skel_ranges[] = [ $ics_check_in, $book_check_in ];
+                }
+                if ( $ics_check_out > $book_check_out ) {
+                    $skel_ranges[] = [ $book_check_out, $ics_check_out ];
+                }
+
+                foreach ( $skel_ranges as list( $skel_in, $skel_out ) ) {
+                    $existing_skel = (int) $wpdb->get_var( $wpdb->prepare(
+                        "SELECT id FROM {$crm_bookings_table} WHERE source_channel = %s AND check_in_date = %s AND check_out_date = %s AND internal_notes LIKE %s AND is_deleted = 0 AND guest_id = %d LIMIT 1",
+                        (string) $booking_group['source_channel'],
+                        $skel_in,
+                        $skel_out,
+                        '%[ICS_SKELETON]%',
+                        (int) $guest['id']
+                    ) );
+                    if ( $existing_skel > 0 ) {
+                        continue;
+                    }
+
+                    $wpdb->insert( $crm_bookings_table, [
+                        'guest_id'          => (int) $guest['id'],
+                        'source_channel'    => (string) $booking_group['source_channel'],
+                        'source_booking_id' => (string) ( $booking_group['source_booking_id'] ?: '' ),
+                        'status_code'       => (string) $booking_group['status_code'],
+                        'check_in_date'     => $skel_in,
+                        'check_out_date'    => $skel_out,
+                        'currency'          => 'EUR',
+                        'booking_note'      => '',
+                        'internal_notes'    => '[ICS_SKELETON]',
+                    ], [ '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ] );
+                    if ( false === $wpdb->insert_id ) {
+                        continue;
+                    }
+                    $skel_booking_id = (int) $wpdb->insert_id;
+
+                    $wpdb->insert( $crm_booking_rooms_table, [
+                        'booking_id' => $skel_booking_id,
+                        'room_id'    => $crm_room_id,
+                    ], [ '%d', '%d' ] );
+                    if ( false === $wpdb->insert_id ) {
+                        continue;
+                    }
+                    $skel_room_id = (int) $wpdb->insert_id;
+
+                    $skel_nights = max( 1, (int) round( ( strtotime( $skel_out ) - strtotime( $skel_in ) ) / DAY_IN_SECONDS ) );
+                    for ( $si = 0; $si < $skel_nights; $si++ ) {
+                        $stay_date = gmdate( 'Y-m-d', strtotime( $skel_in . ' +' . $si . ' day' ) );
+                        $wpdb->insert( $crm_booking_nights_table, [
+                            'booking_room_id' => $skel_room_id,
+                            'stay_date'       => $stay_date,
+                        ], [ '%d', '%s' ] );
+                    }
+                }
+
                 $wpdb->query( 'COMMIT' );
                 continue;
             } else {
