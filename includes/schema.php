@@ -1690,7 +1690,7 @@ function simple_hotel_crm_import_sync_data_to_crm() {
                 continue;
             }
 
-            $existing_booking_room_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$crm_booking_rooms_table} WHERE legacy_reserved_room_id = %d OR (booking_id = %d AND room_id = %d) LIMIT 1", (int) $room_group['external_booking_room_id'], (int) $booking['id'], $crm_room_id ) );
+            $existing_booking_room_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$crm_booking_rooms_table} WHERE (booking_id = %d AND legacy_reserved_room_id = %d) OR (booking_id = %d AND room_id = %d) LIMIT 1", (int) $booking['id'], (int) $room_group['external_booking_room_id'], (int) $booking['id'], $crm_room_id ) );
             if ( $existing_booking_room_id > 0 ) {
                 continue;
             }
