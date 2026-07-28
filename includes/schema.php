@@ -1569,6 +1569,10 @@ function simple_hotel_crm_import_sync_data_to_crm() {
                     [ '%d' ]
                 );
                 $booking = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$crm_bookings_table} WHERE id = %d", (int) $overlap_booking['id'] ), ARRAY_A );
+            } elseif ( $overlap_booking ) {
+                // Enriched booking found by room+date overlap but primary match failed (e.g. Booking.com UID changed).
+                // Re-link it instead of creating a duplicate. The code below will update source_booking_id.
+                $booking = $overlap_booking;
             }
         }
         if ( 'cancelled' === $booking_group['status_code'] ) {
