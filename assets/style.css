@@ -168,6 +168,13 @@
     color: #fff;
     border-color: rgba(255,255,255,0.5);
 }
+.calendar-version-label {
+    position: absolute;
+    right: 12px;
+    color: #9a9bb0;
+    font-size: 11px;
+    font-weight: 400;
+}
 
 .calendar-month-tabs {
     display: flex;

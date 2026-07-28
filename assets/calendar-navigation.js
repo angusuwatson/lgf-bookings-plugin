@@ -232,14 +232,20 @@
             });
         });
 
-        $(document).on('click', '.simple-hotel-crm-container .calendar-nav .button, .simple-hotel-crm-container .calendar-month-tab, .simple-hotel-crm-container .year-nav-link', function(e) {
+        $(document).on('click', '.simple-hotel-crm-container .calendar-nav .button, .simple-hotel-crm-container .calendar-month-tab, .simple-hotel-crm-container .year-nav-link, .simple-hotel-crm-container .calendar-today-btn', function(e) {
             var href = $(this).attr('href');
             if (!href) return;
             e.preventDefault();
             var url = new URL(href, window.location.origin);
             var month = url.searchParams.get('month');
             var year = url.searchParams.get('year');
-            if (month && year) loadMonth(month, year, true);
+            if (month && year) {
+                var isToday = $(this).hasClass('calendar-today-btn');
+                loadMonth(month, year, true);
+                if (isToday) {
+                    setTimeout(scrollToTodayIfVisible, 100);
+                }
+            }
         });
 
         $(document).on('input', '.simple-hotel-crm-container .calendar-note-input', function() {

@@ -21,6 +21,7 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
         <a class="year-nav-link year-prev" href="<?php echo esc_url( add_query_arg( [ 'month' => $month, 'year' => $year - 1 ], $calendar_base_url ) ); ?>" title="<?php esc_attr_e( 'Previous year', 'simple-hotel-crm' ); ?>">‹</a>
         <span class="calendar-year-label"><?php echo esc_html( $year ); ?></span>
         <a class="year-nav-link year-next" href="<?php echo esc_url( add_query_arg( [ 'month' => $month, 'year' => $year + 1 ], $calendar_base_url ) ); ?>" title="<?php esc_attr_e( 'Next year', 'simple-hotel-crm' ); ?>">›</a>
+        <span class="calendar-version-label">v<?php echo esc_html( SIMPLE_HOTEL_CRM_VERSION ); ?></span>
     </div>
     <div class="calendar-month-tabs" role="tablist" aria-label="Calendar months">
         <?php foreach ( $month_tabs as $tab ) : ?>
