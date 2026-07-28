@@ -2074,11 +2074,23 @@ function simple_hotel_crm_rest_ticket_update_booking( WP_REST_Request $request )
     if ( ! empty( $update ) ) {
         $update['updated_at'] = current_time( 'mysql' );
         $formats[] = '%s';
+        // Strip [ICS_SKELETON] marker when a human edits the booking via the calendar popup
+        $internal_notes = (string) $booking->internal_notes;
+        if ( false !== strpos( $internal_notes, '[ICS_SKELETON]' ) ) {
+            $update['internal_notes'] = trim( str_replace( '[ICS_SKELETON]', '', $internal_notes ) );
+            $formats[] = '%s';
+        }
         $wpdb->update( $bookings_table, $update, [ 'id' => $booking_id ], $formats, [ '%d' ] );
     }
 
     $add_room_id = absint( $request->get_param( 'add_room_id' ) );
     if ( $add_room_id > 0 ) {
+        // Strip [ICS_SKELETON] marker when a human adds a room via the calendar popup
+        $internal_notes = (string) $booking->internal_notes;
+        if ( false !== strpos( $internal_notes, '[ICS_SKELETON]' ) ) {
+            $wpdb->update( $bookings_table, [ 'internal_notes' => trim( str_replace( '[ICS_SKELETON]', '', $internal_notes ) ) ], [ 'id' => $booking_id ], [ '%s' ], [ '%d' ] );
+        }
+
         $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
     $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
     $booking_items_table = simple_hotel_crm_booking_items_table();
