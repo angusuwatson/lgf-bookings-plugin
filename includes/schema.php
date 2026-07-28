@@ -1621,19 +1621,34 @@ function simple_hotel_crm_import_sync_data_to_crm() {
 
                 foreach ( $skel_ranges as list( $skel_in, $skel_out ) ) {
                     $existing_skel = (int) $wpdb->get_var( $wpdb->prepare(
-                        "SELECT id FROM {$crm_bookings_table} WHERE source_channel = %s AND check_in_date = %s AND check_out_date = %s AND internal_notes LIKE %s AND is_deleted = 0 AND guest_id = %d LIMIT 1",
+                        "SELECT id FROM {$crm_bookings_table} WHERE source_channel = %s AND check_in_date = %s AND check_out_date = %s AND internal_notes LIKE %s AND is_deleted = 0 LIMIT 1",
                         (string) $booking_group['source_channel'],
                         $skel_in,
                         $skel_out,
-                        '%[ICS_SKELETON]%',
-                        (int) $guest['id']
+                        '%[ICS_SKELETON]%'
                     ) );
                     if ( $existing_skel > 0 ) {
                         continue;
                     }
 
+                    // Create a dedicated guest so editing the skeleton doesn't overwrite the enriched booking's guest
+                    $skel_guest_name = trim( (string) $booking_group['guest_name'] );
+                    if ( '' === $skel_guest_name ) {
+                        $skel_guest_name = __( 'Closed – Not available', 'simple-hotel-crm' );
+                    }
+                    list( $skel_first, $skel_last ) = simple_hotel_crm_split_guest_name( $skel_guest_name );
+                    $wpdb->insert( simple_hotel_crm_guests_table(), [
+                        'first_name' => $skel_first,
+                        'last_name'  => $skel_last,
+                        'phone'      => '',
+                    ], [ '%s', '%s', '%s' ] );
+                    $skel_guest_id = (int) $wpdb->insert_id;
+                    if ( $skel_guest_id <= 0 ) {
+                        continue;
+                    }
+
                     $wpdb->insert( $crm_bookings_table, [
-                        'guest_id'          => (int) $guest['id'],
+                        'guest_id'          => $skel_guest_id,
                         'source_channel'    => (string) $booking_group['source_channel'],
                         'source_booking_id' => (string) ( $booking_group['source_booking_id'] ?: '' ),
                         'status_code'       => (string) $booking_group['status_code'],

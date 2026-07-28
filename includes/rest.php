@@ -681,6 +681,7 @@ function simple_hotel_crm_rest_save_quick_booking( WP_REST_Request $request ) {
     $has_booking_note = null !== $request->get_param( 'booking_note' );
     $booking_note = sanitize_textarea_field( (string) $request->get_param( 'booking_note' ) );
     $internal_notes = sanitize_textarea_field( (string) $request->get_param( 'internal_notes' ) );
+    $internal_notes = trim( str_replace( '[ICS_SKELETON]', '', $internal_notes ) );
 
     if ( '' === $guest_name ) {
         return new WP_Error( 'missing_guest_name', __( 'Guest name is required.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
