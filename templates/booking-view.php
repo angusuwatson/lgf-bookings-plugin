@@ -16,12 +16,11 @@ $today_year = (int) current_time( 'Y' );
 $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_year );
 ?>
 <div class="simple-hotel-crm-container" data-scroll-to-today="<?php echo esc_attr( $scroll_to_today ? '1' : '0' ); ?>" data-today-date="<?php echo esc_attr( $today ); ?>">
-    <button id="calendar-fs-toggle" class="simple-hotel-crm-fs-btn" title="<?php esc_attr_e( 'Fullscreen', 'simple-hotel-crm' ); ?>" type="button">⛶</button>
     <div class="calendar-year-nav">
+        <a class="calendar-today-btn" href="<?php echo esc_url( add_query_arg( [ 'month' => $today_month, 'year' => $today_year ], $calendar_base_url ) ); ?>">Today</a>
         <a class="year-nav-link year-prev" href="<?php echo esc_url( add_query_arg( [ 'month' => $month, 'year' => $year - 1 ], $calendar_base_url ) ); ?>" title="<?php esc_attr_e( 'Previous year', 'simple-hotel-crm' ); ?>">‹</a>
         <span class="calendar-year-label"><?php echo esc_html( $year ); ?></span>
         <a class="year-nav-link year-next" href="<?php echo esc_url( add_query_arg( [ 'month' => $month, 'year' => $year + 1 ], $calendar_base_url ) ); ?>" title="<?php esc_attr_e( 'Next year', 'simple-hotel-crm' ); ?>">›</a>
-        <span class="calendar-version-label">v<?php echo esc_html( SIMPLE_HOTEL_CRM_VERSION ); ?></span>
     </div>
     <div class="calendar-month-tabs" role="tablist" aria-label="Calendar months">
         <?php foreach ( $month_tabs as $tab ) : ?>
