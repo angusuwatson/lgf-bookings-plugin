@@ -1620,6 +1620,25 @@ function simple_hotel_crm_import_sync_data_to_crm() {
                 }
 
                 foreach ( $skel_ranges as list( $skel_in, $skel_out ) ) {
+                    // Narrow range to avoid overlapping existing bookings in the same room
+                    $next_check_in = $wpdb->get_var( $wpdb->prepare(
+                        "SELECT b.check_in_date FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_channel = %s AND b.is_deleted = 0 AND b.status_code IN ('confirmed','checked_in') AND b.check_in_date > %s AND b.check_in_date < %s ORDER BY b.check_in_date ASC LIMIT 1",
+                        $crm_room_id, (string) $booking_group['source_channel'], $skel_in, $skel_out
+                    ) );
+                    if ( $next_check_in ) {
+                        $skel_out = (string) $next_check_in;
+                    }
+                    $prev_check_out = $wpdb->get_var( $wpdb->prepare(
+                        "SELECT b.check_out_date FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_channel = %s AND b.is_deleted = 0 AND b.status_code IN ('confirmed','checked_in') AND b.check_out_date > %s AND b.check_out_date < %s ORDER BY b.check_out_date DESC LIMIT 1",
+                        $crm_room_id, (string) $booking_group['source_channel'], $skel_in, $skel_out
+                    ) );
+                    if ( $prev_check_out ) {
+                        $skel_in = (string) $prev_check_out;
+                    }
+                    if ( $skel_in >= $skel_out ) {
+                        continue;
+                    }
+
                     $existing_skel = (int) $wpdb->get_var( $wpdb->prepare(
                         "SELECT id FROM {$crm_bookings_table} WHERE source_channel = %s AND check_in_date = %s AND check_out_date = %s AND internal_notes LIKE %s AND is_deleted = 0 LIMIT 1",
                         (string) $booking_group['source_channel'],
