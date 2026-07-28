@@ -38,8 +38,6 @@
                 return;
             }
 
-            var savedScrollLeft = $('.simple-hotel-crm').scrollLeft() || 0;
-
             request({
                 url: restUrl,
                 method: 'GET',
@@ -48,7 +46,6 @@
                 success: function(response) {
                     if (response && response.html) {
                         $container.replaceWith(response.html);
-                        $('.simple-hotel-crm').scrollLeft(savedScrollLeft);
                         if (pushState) {
                             var newUrl = new URL(window.location.href);
                             newUrl.searchParams.set('month', month);
@@ -360,26 +357,6 @@
             }
         });
 
-        function saveScrollPosition() {
-            var $scroller = $('.simple-hotel-crm');
-            if ($scroller.length) {
-                sessionStorage.setItem('shc_calendar_scroll', $scroller.scrollLeft());
-            }
-        }
-
-        function restoreScrollPosition() {
-            var saved = sessionStorage.getItem('shc_calendar_scroll');
-            if (saved !== null) {
-                var val = parseInt(saved, 10);
-                if (val > 0) {
-                    $('.simple-hotel-crm').scrollLeft(val);
-                }
-                sessionStorage.removeItem('shc_calendar_scroll');
-            }
-        }
-
-        $(window).on('beforeunload', saveScrollPosition);
-
         function scrollToTodayIfVisible() {
             var $container = getContainer();
             if (!$container.length || $container.data('scroll-to-today') !== 1 && $container.data('scroll-to-today') !== '1') return;
@@ -400,7 +377,6 @@
             if (month && year) {
                 window.history.replaceState({ month: month, year: year }, '', window.location.href);
             }
-            restoreScrollPosition();
         })();
 
         // Fullscreen toggle

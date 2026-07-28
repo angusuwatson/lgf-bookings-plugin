@@ -21,6 +21,7 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
         <a class="year-nav-link year-prev" href="<?php echo esc_url( add_query_arg( [ 'month' => $month, 'year' => $year - 1 ], $calendar_base_url ) ); ?>" title="<?php esc_attr_e( 'Previous year', 'simple-hotel-crm' ); ?>">‹</a>
         <span class="calendar-year-label"><?php echo esc_html( $year ); ?></span>
         <a class="year-nav-link year-next" href="<?php echo esc_url( add_query_arg( [ 'month' => $month, 'year' => $year + 1 ], $calendar_base_url ) ); ?>" title="<?php esc_attr_e( 'Next year', 'simple-hotel-crm' ); ?>">›</a>
+        <span class="calendar-version-label">v<?php echo esc_html( SIMPLE_HOTEL_CRM_VERSION ); ?></span>
     </div>
     <div class="calendar-month-tabs" role="tablist" aria-label="Calendar months">
         <?php foreach ( $month_tabs as $tab ) : ?>
@@ -33,8 +34,8 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
             <thead>
                 <tr class="header-row month-row">
                     <th class="label sticky-col room-header-spacer"><span class="calendar-corner-month"><?php echo esc_html( date_i18n( 'F', mktime( 0, 0, 0, $month, 1, $year ) ) ); ?></span></th>
-                    <?php foreach ( $days as $day ) : ?>
-                        <th data-date="<?php echo esc_attr( sprintf( '%04d-%02d-%02d', $year, $month, $day ) ); ?>">
+                    <?php foreach ( $days as $day ) : $date_str = sprintf( '%04d-%02d-%02d', $year, $month, $day ); ?>
+                        <th data-date="<?php echo esc_attr( $date_str ); ?>"<?php echo $date_str === $today ? ' class="is-today-col"' : ''; ?>>
                             <span class="calendar-day-number"><?php echo esc_html( $day ); ?></span>
                         </th>
                     <?php endforeach; ?>
