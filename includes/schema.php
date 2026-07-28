@@ -1644,11 +1644,10 @@ function simple_hotel_crm_import_sync_data_to_crm() {
                     }
 
                     $existing_skel = (int) $wpdb->get_var( $wpdb->prepare(
-                        "SELECT id FROM {$crm_bookings_table} WHERE source_channel = %s AND check_in_date = %s AND check_out_date = %s AND internal_notes LIKE %s AND is_deleted = 0 LIMIT 1",
+                        "SELECT id FROM {$crm_bookings_table} WHERE source_channel = %s AND check_in_date = %s AND check_out_date = %s AND is_deleted = 0 LIMIT 1",
                         (string) $booking_group['source_channel'],
                         $skel_in,
-                        $skel_out,
-                        '%[ICS_SKELETON]%'
+                        $skel_out
                     ) );
                     if ( $existing_skel > 0 ) {
                         continue;
