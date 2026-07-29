@@ -613,7 +613,7 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
 
     $booking = $wpdb->get_row(
         $wpdb->prepare(
-            "SELECT b.id, b.guest_id, b.status_code, b.source_channel, b.contacted_date, b.booking_note, b.internal_notes, g.first_name, g.last_name, g.phone, g.email
+            "SELECT b.id, b.guest_id, b.status_code, b.source_channel, b.contacted_date, b.booking_note, b.internal_notes, b.check_in_date, b.check_out_date, g.first_name, g.last_name, g.phone, g.email
              FROM {$bookings_table} b
              JOIN {$guests_table} g ON g.id = b.guest_id
              WHERE b.id = %d AND b.is_deleted = 0
@@ -636,6 +636,7 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
 
     $booking_rooms = $wpdb->get_results( $wpdb->prepare( "
         SELECT br.id AS booking_room_id, br.legacy_reserved_room_id, r.room_code, r.room_name,
+               br.room_rate_amount, br.extras_amount, br.commission_amount, br.total_amount,
                COALESCE(MAX(brn.adults), 0) AS adults,
                COALESCE(MAX(brn.children), 0) AS children,
                COALESCE(MAX(brn.babies), 0) AS babies
@@ -643,7 +644,7 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
         JOIN " . simple_hotel_crm_rooms_table() . " r ON r.id = br.room_id
         LEFT JOIN " . simple_hotel_crm_booking_room_nights_table() . " brn ON brn.booking_room_id = br.id
         WHERE br.booking_id = %d
-        GROUP BY br.id, br.legacy_reserved_room_id, r.room_code, r.room_name
+        GROUP BY br.id, br.legacy_reserved_room_id, r.room_code, r.room_name, br.room_rate_amount, br.extras_amount, br.commission_amount, br.total_amount
         ORDER BY r.sort_order ASC
     ", $booking_id ), ARRAY_A );
 
@@ -655,6 +656,8 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
         'status_code' => (string) $booking['status_code'],
         'source_channel' => (string) $booking['source_channel'],
         'contacted_date' => (string) $booking['contacted_date'],
+        'check_in_date' => (string) $booking['check_in_date'],
+        'check_out_date' => (string) $booking['check_out_date'],
         'booking_note' => '' !== $room_note ? $room_note : $booking_note_global,
         'booking_note_global' => $booking_note_global,
         'extras_formula' => '',

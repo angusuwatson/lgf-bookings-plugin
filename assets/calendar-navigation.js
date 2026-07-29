@@ -52,6 +52,10 @@
                             newUrl.searchParams.set('year', year);
                             window.history.pushState({ month: month, year: year }, '', newUrl.toString());
                         }
+                        var today = new Date();
+                        if (parseInt(month, 10) === today.getMonth() + 1 && parseInt(year, 10) === today.getFullYear()) {
+                            scrollToTodayIfVisible();
+                        }
                     } else {
                         alert('Failed to load calendar data: empty response.');
                     }
@@ -151,6 +155,12 @@
                     $form.find('[name="adults"]').val(occRoom ? (parseInt(occRoom.adults, 10) || 0) : 0);
                     $form.find('[name="children"]').val(occRoom ? (parseInt(occRoom.children, 10) || 0) : 0);
                     $form.find('[name="babies"]').val(occRoom ? (parseInt(occRoom.babies, 10) || 0) : 0);
+                    $form.data('check-in', response.check_in_date || '');
+                    $form.data('check-out', response.check_out_date || '');
+                    $form.data('source-channel', response.source_channel || '');
+                    $form.data('room-rate', occRoom ? (parseFloat(occRoom.room_rate_amount) || 0) : 0);
+                    $form.data('extras', occRoom ? (parseFloat(occRoom.extras_amount) || 0) : 0);
+                    $form.data('commission', occRoom ? (parseFloat(occRoom.commission_amount) || 0) : 0);
                     $modal.find('.simple-hotel-crm-open-full-booking').attr('href', response.detail_url || '#');
                     $modal.find('.simple-hotel-crm-open-guest').attr('href', response.guest_url || '#');
                     resetTransferArea();
@@ -240,11 +250,7 @@
             var month = url.searchParams.get('month');
             var year = url.searchParams.get('year');
             if (month && year) {
-                var isToday = $(this).hasClass('calendar-today-btn');
                 loadMonth(month, year, true);
-                if (isToday) {
-                    setTimeout(scrollToTodayIfVisible, 100);
-                }
             }
         });
 
@@ -384,6 +390,56 @@
                 window.history.replaceState({ month: month, year: year }, '', window.location.href);
             }
         })();
+
+        // Copy all booking data to clipboard
+        $(document).on('click', '.simple-hotel-crm-copy-all-btn', function() {
+            var $form = $(this).closest('.simple-hotel-crm-quick-booking-form');
+            var guestName = $form.find('[name="guest_name"]').val() || '';
+            var contactedDate = $form.find('[name="contacted_date"]').val() || '';
+            var sourceChannel = $form.data('source-channel') || '';
+            var adults = parseInt($form.find('[name="adults"]').val(), 10) || 0;
+            var children = parseInt($form.find('[name="children"]').val(), 10) || 0;
+            var babies = parseInt($form.find('[name="babies"]').val(), 10) || 0;
+            var roomRate = $form.data('room-rate') || 0;
+            var extras = $form.data('extras') || 0;
+            var commission = $form.data('commission') || 0;
+
+            var channelAbbr = '';
+            if (sourceChannel === 'booking_com') channelAbbr = 'B';
+            else if (sourceChannel === 'direct') channelAbbr = 'D';
+            else if (sourceChannel === 'expedia') channelAbbr = 'E';
+            else channelAbbr = sourceChannel.substring(0, 1).toUpperCase();
+
+            var dateStr = contactedDate || '';
+            if (dateStr) {
+                dateStr = channelAbbr + ' ' + dateStr;
+            }
+
+            var lines = [];
+            lines.push(guestName);
+            lines.push(dateStr);
+            lines.push(adults + 'A ' + children + 'E ' + babies + 'BB');
+            lines.push(parseFloat(extras).toFixed(2).replace('.', ','));
+            lines.push(Math.round(parseFloat(roomRate)));
+            lines.push(parseFloat(commission).toFixed(2).replace('.', ','));
+
+            var text = lines.join('\n');
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function() {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        });
+
+        function fallbackCopy(text) {
+            var $ta = $('<textarea>').val(text).css({ position: 'fixed', left: '-9999px' }).appendTo('body');
+            $ta.select();
+            try { document.execCommand('copy'); } catch(e) {}
+            $ta.remove();
+        }
 
         // Transfer booking toggle
         $(document).on('click', '.simple-hotel-crm-transfer-toggle', function() {

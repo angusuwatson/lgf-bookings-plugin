@@ -244,6 +244,7 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                 </div>
                 <p><label><?php esc_html_e( 'Internal notes', 'simple-hotel-crm' ); ?><br><textarea name="internal_notes" rows="5" class="large-text"></textarea></label></p>
                 <p class="simple-hotel-crm-quick-booking-actions">
+                    <button type="button" class="button simple-hotel-crm-copy-all-btn"><?php esc_html_e( 'Copy all', 'simple-hotel-crm' ); ?></button>
                     <a href="#" class="button simple-hotel-crm-open-full-booking"><?php esc_html_e( 'Open full booking', 'simple-hotel-crm' ); ?></a>
                     <a href="#" class="button simple-hotel-crm-open-guest"><?php esc_html_e( 'Open guest', 'simple-hotel-crm' ); ?></a>
                     <button type="submit" class="button button-primary"><?php esc_html_e( 'Save', 'simple-hotel-crm' ); ?></button>
