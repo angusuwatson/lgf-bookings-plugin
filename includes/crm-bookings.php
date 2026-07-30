@@ -100,6 +100,24 @@ function simple_hotel_crm_get_room_pricing_for_occupancy( $room_id, $occupancy_a
         ARRAY_A
     );
 
+    if ( is_array( $row ) ) {
+        return $row;
+    }
+
+    // No exact match — fall back to next higher occupancy tier
+    $row = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT id, room_id, occupancy_adults, price_amount
+             FROM {$pricing_table}
+             WHERE room_id = %d AND occupancy_adults >= %d AND active = 1
+             ORDER BY occupancy_adults ASC
+             LIMIT 1",
+            $room_id,
+            $occupancy_adults
+        ),
+        ARRAY_A
+    );
+
     return is_array( $row ) ? $row : null;
 }
 

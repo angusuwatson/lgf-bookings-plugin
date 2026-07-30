@@ -1456,7 +1456,12 @@ function simple_hotel_crm_find_booking_merge_candidates() {
         if ( ! empty( $row['internal_notes'] ) && false !== strpos( (string) $row['internal_notes'], '[MERGED_ARCHIVE]' ) ) {
             continue;
         }
-        $key = (string) $row['source_channel'] . '|' . (string) $row['check_in_date'] . '|' . (string) $row['check_out_date'];
+        $guest_name = trim( (string) $row['first_name'] . ' ' . (string) $row['last_name'] );
+        if ( false !== stripos( $guest_name, 'CLOSED' ) && false !== stripos( $guest_name, 'Not available' ) ) {
+            $key = (string) $row['source_channel'] . '|' . (string) $row['check_in_date'] . '|' . (string) $row['check_out_date'] . '|CLOSED';
+        } else {
+            $key = (string) $row['source_channel'] . '|' . (string) $row['check_in_date'] . '|' . (string) $row['check_out_date'] . '|' . $guest_name;
+        }
         $groups[ $key ][] = $row;
     }
 
@@ -2885,8 +2890,10 @@ window.simpleHotelCrmBookingComCommissionPercent = {$booking_com_commission_perc
     var adults=row.querySelector("input[name*='[adults]']");
     var children=row.querySelector("input[name*='[children]']");
     var occupancy=(parseInt(adults&&adults.value||0,10)||0)+(parseInt(children&&children.value||0,10)||0);
-    var base=((window.simpleHotelCrmRoomPricing||{})[room&&room.value]||{})[occupancy]||0;
-    return {base:base, total:base>0?(base*nights):0};
+    var pricing=((window.simpleHotelCrmRoomPricing||{})[room&&room.value]||{});
+    var base=pricing[occupancy];
+    if(!base&&occupancy>0){var o=occupancy;while(o<=20&&!base){o++;base=pricing[o];}}
+    return {base:base||0, total:(base||0)>0?((base||0)*nights):0};
   }
   function upd(forceAuto){
     var form=document.querySelector(".wrap form");if(!form)return;
@@ -3462,8 +3469,10 @@ function rateSource(box, nights){
     var adults=box.querySelector("input[name*='[adults]']");
     var children=box.querySelector("input[name*='[children]']");
     var occupancy=(parseInt(adults&&adults.value||0,10)||0)+(parseInt(children&&children.value||0,10)||0);
-    var base=((window.simpleHotelCrmRoomPricing||{})[room&&room.value]||{})[occupancy]||0;
-    return {base:base,total:base>0?(base*nights):0};
+    var pricing=((window.simpleHotelCrmRoomPricing||{})[room&&room.value]||{});
+    var base=pricing[occupancy];
+    if(!base&&occupancy>0){var o=occupancy;while(o<=20&&!base){o++;base=pricing[o];}}
+    return {base:base||0,total:(base||0)>0?((base||0)*nights):0};
 }
 function upd(forceAuto){
     window.shcUpd=upd;

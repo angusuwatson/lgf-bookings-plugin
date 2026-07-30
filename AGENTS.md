@@ -1,7 +1,7 @@
 ## Version Bumping
 
 When bumping the version number, update ALL 3 places:
-1. `simple-hotel-crm.php` — the `Version:` header
+1. `simple-hotel-crm.php` — the `Version:` header (the `SIMPLE_HOTEL_CRM_VERSION` constant reads this automatically)
 2. `update.json` — the `"version"` field
 3. `update.json` — the changelog section
 
