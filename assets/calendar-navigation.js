@@ -138,6 +138,7 @@
                     $form.find('[name="guest_name"]').val(response.guest_name || '');
                     $form.find('[name="phone"]').val(response.phone || '');
                     $form.find('[name="email"]').val(response.email || '');
+                    $form.find('[name="country"]').val(response.country || '');
                     $form.find('[name="contacted_date"]').val(response.contacted_date || '');
                     $form.find('[name="internal_notes"]').val(response.internal_notes || '');
                     $form.find('[name="status_code"]').val(response.status_code || '');
@@ -395,6 +396,7 @@
         $(document).on('click', '.simple-hotel-crm-copy-all-btn', function() {
             var $form = $(this).closest('.simple-hotel-crm-quick-booking-form');
             var guestName = $form.find('[name="guest_name"]').val() || '';
+            var country = $form.find('[name="country"]').val() || '';
             var contactedDate = $form.find('[name="contacted_date"]').val() || '';
             var sourceChannel = $form.data('source-channel') || '';
             var adults = parseInt($form.find('[name="adults"]').val(), 10) || 0;
@@ -410,18 +412,18 @@
             else if (sourceChannel === 'expedia') channelAbbr = 'E';
             else channelAbbr = sourceChannel.substring(0, 1).toUpperCase();
 
-            var dateStr = contactedDate || '';
-            if (dateStr) {
-                dateStr = channelAbbr + ' ' + dateStr;
+            var dateStr = '';
+            if (contactedDate) {
+                dateStr = channelAbbr + ' ' + contactedDate;
             }
 
             var lines = [];
-            lines.push(guestName);
+            lines.push(guestName + (country ? ' (' + country.toUpperCase() + ')' : ''));
             lines.push(dateStr);
             lines.push(adults + 'A ' + children + 'E ' + babies + 'BB');
-            lines.push(parseFloat(extras).toFixed(2).replace('.', ','));
-            lines.push(Math.round(parseFloat(roomRate)));
-            lines.push(parseFloat(commission).toFixed(2).replace('.', ','));
+            lines.push(extras > 0 ? parseFloat(extras).toFixed(2).replace('.', ',') : '');
+            lines.push(roomRate > 0 ? Math.round(parseFloat(roomRate)) : '');
+            lines.push(commission > 0 ? parseFloat(commission).toFixed(2).replace('.', ',') : '');
 
             var text = lines.join('\n');
 

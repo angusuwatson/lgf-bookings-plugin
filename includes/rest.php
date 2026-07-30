@@ -613,7 +613,7 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
 
     $booking = $wpdb->get_row(
         $wpdb->prepare(
-            "SELECT b.id, b.guest_id, b.status_code, b.source_channel, b.contacted_date, b.booking_note, b.internal_notes, b.check_in_date, b.check_out_date, g.first_name, g.last_name, g.phone, g.email
+             "SELECT b.id, b.guest_id, b.status_code, b.source_channel, b.contacted_date, b.booking_note, b.internal_notes, b.check_in_date, b.check_out_date, g.first_name, g.last_name, g.phone, g.email, g.country
              FROM {$bookings_table} b
              JOIN {$guests_table} g ON g.id = b.guest_id
              WHERE b.id = %d AND b.is_deleted = 0
@@ -653,6 +653,7 @@ function simple_hotel_crm_rest_get_quick_booking( WP_REST_Request $request ) {
         'guest_name' => trim( (string) $booking['first_name'] . ' ' . (string) $booking['last_name'] ),
         'phone' => (string) $booking['phone'],
         'email' => (string) $booking['email'],
+        'country' => (string) $booking['country'],
         'status_code' => (string) $booking['status_code'],
         'source_channel' => (string) $booking['source_channel'],
         'contacted_date' => (string) $booking['contacted_date'],
