@@ -1644,7 +1644,8 @@ function simple_hotel_crm_import_sync_data_to_crm() {
                     }
 
                     $existing_skel = (int) $wpdb->get_var( $wpdb->prepare(
-                        "SELECT id FROM {$crm_bookings_table} WHERE source_channel = %s AND check_in_date = %s AND check_out_date = %s AND is_deleted = 0 LIMIT 1",
+                        "SELECT b.id FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_channel = %s AND b.check_in_date = %s AND b.check_out_date = %s AND b.is_deleted = 0 LIMIT 1",
+                        $crm_room_id,
                         (string) $booking_group['source_channel'],
                         $skel_in,
                         $skel_out
