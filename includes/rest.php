@@ -882,6 +882,7 @@ function simple_hotel_crm_rest_save_quick_booking( WP_REST_Request $request ) {
     }
 
     simple_hotel_crm_clear_calendar_cache();
+    simple_hotel_crm_ics_export_on_booking_change( $booking_id );
 
     return rest_ensure_response( [ 'success' => true ] );
 }

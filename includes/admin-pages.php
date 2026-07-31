@@ -556,6 +556,9 @@ function simple_hotel_crm_render_bookings_page() {
             $deleted = false !== $wpdb->update( $bookings_table, [ 'is_deleted' => 1, 'deleted_at' => current_time( 'mysql' ) ], [ 'id' => absint( $_GET['delete_booking'] ) ], [ '%d', '%s' ], [ '%d' ] );
             echo '<div class="notice ' . esc_attr( $deleted ? 'notice-success' : 'notice-error' ) . '"><p>' . esc_html( $deleted ? __( 'Booking moved to trash.', 'simple-hotel-crm' ) : __( 'Booking could not be deleted.', 'simple-hotel-crm' ) ) . '</p></div>';
             simple_hotel_crm_clear_calendar_cache();
+            if ( $deleted ) {
+                simple_hotel_crm_ics_export_on_booking_change( absint( $_GET['delete_booking'] ) );
+            }
         }
     }
 
