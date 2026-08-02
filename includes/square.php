@@ -208,6 +208,10 @@ function simple_hotel_crm_square_handle_payment_complete( $booking_id, $checkout
     global $wpdb;
     $bookings_table = simple_hotel_crm_bookings_table();
 
+    if ( get_post_meta( $booking_id, '_square_completed_checkout_id', true ) === $checkout_id ) {
+        return true;
+    }
+
     if ( empty( $payment_id ) ) {
         $details = simple_hotel_crm_square_api_request( 'GET', '/v2/terminals/checkouts/' . $checkout_id );
         if ( ! is_wp_error( $details ) && isset( $details['checkout']['payment_ids'][0] ) ) {
@@ -224,6 +228,7 @@ function simple_hotel_crm_square_handle_payment_complete( $booking_id, $checkout
     );
 
     update_post_meta( $booking_id, '_square_checkout_status', 'completed' );
+    update_post_meta( $booking_id, '_square_completed_checkout_id', $checkout_id );
     if ( ! empty( $payment_id ) ) {
         update_post_meta( $booking_id, '_square_payment_id', $payment_id );
     }

@@ -130,8 +130,35 @@ function simple_hotel_crm_create_invoice_ninja_invoice( $booking_id ) {
     if ( empty( $booking ) ) {
         return new WP_Error( 'booking_not_found', 'Booking not found.' );
     }
-    if ( ! empty( $booking['invoice_ninja_invoice_id'] ) ) {
+    if ( ! empty( $booking['invoice_ninja_invoice_id'] ) && '__creating__' !== $booking['invoice_ninja_invoice_id'] ) {
         return new WP_Error( 'already_invoiced', 'This booking already has an Invoice Ninja invoice.' );
+    }
+    if ( ! empty( $booking['is_deleted'] ) ) {
+        return new WP_Error( 'booking_deleted', 'This booking is deleted and cannot be invoiced.' );
+    }
+    if ( ! in_array( (string) $booking['status_code'], [ 'confirmed', 'checked_in', 'checked_out' ], true ) ) {
+        return new WP_Error( 'booking_not_invoiceable', 'Only confirmed, checked-in, or checked-out bookings can be invoiced.' );
+    }
+    if ( '__creating__' === $booking['invoice_ninja_invoice_id'] ) {
+        return new WP_Error( 'invoice_already_pending', 'An invoice is already being created for this booking.' );
+    }
+    $release_claim = function() use ( $wpdb, $bookings_table, $booking_id ) {
+        $wpdb->query( $wpdb->prepare( "UPDATE {$bookings_table} SET invoice_ninja_invoice_id = NULL WHERE id = %d AND invoice_ninja_invoice_id = '__creating__'", $booking_id ) );
+    };
+    // Atomically claim the booking so concurrent requests cannot both create an invoice.
+    $claimed = $wpdb->query( $wpdb->prepare(
+        "UPDATE {$bookings_table} SET invoice_ninja_invoice_id = '__creating__' WHERE id = %d AND ( invoice_ninja_invoice_id IS NULL OR invoice_ninja_invoice_id = '' )",
+        $booking_id
+    ) );
+    if ( false === $claimed ) {
+        return new WP_Error( 'invoice_claim_failed', 'Could not claim booking for invoicing.' );
+    }
+    if ( 0 === $claimed ) {
+        $existing = (string) $wpdb->get_var( $wpdb->prepare( "SELECT invoice_ninja_invoice_id FROM {$bookings_table} WHERE id = %d", $booking_id ) );
+        if ( '' !== $existing && '__creating__' !== $existing ) {
+            return new WP_Error( 'already_invoiced', 'This booking already has an Invoice Ninja invoice.' );
+        }
+        return new WP_Error( 'invoice_already_pending', 'An invoice is already being created for this booking.' );
     }
     $guest = [
         'id' => $booking['guest_id'],
@@ -143,6 +170,7 @@ function simple_hotel_crm_create_invoice_ninja_invoice( $booking_id ) {
     ];
     $client_id = simple_hotel_crm_find_or_create_invoice_ninja_client( $guest );
     if ( is_wp_error( $client_id ) ) {
+        $release_claim();
         return $client_id;
     }
     $booking_rooms = $wpdb->get_results( $wpdb->prepare( "SELECT br.*, r.room_name, r.room_code FROM {$booking_rooms_table} br LEFT JOIN {$rooms_table} r ON r.id = br.room_id WHERE br.booking_id = %d ORDER BY br.id ASC", $booking_id ), ARRAY_A );
@@ -159,6 +187,7 @@ function simple_hotel_crm_create_invoice_ninja_invoice( $booking_id ) {
         }
     }
     if ( ! empty( $missing_products ) ) {
+        $release_claim();
         return new WP_Error(
             'missing_products',
             'The following Invoice Ninja products do not exist yet: ' . implode( ', ', $missing_products ) . '. Please create them in Invoice Ninja first, then try again.'
@@ -233,6 +262,7 @@ function simple_hotel_crm_create_invoice_ninja_invoice( $booking_id ) {
         }
     }
     if ( empty( $line_items ) ) {
+        $release_claim();
         return new WP_Error( 'empty_invoice', 'No invoiceable line items found for this booking.' );
     }
     $total_amount = 0;
@@ -262,14 +292,16 @@ function simple_hotel_crm_create_invoice_ninja_invoice( $booking_id ) {
     }
     $result = simple_hotel_crm_invoice_ninja_api_request( 'POST', 'invoices', $payload );
     if ( is_wp_error( $result ) ) {
+        $release_claim();
         return $result;
     }
     $invoice_id = (string) ( $result['data']['id'] ?? '' );
     if ( '' === $invoice_id ) {
+        $release_claim();
         return new WP_Error( 'invoice_ninja_no_invoice_id', 'Invoice was created but no ID was returned.' );
     }
     $invoice_status = (string) ( $result['data']['status_id'] ?? '' );
-    $wpdb->update(
+    $stored = $wpdb->update(
         $bookings_table,
         [
             'invoice_ninja_client_id' => $client_id,
@@ -281,6 +313,9 @@ function simple_hotel_crm_create_invoice_ninja_invoice( $booking_id ) {
         [ '%s', '%s', '%s', '%s' ],
         [ '%d' ]
     );
+    if ( false === $stored ) {
+        error_log( 'LGF: invoice ' . $invoice_id . ' created for booking ' . $booking_id . ' but could not be saved to the booking.' );
+    }
     return [
         'success' => true,
         'invoice_id' => $invoice_id,
@@ -295,7 +330,7 @@ function simple_hotel_crm_sync_past_bookings_to_invoice_ninja() {
     $results = [];
     $bookings = $wpdb->get_results(
         $wpdb->prepare(
-            "SELECT id FROM {$bookings_table} WHERE is_deleted = 0 AND invoice_ninja_invoice_id IS NULL AND status_code IN ( 'checked_in', 'checked_out', 'confirmed' ) ORDER BY check_in_date ASC"
+            "SELECT id FROM {$bookings_table} WHERE is_deleted = 0 AND ( invoice_ninja_invoice_id IS NULL OR invoice_ninja_invoice_id = '' ) AND status_code IN ( 'checked_in', 'checked_out', 'confirmed' ) ORDER BY check_in_date ASC"
         ),
         ARRAY_A
     );
