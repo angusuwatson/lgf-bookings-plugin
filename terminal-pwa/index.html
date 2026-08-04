@@ -826,7 +826,7 @@ function closeHm(){
 function apiGet(path){
     var key=getAuth();
     var sep=path.indexOf('?')===-1?'?':'&';
-    return fetch(REST_BASE+path+sep+'api_key='+encodeURIComponent(key),{
+    return fetch(REST_BASE+path+sep+'_='+Date.now()+'&api_key='+encodeURIComponent(key),{
         headers:{},
     }).then(function(r){
         if(r.status===401){removeAuth();showLogin('Session expired. Please sign in again.');throw new Error('unauthorized');}

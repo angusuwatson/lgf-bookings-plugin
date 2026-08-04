@@ -1,7 +1,8 @@
-var CACHE = 'lgf-terminal-v2';
+var CACHE = 'lgf-terminal-v3';
 var SHELL = ['/manifest.json', '/icon-152.png', '/icon-167.png', '/icon-180.png', '/icon-512.png'];
 
 self.addEventListener('install', function(e) {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE).then(function(cache) {
       return cache.addAll(SHELL);
@@ -17,6 +18,8 @@ self.addEventListener('activate', function(e) {
           if (k !== CACHE) return caches.delete(k);
         })
       );
+    }).then(function() {
+      return self.clients.claim();
     })
   );
 });
@@ -24,6 +27,7 @@ self.addEventListener('activate', function(e) {
 self.addEventListener('fetch', function(e) {
   var url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
+  if (url.pathname.indexOf('/wp-json/') >= 0) return;
   if (url.pathname === '/' || url.pathname === '/index.html') {
     e.respondWith(
       fetch(e.request).catch(function() {
