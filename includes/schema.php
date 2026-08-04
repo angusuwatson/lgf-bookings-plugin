@@ -1526,7 +1526,7 @@ function simple_hotel_crm_import_sync_data_to_crm() {
 
         $booking = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT b.* FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_channel = %s AND b.is_deleted = 0 AND (b.source_booking_id = %s OR b.source_booking_id = %s) AND b.check_in_date < %s AND b.check_out_date > %s AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL) LIMIT 1",
+                "SELECT b.* FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_channel = %s AND b.is_deleted = 0 AND (b.source_booking_id = %s OR b.source_booking_id = %s) AND b.check_in_date < %s AND b.check_out_date > %s AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL) ORDER BY (b.internal_notes LIKE '%[ICS_SKELETON]%') ASC, b.id ASC LIMIT 1",
                 $crm_room_id,
                 (string) $booking_group['source_channel'],
                 (string) ( $booking_group['source_booking_id'] ?: '' ),
@@ -1547,6 +1547,7 @@ function simple_hotel_crm_import_sync_data_to_crm() {
                        AND b.check_in_date < %s
                        AND b.check_out_date > %s
                        AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL)
+                     ORDER BY (b.internal_notes LIKE '%[ICS_SKELETON]%') ASC, b.id ASC
                      LIMIT 1",
                     $crm_room_id,
                     (string) $booking_group['source_channel'],
@@ -1644,11 +1645,11 @@ function simple_hotel_crm_import_sync_data_to_crm() {
                     }
 
                     $existing_skel = (int) $wpdb->get_var( $wpdb->prepare(
-                        "SELECT b.id FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_channel = %s AND b.check_in_date = %s AND b.check_out_date = %s AND b.is_deleted = 0 LIMIT 1",
+                        "SELECT b.id FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_channel = %s AND b.is_deleted = 0 AND b.check_in_date < %s AND b.check_out_date > %s LIMIT 1",
                         $crm_room_id,
                         (string) $booking_group['source_channel'],
-                        $skel_in,
-                        $skel_out
+                        $skel_out,
+                        $skel_in
                     ) );
                     if ( $existing_skel > 0 ) {
                         continue;
@@ -1881,6 +1882,53 @@ function simple_hotel_crm_import_sync_data_to_crm() {
 
         $wpdb->query( 'COMMIT' );
     }
+
+    simple_hotel_crm_cleanup_overlapping_ics_skeletons();
+}
+
+/**
+ * Remove [ICS_SKELETON] bookings that are fully covered by another non-deleted
+ * booking in the same room (duplicates accumulated by earlier sync bugs).
+ */
+function simple_hotel_crm_cleanup_overlapping_ics_skeletons() {
+    global $wpdb;
+
+    $bookings_table = simple_hotel_crm_bookings_table();
+    $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
+    $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
+
+    $ids = $wpdb->get_col( $wpdb->prepare(
+        "SELECT b.id FROM {$bookings_table} b
+         INNER JOIN {$booking_rooms_table} br ON br.booking_id = b.id
+         WHERE b.internal_notes LIKE '%[ICS_SKELETON]%'
+           AND b.adults = 0 AND b.children = 0 AND b.babies = 0
+           AND b.room_rate_amount = 0 AND b.extras_amount = 0 AND b.tourist_tax_amount = 0 AND b.total_amount = 0
+           AND b.booking_note = ''
+           AND EXISTS (
+               SELECT 1 FROM {$booking_rooms_table} br2
+               INNER JOIN {$bookings_table} b2 ON b2.id = br2.booking_id
+               WHERE br2.room_id = br.room_id
+                 AND b2.id <> b.id
+                 AND b2.is_deleted = 0
+                 AND b2.check_in_date <= b.check_in_date
+                 AND b2.check_out_date >= b.check_out_date
+           )"
+    ) );
+
+    if ( empty( $ids ) ) {
+        return;
+    }
+
+    $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+    $room_ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$booking_rooms_table} WHERE booking_id IN ({$placeholders})", $ids ) );
+
+    if ( ! empty( $room_ids ) ) {
+        $room_placeholders = implode( ',', array_fill( 0, count( $room_ids ), '%d' ) );
+        $wpdb->query( $wpdb->prepare( "DELETE FROM {$booking_nights_table} WHERE booking_room_id IN ({$room_placeholders})", $room_ids ) );
+    }
+
+    $wpdb->query( $wpdb->prepare( "DELETE FROM {$booking_rooms_table} WHERE booking_id IN ({$placeholders})", $ids ) );
+    $wpdb->query( $wpdb->prepare( "DELETE FROM {$bookings_table} WHERE id IN ({$placeholders})", $ids ) );
 }
 
 function simple_hotel_crm_maybe_migrate_sync_data_to_crm() {
