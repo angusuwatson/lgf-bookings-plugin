@@ -767,7 +767,7 @@ function simple_hotel_crm_debug_ics_feeds() {
 
     $bookings = $wpdb->get_results(
         $wpdb->prepare(
-            "SELECT b.id, b.source_booking_id, b.external_booking_id, b.source_channel,
+            "SELECT b.id, b.source_booking_id, b.source_channel,
                     b.check_in_date, b.check_out_date, b.status_code, b.internal_notes,
                     b.adults, b.total_amount, b.guest_id
              FROM {$bookings_table} b
@@ -784,7 +784,6 @@ function simple_hotel_crm_debug_ics_feeds() {
         $result['crm_bookings'][] = [
             'id'                => (int) $bk['id'],
             'source_booking_id' => $bk['source_booking_id'],
-            'external_booking_id' => $bk['external_booking_id'],
             'check_in_date'     => $bk['check_in_date'],
             'check_out_date'    => $bk['check_out_date'],
             'status_code'       => $bk['status_code'],
@@ -810,7 +809,7 @@ function simple_hotel_crm_find_duplicate_bookings( $source_channel = 'booking_co
     $duplicates = [];
 
     $bookings = $wpdb->get_results( $wpdb->prepare(
-        "SELECT b.id, b.source_booking_id, b.external_booking_id, b.source_channel,
+        "SELECT b.id, b.source_booking_id, b.source_channel,
                 b.check_in_date, b.check_out_date, b.status_code, b.adults,
                 b.total_amount, b.guest_id, b.internal_notes, b.is_deleted
          FROM {$bookings_table} b

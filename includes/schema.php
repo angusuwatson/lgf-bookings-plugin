@@ -1884,6 +1884,7 @@ function simple_hotel_crm_import_sync_data_to_crm() {
     }
 
     simple_hotel_crm_cleanup_overlapping_ics_skeletons();
+    simple_hotel_crm_cleanup_orphan_room_ics_skeletons();
 }
 
 /**
@@ -1929,6 +1930,50 @@ function simple_hotel_crm_cleanup_overlapping_ics_skeletons() {
 
     $wpdb->query( $wpdb->prepare( "DELETE FROM {$booking_rooms_table} WHERE booking_id IN ({$placeholders})", $ids ) );
     $wpdb->query( $wpdb->prepare( "DELETE FROM {$bookings_table} WHERE id IN ({$placeholders})", $ids ) );
+}
+
+/**
+ * Remove [ICS_SKELETON] bookings whose booking_rooms.room_id does not resolve to
+ * an existing room. These are calendar-invisible leftovers from earlier sync bugs
+ * (room renumbering, Booking.com regenerating closure UIDs): they render as "room 0"
+ * in the booking list but are never reachable by the calendar. Any still-current
+ * closure is recreated in the correct room on the next import, so deleting is safe.
+ *
+ * @return int Number of orphaned skeleton bookings removed.
+ */
+function simple_hotel_crm_cleanup_orphan_room_ics_skeletons() {
+    global $wpdb;
+
+    $bookings_table      = simple_hotel_crm_bookings_table();
+    $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
+    $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
+    $rooms_table         = simple_hotel_crm_rooms_table();
+
+    $ids = $wpdb->get_col(
+        "SELECT b.id FROM {$bookings_table} b
+         INNER JOIN {$booking_rooms_table} br ON br.booking_id = b.id
+         LEFT JOIN {$rooms_table} r ON r.id = br.room_id
+         WHERE b.is_deleted = 0
+           AND b.internal_notes LIKE '%[ICS_SKELETON]%'
+           AND (br.room_id IS NULL OR br.room_id <= 0 OR r.id IS NULL)"
+    );
+
+    if ( empty( $ids ) ) {
+        return 0;
+    }
+
+    $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+    $room_ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$booking_rooms_table} WHERE booking_id IN ({$placeholders})", $ids ) );
+
+    if ( ! empty( $room_ids ) ) {
+        $room_placeholders = implode( ',', array_fill( 0, count( $room_ids ), '%d' ) );
+        $wpdb->query( $wpdb->prepare( "DELETE FROM {$booking_nights_table} WHERE booking_room_id IN ({$room_placeholders})", $room_ids ) );
+    }
+
+    $wpdb->query( $wpdb->prepare( "DELETE FROM {$booking_rooms_table} WHERE booking_id IN ({$placeholders})", $ids ) );
+    $wpdb->query( $wpdb->prepare( "DELETE FROM {$bookings_table} WHERE id IN ({$placeholders})", $ids ) );
+
+    return count( $ids );
 }
 
 function simple_hotel_crm_maybe_migrate_sync_data_to_crm() {
