@@ -193,7 +193,7 @@ function simple_hotel_crm_import_motopress_bookings() {
     $bookings_table = simple_hotel_crm_bookings_table();
     $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
 
-    $stats = [ 'fetched' => 0, 'imported' => 0, 'skipped' => 0, 'cancelled' => 0, 'errors' => [] ];
+    $stats = [ 'fetched' => 0, 'imported' => 0, 'skipped' => 0, 'cancelled' => 0, 'restored' => 0, 'errors' => [] ];
     $analysis_skipped = 0;
 
     // ── Phase 1: Fetch all bookings from MotoPress REST API ──
@@ -234,6 +234,7 @@ function simple_hotel_crm_import_motopress_bookings() {
     $imported_external_ids = [];
     $raw_by_external_id = [];
     $orphan_ids_for_retry = [];
+    $status_changed = false;
 
     foreach ( $all_bookings as $raw_booking ) {
         $external_id = (string) ( $raw_booking['id'] ?? '' );
@@ -245,11 +246,18 @@ function simple_hotel_crm_import_motopress_bookings() {
         // Check if already imported
         $existing = $wpdb->get_row( $wpdb->prepare( "SELECT id, status_code FROM {$bookings_table} WHERE source_booking_id = %s AND (internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR internal_notes IS NULL) LIMIT 1", $external_id ), ARRAY_A );
         if ( $existing ) {
-            // If MotoPress says cancelled and CRM isn't, update CRM
+            // Mirror MotoPress status into the CRM (two-way sync):
+            // - MotoPress cancelled and CRM isn't -> cancel the CRM booking
+            // - MotoPress confirmed and CRM is cancelled -> restore the CRM booking
             $mp_status = strtolower( (string) ( $raw_booking['status'] ?? $raw_booking['status_code'] ?? '' ) );
             if ( 'cancelled' === $mp_status && 'cancelled' !== $existing['status_code'] ) {
                 $wpdb->update( $bookings_table, [ 'status_code' => 'cancelled' ], [ 'id' => $existing['id'] ] );
                 $stats['cancelled']++;
+                $status_changed = true;
+            } elseif ( 'confirmed' === $mp_status && 'cancelled' === $existing['status_code'] ) {
+                $wpdb->update( $bookings_table, [ 'status_code' => 'confirmed' ], [ 'id' => $existing['id'] ] );
+                $stats['restored']++;
+                $status_changed = true;
             }
             // Check for orphaned header (booking created but room import failed)
             $has_rooms = (int) $wpdb->get_var( $wpdb->prepare(
@@ -274,6 +282,10 @@ function simple_hotel_crm_import_motopress_bookings() {
         } else {
             $analysis_skipped++;
         }
+    }
+
+    if ( $status_changed ) {
+        simple_hotel_crm_clear_calendar_cache();
     }
 
     if ( empty( $new_booking_rows ) && empty( $orphan_ids_for_retry ) ) {
@@ -409,8 +421,8 @@ function simple_hotel_crm_motopress_cron_sync() {
         $output[] = 'MotoPress error: ' . $moto_result->get_error_message();
     } elseif ( is_array( $moto_result ) ) {
         $retry = $moto_result['retry_rooms'] ?? 0;
-        $output[] = sprintf( 'MotoPress: fetched=%d imported=%d skipped=%d cancelled=%d retry_rooms=%d',
-            $moto_result['fetched'], $moto_result['imported'], $moto_result['skipped'], $moto_result['cancelled'] ?? 0, $retry );
+        $output[] = sprintf( 'MotoPress: fetched=%d imported=%d skipped=%d cancelled=%d restored=%d retry_rooms=%d',
+            $moto_result['fetched'], $moto_result['imported'], $moto_result['skipped'], $moto_result['cancelled'] ?? 0, $moto_result['restored'] ?? 0, $retry );
     }
     $summary = implode( ' | ', $output );
     $log_errors = [];
