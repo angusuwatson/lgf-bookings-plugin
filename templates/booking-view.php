@@ -218,7 +218,7 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
             <form class="simple-hotel-crm-quick-booking-form">
                 <input type="hidden" name="booking_id" value="" />
                 <input type="hidden" name="reserved_room_id" value="" />
-                <div class="simple-hotel-crm-form-grid simple-hotel-crm-form-grid-2">
+                <div class="simple-hotel-crm-form-grid simple-hotel-crm-form-grid-3">
                     <p><label><?php esc_html_e( 'Guest name', 'simple-hotel-crm' ); ?><span class="simple-hotel-crm-copy-field"><input type="text" name="guest_name" class="regular-text" /><button type="button" class="button button-small simple-hotel-crm-copy-button" data-copy-target="guest_name"><?php esc_html_e( 'Copy', 'simple-hotel-crm' ); ?></button></span></label></p>
                     <p><label><?php esc_html_e( 'Phone', 'simple-hotel-crm' ); ?><span class="simple-hotel-crm-copy-field"><input type="text" name="phone" class="regular-text" /><button type="button" class="button button-small simple-hotel-crm-copy-button" data-copy-target="phone"><?php esc_html_e( 'Copy', 'simple-hotel-crm' ); ?></button></span></label></p>
                     <p><label><?php esc_html_e( 'Email', 'simple-hotel-crm' ); ?><span class="simple-hotel-crm-copy-field"><input type="email" name="email" class="regular-text" /><button type="button" class="button button-small simple-hotel-crm-copy-button" data-copy-target="email"><?php esc_html_e( 'Copy', 'simple-hotel-crm' ); ?></button></span></label></p>
@@ -243,7 +243,7 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
                         <button type="button" class="button button-primary simple-hotel-crm-transfer-execute"><?php esc_html_e( 'Confirm transfer', 'simple-hotel-crm' ); ?></button>
                     </div>
                 </div>
-                <p><label><?php esc_html_e( 'Internal notes', 'simple-hotel-crm' ); ?><br><textarea name="internal_notes" rows="5" class="large-text"></textarea></label></p>
+                <p><label><?php esc_html_e( 'Internal notes', 'simple-hotel-crm' ); ?><br><textarea name="internal_notes" rows="3" class="large-text"></textarea></label></p>
                 <p class="simple-hotel-crm-quick-booking-actions">
                     <button type="button" class="button simple-hotel-crm-copy-all-btn"><?php esc_html_e( 'Copy all', 'simple-hotel-crm' ); ?></button>
                     <a href="#" class="button simple-hotel-crm-open-full-booking"><?php esc_html_e( 'Open full booking', 'simple-hotel-crm' ); ?></a>
