@@ -204,7 +204,7 @@ function simple_hotel_crm_square_cancel_checkout( $checkout_id ) {
     return simple_hotel_crm_square_api_request( 'POST', '/v2/terminals/checkouts/' . $checkout_id . '/cancel' );
 }
 
-function simple_hotel_crm_square_handle_payment_complete( $booking_id, $checkout_id, $payment_id = '' ) {
+function simple_hotel_crm_square_handle_payment_complete( $booking_id, $checkout_id, $payment_id = '', $skip_invoice = false ) {
     global $wpdb;
     $bookings_table = simple_hotel_crm_bookings_table();
 
@@ -233,9 +233,11 @@ function simple_hotel_crm_square_handle_payment_complete( $booking_id, $checkout
         update_post_meta( $booking_id, '_square_payment_id', $payment_id );
     }
 
-    $invoice = simple_hotel_crm_create_invoice_ninja_invoice( $booking_id );
-    if ( is_wp_error( $invoice ) ) {
-        return $invoice;
+    if ( ! $skip_invoice ) {
+        $invoice = simple_hotel_crm_create_invoice_ninja_invoice( $booking_id );
+        if ( is_wp_error( $invoice ) ) {
+            return $invoice;
+        }
     }
 
     return true;
