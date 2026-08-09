@@ -1091,7 +1091,7 @@ function renderDashboard(){
     if(state.bookings.length===0){
         guestList.appendChild(el('div',{className:'dash-empty'},['No bookings today.']));
     }else{
-        state.bookings.forEach(function(b){
+        state.bookings.slice().sort(compareBookings).forEach(function(b){
             var sl=statusLabel(b);
             var rooms=state.roomsByBooking[b.id]||[];
             var roomLabels=rooms.map(function(r){return r.room_code;}).join(', ');
@@ -1339,6 +1339,20 @@ function render(){
 }
 
 /* ---- Bookings ---- */
+function bookingGroup(b){
+    if(b.check_in_date===state.date) return 0;      // check-in today
+    if(b.check_out_date===state.date) return 1;     // check-out today
+    return 2;                                       // stay over
+}
+function bookingRoomKey(b){
+    var codes=(state.roomsByBooking[b.id]||[]).map(function(r){return r.room_code;}).sort();
+    return codes.join(', ');
+}
+function compareBookings(a,b){
+    var ga=bookingGroup(a),gb=bookingGroup(b);
+    if(ga!==gb) return ga-gb;
+    return bookingRoomKey(a).localeCompare(bookingRoomKey(b));
+}
 function renderBookings(){
     var container=document.getElementById('booking-cards');
     if(state.bookings.length===0){
@@ -1347,7 +1361,8 @@ function renderBookings(){
         return;
     }
     var todayStr=today();
-    var cards=state.bookings.map(function(b){
+    var sorted=state.bookings.slice().sort(compareBookings);
+    var cards=sorted.map(function(b){
         var isActive=parseInt(b.id,10)===state.activeBookingId;
         var rooms=state.roomsByBooking[b.id]||[];
         var roomLabels=rooms.map(function(r){return r.room_code}).join(', ');
