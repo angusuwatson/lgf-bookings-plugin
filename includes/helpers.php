@@ -502,7 +502,7 @@ function simple_hotel_crm_import_booking_com_ics_feeds() {
     $sync_bookings_table = simple_hotel_crm_sync_bookings_table();
     simple_hotel_crm_clear_booking_com_ics_staged_rows();
     $room_urls = simple_hotel_crm_get_booking_com_ics_room_urls();
-    $summary = [ 'feeds' => 0, 'events' => 0, 'staged' => 0, 'skipped' => 0, 'errors' => [], 'seen_uids' => [] ];
+    $summary = [ 'feeds' => 0, 'events' => 0, 'staged' => 0, 'skipped' => 0, 'errors' => [], 'seen_uids' => [], 'fetch_failures' => 0 ];
 
     if ( empty( $room_urls ) ) {
         $summary['errors'][] = __( 'No Booking.com ICS URLs configured.', 'simple-hotel-crm' );
@@ -524,10 +524,12 @@ function simple_hotel_crm_import_booking_com_ics_feeds() {
 
         $response = wp_remote_get( $url, [ 'timeout' => 20 ] );
         if ( is_wp_error( $response ) ) {
+            $summary['fetch_failures']++;
             $summary['errors'][] = sprintf( __( 'ICS fetch failed for %1$s: %2$s', 'simple-hotel-crm' ), $room['room_name'], $response->get_error_message() );
             continue;
         }
         if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
+            $summary['fetch_failures']++;
             $summary['errors'][] = sprintf( __( 'ICS fetch failed for %1$s: HTTP %2$d', 'simple-hotel-crm' ), $room['room_name'], (int) wp_remote_retrieve_response_code( $response ) );
             continue;
         }
@@ -611,7 +613,14 @@ function simple_hotel_crm_import_booking_com_ics_feeds() {
     }
 
     simple_hotel_crm_import_sync_data_to_crm();
-    $summary['cancelled'] = simple_hotel_crm_mark_missing_booking_com_bookings_cancelled( $summary['seen_uids'] );
+    // Only cancel genuinely-removed closures when every feed fetched OK.
+    // If any feed failed (timeout / HTTP error), its events are absent from
+    // seen_uids and we cannot tell "closure removed from Booking.com" from
+    // "feed temporarily broken" — cancelling here would wipe a whole room.
+    $summary['cancelled'] = 0;
+    if ( 0 === (int) $summary['fetch_failures'] ) {
+        $summary['cancelled'] = simple_hotel_crm_mark_missing_booking_com_bookings_cancelled( $summary['seen_uids'] );
+    }
     simple_hotel_crm_clear_calendar_cache();
     return $summary;
 }

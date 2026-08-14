@@ -1536,6 +1536,35 @@ function simple_hotel_crm_import_sync_data_to_crm() {
             ),
             ARRAY_A
         );
+        if ( ! $booking ) {
+            // Adopt a room-less skeleton with the same source ID instead of
+            // creating a duplicate. Such skeletons are invisible to the primary
+            // lookup (it INNER JOINs booking_rooms) so they'd otherwise linger
+            // forever and spawn a fresh room-linked booking on every run.
+            $roomless_booking = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT b.* FROM {$crm_bookings_table} b
+                     WHERE b.source_channel = %s
+                       AND b.is_deleted = 0
+                       AND (b.source_booking_id = %s OR b.source_booking_id = %s)
+                       AND b.check_in_date < %s
+                       AND b.check_out_date > %s
+                       AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL)
+                       AND NOT EXISTS (SELECT 1 FROM {$crm_booking_rooms_table} br WHERE br.booking_id = b.id)
+                     ORDER BY (b.internal_notes LIKE '%[ICS_SKELETON]%') DESC, b.id ASC
+                     LIMIT 1",
+                    (string) $booking_group['source_channel'],
+                    (string) ( $booking_group['source_booking_id'] ?: '' ),
+                    (string) $booking_group['external_booking_id'],
+                    (string) $booking_group['check_out_date'],
+                    (string) $booking_group['check_in_date']
+                ),
+                ARRAY_A
+            );
+            if ( $roomless_booking ) {
+                $booking = $roomless_booking;
+            }
+        }
         if ( ! $booking && 'confirmed' === $booking_group['status_code'] ) {
             $overlap_booking = $wpdb->get_row(
                 $wpdb->prepare(
@@ -1957,6 +1986,30 @@ function simple_hotel_crm_cleanup_orphan_room_ics_skeletons() {
            AND b.internal_notes LIKE '%[ICS_SKELETON]%'
            AND (br.room_id IS NULL OR br.room_id <= 0 OR r.id IS NULL)"
     );
+
+    // Room-less skeletons are invisible to the primary import lookup (it
+    // INNER JOINs booking_rooms), so every feed run would spawn a fresh
+    // room-linked copy while the ghost lingers. Any room-less skeleton whose
+    // source_booking_id is already carried by a room-linked skeleton is a
+    // duplicate ghost — safe to delete. (Unique room-less skeletons are
+    // adopted by the import fallback or cancelled as missing.)
+    $ghost_ids = $wpdb->get_col(
+        "SELECT g.id FROM {$bookings_table} g
+         WHERE g.is_deleted = 0
+           AND g.source_booking_id <> ''
+           AND g.internal_notes LIKE '%[ICS_SKELETON]%'
+           AND NOT EXISTS (SELECT 1 FROM {$booking_rooms_table} gr WHERE gr.booking_id = g.id)
+           AND EXISTS (
+               SELECT 1
+               FROM {$bookings_table} r
+               INNER JOIN {$booking_rooms_table} rr ON rr.booking_id = r.id
+               WHERE r.id <> g.id
+                 AND r.is_deleted = 0
+                 AND r.internal_notes LIKE '%[ICS_SKELETON]%'
+                 AND r.source_booking_id = g.source_booking_id
+           )"
+    );
+    $ids = array_values( array_unique( array_merge( array_map( 'intval', (array) $ids ), array_map( 'intval', (array) $ghost_ids ) ) ) );
 
     if ( empty( $ids ) ) {
         return 0;

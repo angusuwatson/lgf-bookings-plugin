@@ -413,9 +413,10 @@ function simple_hotel_crm_motopress_cron_sync() {
 
     $output = [];
     if ( is_array( $ics_result ) ) {
-        $output[] = sprintf( 'ICS: feeds=%d events=%d staged=%d skipped=%d',
+        $output[] = sprintf( 'ICS: feeds=%d events=%d staged=%d skipped=%d fetch_failures=%d cancelled=%d',
             $ics_result['feeds'] ?? 0, $ics_result['events'] ?? 0,
-            $ics_result['staged'] ?? 0, $ics_result['skipped'] ?? 0 );
+            $ics_result['staged'] ?? 0, $ics_result['skipped'] ?? 0,
+            $ics_result['fetch_failures'] ?? 0, $ics_result['cancelled'] ?? 0 );
     }
     if ( is_wp_error( $moto_result ) ) {
         $output[] = 'MotoPress error: ' . $moto_result->get_error_message();
