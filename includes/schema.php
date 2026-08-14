@@ -1491,7 +1491,7 @@ function simple_hotel_crm_import_sync_data_to_crm() {
         }
 
         $guest_id = $wpdb->get_var( $wpdb->prepare(
-            "SELECT b.guest_id FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_booking_id = %s AND b.source_channel = %s AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL) LIMIT 1",
+            "SELECT b.guest_id FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_booking_id = %s AND b.source_channel = %s AND b.status_code IN ('confirmed', 'checked_in') AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL) LIMIT 1",
             $crm_room_id,
             $source_id,
             $booking_group['source_channel']
