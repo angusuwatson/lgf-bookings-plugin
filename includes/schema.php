@@ -1491,7 +1491,7 @@ function simple_hotel_crm_import_sync_data_to_crm() {
         }
 
         $guest_id = $wpdb->get_var( $wpdb->prepare(
-            "SELECT b.guest_id FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_booking_id = %s AND b.source_channel = %s AND b.status_code IN ('confirmed', 'checked_in') AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL) LIMIT 1",
+            "SELECT b.guest_id FROM {$crm_bookings_table} b INNER JOIN {$crm_booking_rooms_table} br ON br.booking_id = b.id AND br.room_id = %d WHERE b.source_booking_id = %s AND b.source_channel = %s AND b.is_deleted = 0 AND b.status_code IN ('confirmed', 'checked_in') AND (b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%' OR b.internal_notes IS NULL) LIMIT 1",
             $crm_room_id,
             $source_id,
             $booking_group['source_channel']
@@ -1827,6 +1827,17 @@ function simple_hotel_crm_import_sync_data_to_crm() {
             if ( $existing_booking_room_id > 0 ) {
                 continue;
             }
+
+            $wpdb->query( $wpdb->prepare(
+                "UPDATE {$crm_booking_rooms_table} br
+                 INNER JOIN {$crm_bookings_table} b ON b.id = br.booking_id
+                 SET br.legacy_reserved_room_id = NULL
+                 WHERE br.legacy_reserved_room_id = %d
+                   AND br.booking_id <> %d
+                   AND (b.is_deleted = 1 OR b.status_code = 'cancelled')",
+                (int) $room_group['external_booking_room_id'],
+                (int) $booking['id']
+            ) );
 
             $booking_room_inserted = $wpdb->insert(
                 $crm_booking_rooms_table,
