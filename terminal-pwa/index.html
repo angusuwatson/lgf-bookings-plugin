@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
 <title>LGF Dashboard</title>
 <style>
-:root{--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#f1f5f9;--muted:#94a3b8;--accent:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;--hover-bg:rgba(59,130,246,.15);--error-bg:rgba(239,68,68,.15);--success-bg:rgba(34,197,94,.15)}
+:root{--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#f1f5f9;--muted:#94a3b8;--accent:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;--hover-bg:rgba(59,130,246,.15);--error-bg:rgba(239,68,68,.15);--success-bg:rgba(34,197,94,.15);--sep:#111;--note-row-bg:var(--bg);--cal-text-dark:#000;--cal-text-light:#fff;--ch-badge-bg:rgba(0,0,0,.15)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:18px;color:var(--text);background:var(--bg);overflow:hidden;-webkit-tap-highlight-color:transparent}
 #app{display:flex;flex-direction:column;height:100vh}
@@ -100,16 +100,28 @@ input,select{font-family:inherit;font-size:16px}
 .cal-date-col{display:table-cell;padding:3px 4px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:600;color:var(--muted);min-width:100px;vertical-align:middle}
 .cal-cell{display:table-cell;padding:3px 4px;border:1px solid var(--border);text-align:center;font-size:11px;cursor:pointer;vertical-align:middle;transition:background .15s}
 .cal-cell:active{opacity:.7}
-.cal-free{background:transparent;color:#fff}
-.cal-occ-confirmed{background:transparent;color:#64748b}
-.cal-occ-checked_in{background:transparent;color:#000}
-.cal-today{font-weight:700;border-color:var(--accent)!important}
-.cal-guest-name{font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.cal-occ-line{font-size:10px;display:block;color:#000;opacity:.9;text-align:right}
-.cal-bottom-line{display:flex;justify-content:space-between;font-size:10px;color:#000;opacity:.6;align-items:flex-end}
-.cal-price{text-align:right;font-weight:700;color:#000;opacity:.95}
-.cal-extras-price{font-size:9px;opacity:.6;text-align:right}
-.cal-channel{display:inline-block;font-size:9px;font-weight:700;background:rgba(0,0,0,.15);border-radius:3px;padding:0 4px;margin-left:2px;line-height:14px}
+.cal-free{background:transparent;color:var(--cal-text-light)}
+.cal-occ-confirmed{background:transparent;color:var(--cal-text-dark)}
+.cal-occ-checked_in{background:transparent;color:var(--cal-text-dark)}
+.cal-date-col.cal-today{background:var(--accent);color:var(--cal-text-light);font-weight:700;border-color:var(--accent)}
+.cal-guest-name{font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--cal-text-dark)}
+.cal-occ-line{font-size:10px;display:block;color:var(--cal-text-dark);text-align:left}
+.cal-bottom-line{display:flex;justify-content:flex-end;font-size:10px;color:var(--cal-text-dark);align-items:flex-end}
+.cal-price{text-align:right;font-weight:700;color:var(--cal-text-dark)}
+.cal-extras-price{font-size:9px;text-align:right;color:var(--cal-text-dark)}
+.cal-channel{display:inline-block;font-size:9px;font-weight:700;color:var(--cal-text-dark);background:var(--ch-badge-bg);border-radius:3px;padding:0 4px;line-height:14px}
+.cal-subrow-col{font-size:9px;font-weight:600;letter-spacing:.03em;color:var(--cal-text-light)}
+.cal-room-note{font-size:10px;color:var(--cal-text-light)}
+.cal-rownote{background:var(--note-row-bg)}
+.cal-rownote .cal-cell,.cal-rownote .cal-room-col{background:var(--note-row-bg)}
+.cal-rownote .cal-cell{border-bottom:1px solid var(--sep)}
+.cal-rownote .cal-room-col{border-bottom:1px solid var(--sep)}
+.cal-sep-row{height:1px;padding:0;border:none;background:var(--sep);cursor:default;pointer-events:none}
+.cal-left{text-align:left}
+.cal-top{vertical-align:top}
+.cal-contact-line{display:flex;align-items:center;gap:4px;margin:1px 0}
+.cal-contact-date{font-size:10px;color:var(--cal-text-dark)}
+.cal-gap-cell{border:none;background:transparent;padding:2px;cursor:default}
 /* Dashboard */
 .dash-scroll{flex:1;overflow-y:auto;padding:12px;background:var(--card);-webkit-overflow-scrolling:touch}
 .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;margin-bottom:12px}
@@ -230,6 +242,8 @@ input,select{font-family:inherit;font-size:16px}
 .hm-menu .hm-user{display:block;padding:6px 14px;font-size:12px;color:rgba(255,255,255,.5);text-align:center;border-top:1px solid rgba(255,255,255,.1);margin-top:4px}
 .hm-menu .hm-logout{display:block;width:100%;padding:8px 14px;font-size:13px;background:none;border:none;color:#e57373;border-radius:6px;cursor:pointer;text-align:center}
 .hm-menu .hm-logout:active{background:rgba(255,255,255,.1)}
+.hm-theme-label{display:block;padding:6px 14px 2px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.hm-theme{display:block;width:100%;margin:4px 0;padding:8px 14px;font-size:13px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px}
 /* Responsive */
 @media(max-width:768px){
   .main{flex-direction:column}
@@ -318,14 +332,6 @@ input,select{font-family:inherit;font-size:16px}
 .room-selector{padding:6px 10px;display:flex;align-items:center;gap:6px;font-size:13px;border-bottom:1px solid var(--border);background:var(--card)}
 .room-selector select{padding:6px 8px;border-radius:6px;border:1px solid var(--border);font-size:13px;min-height:36px;background:var(--bg);color:var(--text)}
 /* misc */
-.dn-bar{border-bottom:1px solid var(--border);padding:6px 12px;background:var(--card);flex-shrink:0}
-.dn-bar>div:first-child{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.dn-label{font-size:13px;font-weight:700;color:var(--muted)}
-.dn-saved{font-size:11px;color:var(--green);display:none}
-.dash-date{font-size:14px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);min-height:28px}
-.date-nav-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 8px;min-height:28px;line-height:1}
-.date-nav-btn:active{background:var(--hover-bg)}
-#dn-input{width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:var(--bg);color:var(--text)}
 .text-muted{color:var(--muted)}
 .text-sm{font-size:12px}
 .hidden{display:none!important}
@@ -441,6 +447,14 @@ input,select{font-family:inherit;font-size:16px}
       <button class="view-btn" data-view="maint" id="hm-view-maint">🔧 Maintenance</button>
       <hr style="border:none;border-top:1px solid var(--border);margin:6px 0">
       <button class="view-btn" id="hm-view-refresh" style="color:var(--muted)">↻ Refresh</button>
+      <hr style="border:none;border-top:1px solid var(--border);margin:6px 0">
+      <label class="hm-theme-label">Theme</label>
+      <select id="theme-select" class="hm-theme">
+        <option value="default">Current</option>
+        <option value="ocean">Ocean</option>
+        <option value="forest">Forest</option>
+        <option value="sunset">Sunset</option>
+      </select>
       <span class="hm-user" id="hm-user"></span>
       <button class="hm-logout" id="hm-logout">Sign Out</button>
     </div>
@@ -450,10 +464,6 @@ input,select{font-family:inherit;font-size:16px}
 
   <div class="main">
     <div class="left-panel">
-      <div class="dn-bar" id="dn-bar">
-        <div><span class="dn-label">&#128203; Daily Note</span><button class="date-nav-btn" id="date-prev">◀</button><input type="date" id="dash-date" class="dash-date"><button class="date-nav-btn" id="date-next">▶</button><span class="dn-saved" id="dn-saved">Saved</span></div>
-        <input type="text" id="dn-input" placeholder="Note for today..." autocomplete="off">
-      </div>
       <div class="bookings-row" id="booking-cards"></div>
       <div class="catalog-scroll" id="item-grid"></div>
       <div id="dash-view" class="dash-scroll" style="display:none"></div>
@@ -1266,12 +1276,6 @@ function renderDashboard(){
 }
 
 function render(){
-    var dd=document.getElementById('dash-date');
-    if(state.viewMode==='dash'||state.viewMode==='list'){
-        if(dd) dd.style.display='';
-    }else{
-        if(dd) dd.style.display='none';
-    }
     if(state.viewMode==='dash'){
         document.getElementById('booking-cards').style.display='none';
         document.getElementById('item-grid').style.display='none';
@@ -2135,23 +2139,42 @@ function renderCalendar(){
 
     // Daily notes row (above rooms)
     html+='<div class="cal-row">';
-    html+='<div class="cal-room-col" style="background:var(--accent);font-weight:600;color:#fff">Notes</div>';
+    html+='<div class="cal-room-col" style="font-weight:600;color:var(--cal-text-light)">Notes</div>';
     dates.forEach(function(date){
         var note=noteMap[date];
         var cls='cal-cell cal-free';
-        if(date===todayStr) cls+=' cal-today';
-        html+='<div class="'+cls+'" style="color:var(--muted);overflow:hidden;text-overflow:ellipsis">'+
+        html+='<div class="'+cls+'" style="overflow:hidden;text-overflow:ellipsis">'+
             (note?note.slice(0,10):'')+'</div>';
     });
     html+='</div>';
 
-        // Room rows
+    // Room rows
     var extrasMap=state.calExtrasMap||{};
-    state.calRooms.forEach(function(room){
-        if(!room.active) return;
+    var activeRooms=state.calRooms.filter(function(room){return room.active;});
+    activeRooms.forEach(function(room,rIdx){
         var color=room.color||'var(--border)';
+        // Room day note row (above guest name)
+        html+='<div class="cal-row cal-rownote">';
+        html+='<div class="cal-room-col cal-subrow-col">Note</div>';
+        dates.forEach(function(date){
+            var occ=occMap[date+'-'+room.id];
+            var cls='cal-cell cal-left cal-top';
+            if(occ){
+                cls+=' cal-occ-'+(occ.status_code==='checked_in'?'checked_in':'confirmed');
+            }else{
+                cls+=' cal-free';
+            }
+            var txt='';
+            if(occ && occ.room_note){
+                txt='<span class="cal-room-note">'+occ.room_note.slice(0,10)+'</span>';
+            }
+            html+='<div class="'+cls+'">'+txt+'</div>';
+        });
+        html+='</div>';
+
+        // Guest name row
         html+='<div class="cal-row" style="background:'+color+'">';
-        html+='<div class="cal-room-col" style="background:'+color+'">'+
+        html+='<div class="cal-room-col" style="background:'+color+';color:var(--cal-text-dark)">'+
             (room.room_code||'')+'</div>';
         dates.forEach(function(date){
             var occ=occMap[date+'-'+room.id];
@@ -2163,7 +2186,6 @@ function renderCalendar(){
             }else{
                 cls+=' cal-free';
             }
-            if(date===todayStr) cls+=' cal-today';
             var extra='';
             if(occ){
                 var name=(occ.first_name||'')+' '+(occ.last_name||'');
@@ -2173,19 +2195,44 @@ function renderCalendar(){
                 if(parseInt(occ.babies)) occLine+=' '+parseInt(occ.babies)+'B';
                 if(parseInt(dinnerMap[occ.booking_id],10)>0) occLine+=' \uD83C\uDF7D';
                 var extrasAmt=extrasMap[date+'-'+room.id]||0;
+                var contactLine='';
+                if(occ.contacted_date || channelAbbr){
+                    contactLine='<div class="cal-contact-line">'+
+                        (channelAbbr?'<span class="cal-channel">'+channelAbbr+'</span>':'')+
+                        (occ.contacted_date?'<span class="cal-contact-date">'+occ.contacted_date.replace(/-/g,'/')+'</span>':'')+
+                    '</div>';
+                }
                 extra='<span class="cal-guest-name">'+name.slice(0,18)+'</span>'+
+                    contactLine+
                     '<span class="cal-occ-line">'+occLine+'</span>'+
                     '<div class="cal-bottom-line">'+
-                        '<span class="cal-channel">'+(channelAbbr?channelAbbr:'')+'</span>'+
                         '<div>'+
-                            '<span class="cal-price">'+(parseFloat(occ.room_rate_amount)||0).toFixed(0)+'\u20AC</span>'+
-                            (extrasAmt>0?'<div class="cal-extras-price">+'+(extrasAmt).toFixed(0)+'\u20AC</div>':'')+
+                            '<span class="cal-price">'+(parseFloat(occ.room_rate_amount)||0).toFixed(2)+'\u20AC</span>'+
+                            (extrasAmt>0?'<div class="cal-extras-price">+'+(extrasAmt).toFixed(2)+'\u20AC</div>':'')+
                         '</div>'+
                     '</div>';
             }
-            html+='<div class="'+cls+'" data-bid="'+bookingId+'">'+extra+'</div>';
+            html+='<div class="'+cls+' cal-left cal-top" data-bid="'+bookingId+'" data-room-id="'+room.id+'" data-date="'+ds+'">'+extra+'</div>';
         });
         html+='</div>';
+
+        // Room rate separator row (spans full calendar width)
+        html+='<div class="cal-row">';
+        html+='<div class="cal-cell cal-sep-row"></div>';
+        dates.forEach(function(){
+            html+='<div class="cal-cell cal-sep-row"></div>';
+        });
+        html+='</div>';
+
+        // Small gap row between each room
+        if(rIdx<activeRooms.length-1){
+            html+='<div class="cal-row">';
+            html+='<div class="cal-cell cal-gap-cell"></div>';
+            dates.forEach(function(){
+                html+='<div class="cal-cell cal-gap-cell"></div>';
+            });
+            html+='</div>';
+        }
     });
 
     html+='</div>';
@@ -2321,25 +2368,6 @@ window._selectGuestResult=function(guestId){
     }
     showError('Guest found — change date to their booking date.');
 };
-
-/* ---- Daily Note ---- */
-var _dnTimer=0;
-function loadDailyNote(){
-    apiGet('ticket-daily-note?date='+state.date).then(function(data){
-        var inp=document.getElementById('dn-input');
-        if(inp&&data.note!==undefined) inp.value=data.note||'';
-    }).catch(function(){});
-}
-function saveDailyNote(){
-    clearTimeout(_dnTimer);
-    _dnTimer=setTimeout(function(){
-        var note=document.getElementById('dn-input').value;
-        apiPost('daily-note',{date:state.date,note:note}).then(function(){
-            var s=document.getElementById('dn-saved');
-            if(s){s.style.display='inline';setTimeout(function(){s.style.display='none';},2000);}
-        }).catch(function(){});
-    },600);
-}
 
 /* ---- Ticket ---- */
 function getRoomCharges(){
@@ -2818,50 +2846,63 @@ function submitCheckin(){
 }
 
 /* ---- Quick Booking ---- */
-function openQuickBookingModal(){
+function openQuickBookingModal(roomId,date){
     document.getElementById('qb-error').style.display='none';
     document.getElementById('qb-name').value='';
     document.getElementById('qb-phone').value='';
     document.getElementById('qb-email').value='';
-    document.getElementById('qb-check-in').value=state.date;
-    var d=new Date(state.date+'T12:00:00');
+    var ci=date||state.date;
+    document.getElementById('qb-check-in').value=ci;
+    var d=new Date(ci+'T12:00:00');
     d.setDate(d.getDate()+1);
     document.getElementById('qb-check-out').value=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
     document.getElementById('qb-adults').value='1';
 
-    // Populate room dropdown
-    var sel=document.getElementById('qb-room');
-    sel.innerHTML='<option value="">Select room (optional)</option>';
-    state.bookings.forEach(function(b){
-        var rooms=state.roomsByBooking[b.id]||[];
-        rooms.forEach(function(r){
-            // Only show room if not already in dropdown
-            var exists=false;
-            for(var j=0;j<sel.options.length;j++){if(sel.options[j].value===String(r.room_id)){exists=true;break;}}
-            if(!exists&&r.room_code){
-                sel.add(new Option(r.room_code+' ('+r.room_name+')',r.room_id));
-            }
-        });
-    });
-
-    // If no rooms from bookings, try catalog rooms
-    if(sel.options.length<=1){
-        // Will load rooms from ticket-room-status endpoint
-        apiGet('ticket-room-status').then(function(data){
-            (data.rooms||[]).forEach(function(r){
-                if(r.active){
-                    var exists=false;
-                    for(var j=0;j<sel.options.length;j++){if(sel.options[j].value===String(r.id)){exists=true;break;}}
-                    if(!exists) sel.add(new Option(r.room_code||r.room_name,r.id));
-                }
-            });
-        }).catch(function(){});
-    }
+    state.qbPendingRoom=roomId?String(roomId):'';
+    // Populate room dropdown for the current dates
+    loadQbRooms();
 
     document.getElementById('qb-modal').classList.add('active');
 }
 
+// Reload the available-room dropdown based on the selected check-in/check-out dates.
+function loadQbRooms(){
+    var sel=document.getElementById('qb-room');
+    var checkIn=document.getElementById('qb-check-in').value;
+    var checkOut=document.getElementById('qb-check-out').value;
+    var prevValue=state.qbPendingRoom||sel.value;
+    sel.innerHTML='<option value="">Select room (optional)</option>';
+    var dateRe=/^\d{4}-\d{2}-\d{2}$/;
+    if(!dateRe.test(checkIn)||!dateRe.test(checkOut)||checkOut<=checkIn){
+        return;
+    }
+    apiGet('available-rooms?check_in='+encodeURIComponent(checkIn)+'&check_out='+encodeURIComponent(checkOut)).then(function(data){
+        var available={};
+        (data.available||[]).forEach(function(id){available[String(id)]=true;});
+        var added=0;
+        state.rooms.forEach(function(r){
+            if(!available[String(r.id)]) return;
+            var label=r.room_code+(r.room_name?' ('+r.room_name+')':'');
+            sel.add(new Option(label,r.id));
+            added++;
+        });
+        if(added===0){
+            sel.innerHTML='<option value="">Select room (optional)</option><option value="" disabled>— No rooms available for these dates —</option>';
+            return;
+        }
+        if(prevValue){
+            for(var k=0;k<sel.options.length;k++){
+                if(sel.options[k].value===prevValue){sel.value=prevValue;break;}
+            }
+        }
+    }).catch(function(err){
+        if(err.message==='unauthorized') return;
+        sel.innerHTML='<option value="">Select room (optional)</option>';
+    });
+}
+
 function closeQbModal(){
+    state.qbPendingRoom='';
     document.getElementById('qb-modal').classList.remove('active');
 }
 
@@ -2897,6 +2938,7 @@ function submitQuickBooking(){
         state.ticketItems=[];
         state.savedItems=[];
         fetchData().then(function(){
+            if(state.viewMode==='cal') loadCalendar();
             // Find and select the new booking
             for(var i=0;i<state.bookings.length;i++){
                 if(parseInt(state.bookings[i].id,10)===data.booking_id){
@@ -2993,6 +3035,32 @@ function fixViewport(){
     document.getElementById('app').style.height=window.innerHeight+'px';
 }
 
+/* ---- Theme ---- */
+var THEMES={
+    default:{
+        name:'Current',
+        vars:{'--bg':'#0f172a','--card':'#1e293b','--border':'#334155','--text':'#f1f5f9','--muted':'#94a3b8','--accent':'#3b82f6','--green':'#22c55e','--red':'#ef4444','--orange':'#f97316','--hover-bg':'rgba(59,130,246,.15)','--error-bg':'rgba(239,68,68,.15)','--success-bg':'rgba(34,197,94,.15)','--sep':'#111','--note-row-bg':'#0f172a','--cal-text-dark':'#000','--cal-text-light':'#fff','--ch-badge-bg':'rgba(0,0,0,.15)'}
+    },
+    ocean:{
+        name:'Ocean',
+        vars:{'--bg':'#071318','--card':'#0e222b','--border':'#1c3b48','--text':'#dff3f7','--muted':'#7ea6b3','--accent':'#22d3ee','--green':'#2dd4a7','--red':'#f87171','--orange':'#fb923c','--hover-bg':'rgba(34,211,238,.15)','--error-bg':'rgba(248,113,113,.15)','--success-bg':'rgba(45,212,167,.15)','--sep':'#0a171c','--note-row-bg':'#0a1a20','--cal-text-dark':'#06202a','--cal-text-light':'#f0fcff','--ch-badge-bg':'rgba(6,32,42,.18)'}
+    },
+    forest:{
+        name:'Forest',
+        vars:{'--bg':'#0b1f16','--card':'#12291d','--border':'#1f3d2d','--text':'#e7f5ee','--muted':'#7ea395','--accent':'#34d399','--green':'#4ade80','--red':'#f87171','--orange':'#fb923c','--hover-bg':'rgba(52,211,153,.15)','--error-bg':'rgba(248,113,113,.15)','--success-bg':'rgba(74,222,128,.15)','--sep':'#0a1a12','--note-row-bg':'#0c2218','--cal-text-dark':'#052e1d','--cal-text-light':'#f2fbf5','--ch-badge-bg':'rgba(5,46,29,.18)'}
+    },
+    sunset:{
+        name:'Sunset',
+        vars:{'--bg':'#17120d','--card':'#221b13','--border':'#3a3025','--text':'#f5ead9','--muted':'#a89b8a','--accent':'#f59e0b','--green':'#4ade80','--red':'#e57373','--orange':'#fb923c','--hover-bg':'rgba(245,158,11,.15)','--error-bg':'rgba(229,115,115,.15)','--success-bg':'rgba(74,222,128,.15)','--sep':'#0e0a06','--note-row-bg':'#14100a','--cal-text-dark':'#3a2410','--cal-text-light':'#fff8ec','--ch-badge-bg':'rgba(58,36,16,.18)'}
+    }
+};
+function applyTheme(name){
+    var t=THEMES[name]||THEMES.default;
+    var st=document.documentElement.style;
+    for(var k in t.vars){ if(t.vars.hasOwnProperty(k)) st.setProperty(k,t.vars[k]); }
+    try{localStorage.setItem('lgf_theme',name);}catch(e){}
+}
+
 /* ---- Init ---- */
 document.addEventListener('DOMContentLoaded',function(){
     if('serviceWorker' in navigator){
@@ -3002,6 +3070,16 @@ document.addEventListener('DOMContentLoaded',function(){
     window.addEventListener('resize',fixViewport);
     document.addEventListener('fullscreenchange',fixViewport);
     document.addEventListener('webkitfullscreenchange',fixViewport);
+
+    var savedTheme='default';
+    try{savedTheme=localStorage.getItem('lgf_theme')||'default'}catch(e){}
+    applyTheme(savedTheme);
+    var themeSelect=document.getElementById('theme-select');
+    if(themeSelect){
+        themeSelect.value=THEMES[savedTheme]?savedTheme:'default';
+        themeSelect.addEventListener('change',function(){applyTheme(this.value);});
+    }
+
     document.addEventListener('click',function(e){
         if(!e.target.closest('.header')&&!e.target.closest('.gs-results')){
             document.getElementById('gs-results').classList.remove('active');
@@ -3011,10 +3089,7 @@ document.addEventListener('DOMContentLoaded',function(){
         }
     });
 
-    var dateInput=document.getElementById('dash-date');
-    if(!dateInput) return;
-    dateInput.value=today();
-    state.date=dateInput.value;
+    state.date=today();
 
     var auth=getAuth();
     if(!auth){showLogin();}else{
@@ -3024,36 +3099,7 @@ document.addEventListener('DOMContentLoaded',function(){
         hideLogin();
         setViewMode(state.viewMode);
         fetchData();
-        loadDailyNote();
     }
-
-    function reloadOnDateChange(){
-        state.activeBookingId=0;state.activeRoomId=0;state.activeBooking=null;
-        state.ticketItems=[];state.savedItems=[];
-        fetchData();
-        loadDailyNote();
-    }
-
-    dateInput.addEventListener('change',function(){
-        state.date=this.value;
-        reloadOnDateChange();
-    });
-
-    document.getElementById('date-prev').addEventListener('click',function(){
-        var d=new Date(state.date+'T12:00:00');
-        d.setDate(d.getDate()-1);
-        state.date=d.toISOString().slice(0,10);
-        dateInput.value=state.date;
-        reloadOnDateChange();
-    });
-
-    document.getElementById('date-next').addEventListener('click',function(){
-        var d=new Date(state.date+'T12:00:00');
-        d.setDate(d.getDate()+1);
-        state.date=d.toISOString().slice(0,10);
-        dateInput.value=state.date;
-        reloadOnDateChange();
-    });
 
     // Search toggle
     document.getElementById('gs-toggle').addEventListener('click',function(){
@@ -3107,9 +3153,6 @@ document.addEventListener('DOMContentLoaded',function(){
         });
     });
 
-    // Daily note
-    document.getElementById('dn-input').addEventListener('input',function(){saveDailyNote();});
-
     // Guest search
     document.getElementById('gs-input').addEventListener('input',function(){doGuestSearch();});
     document.getElementById('hm-search').addEventListener('input',function(){
@@ -3123,6 +3166,8 @@ document.addEventListener('DOMContentLoaded',function(){
 
     // Quick booking
     document.getElementById('qb-open').addEventListener('click',function(){openQuickBookingModal();});
+    document.getElementById('qb-check-in').addEventListener('change',loadQbRooms);
+    document.getElementById('qb-check-out').addEventListener('change',loadQbRooms);
     document.getElementById('qb-confirm').addEventListener('click',function(){submitQuickBooking();});
     document.getElementById('qb-cancel').addEventListener('click',function(){closeQbModal();});
     document.getElementById('qb-modal-close').addEventListener('click',function(){closeQbModal();});
@@ -3185,6 +3230,11 @@ document.addEventListener('DOMContentLoaded',function(){
         var cell=e.target.closest('[data-bid]');
         if(cell&&parseInt(cell.getAttribute('data-bid'),10)){
             window._calSelectBooking(parseInt(cell.getAttribute('data-bid'),10));
+            return;
+        }
+        var free=e.target.closest('[data-room-id][data-date]');
+        if(free&&free.classList.contains('cal-free')){
+            openQuickBookingModal(parseInt(free.getAttribute('data-room-id'),10),free.getAttribute('data-date'));
         }
     });
 });

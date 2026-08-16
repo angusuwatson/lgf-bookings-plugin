@@ -1674,7 +1674,7 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
     $rooms = $wpdb->get_results( "SELECT id, room_code, room_name, sort_order, color, active FROM {$rooms_table} WHERE active = 1 ORDER BY sort_order ASC", ARRAY_A );
 
     $occupancy = $wpdb->get_results( $wpdb->prepare( "
-        SELECT brn.stay_date, br.room_id, r.room_code, r.room_name,
+        SELECT brn.stay_date, br.room_id, br.id AS booking_room_id, r.room_code, r.room_name,
                COALESCE(brn.adults, br.adults, 0) AS adults,
                COALESCE(brn.children, br.children, 0) AS children,
                COALESCE(brn.babies, br.babies, 0) AS babies,
@@ -1683,6 +1683,7 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
                brn.extras_amount,
                b.id AS booking_id, b.status_code, b.check_in_date, b.check_out_date,
                b.source_channel,
+               b.contacted_date,
                g.first_name, g.last_name
         FROM {$booking_nights_table} brn
         JOIN {$booking_rooms_table} br ON br.id = brn.booking_room_id
@@ -1753,6 +1754,50 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
                 }
             }
         }
+    }
+
+    // Attach room-level day notes to each occupancy row (booking+room+date > booking+room > booking)
+    if ( ! empty( $occupancy ) ) {
+        $bids = array_unique( array_column( $occupancy, 'booking_id' ) );
+        $booking_notes_table = simple_hotel_crm_booking_notes_table();
+        $placeholders = implode( ',', array_fill( 0, count( $bids ), '%d' ) );
+        $note_rows = $wpdb->get_results( $wpdb->prepare( "
+            SELECT booking_id, booking_room_id, stay_date, note_text
+            FROM {$booking_notes_table}
+            WHERE booking_id IN ({$placeholders})
+              AND note_text IS NOT NULL AND note_text <> ''
+            ORDER BY booking_id ASC, booking_room_id IS NULL ASC, stay_date IS NULL ASC
+        ", $bids ), ARRAY_A );
+
+        $notes_by_booking = [];
+        foreach ( $note_rows as $nr ) {
+            $notes_by_booking[ (int) $nr['booking_id'] ][] = $nr;
+        }
+
+        foreach ( $occupancy as &$occ ) {
+            $bid   = (int) $occ['booking_id'];
+            $brid  = (int) ( $occ['booking_room_id'] ?? 0 );
+            $date  = (string) $occ['stay_date'];
+            $note  = '';
+            foreach ( ( $notes_by_booking[ $bid ] ?? [] ) as $nr ) {
+                $nbrid  = (int) ( $nr['booking_room_id'] ?? 0 );
+                $ndate  = $nr['stay_date'] ?? null;
+                if ( $nbrid === $brid && $ndate === $date ) {
+                    $note = (string) $nr['note_text'];
+                    break;
+                }
+                if ( $nbrid === $brid && null === $ndate ) {
+                    $note = (string) $nr['note_text'];
+                    break;
+                }
+                if ( 0 === $nbrid && null === $ndate ) {
+                    $note = (string) $nr['note_text'];
+                    break;
+                }
+            }
+            $occ['room_note'] = $note;
+        }
+        unset( $occ );
     }
 
     $daily_notes_table = simple_hotel_crm_daily_notes_table();
