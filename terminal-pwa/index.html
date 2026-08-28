@@ -3269,16 +3269,18 @@ function openEditModal(){
         });
     }).catch(function(){});
 
-    // Room Day Notes — build from all room nights + existing notes
+    // Room Day Notes — build from the current booking's room nights + existing notes
     var notesContainer=document.getElementById('be-room-day-notes');
     notesContainer.innerHTML='<div style="color:var(--muted);font-size:13px">Loading notes…</div>';
-    // Ensure room nights are loaded even when opened from the calendar page
-    var nightsPromise=(state.roomNights||[]).length
-        ? Promise.resolve()
-        : apiGet('ticket-data?booking_id='+_beBookingId+'&_='+Date.now()).then(function(d){
-            state.bookingRooms=d.booking_rooms||state.bookingRooms||[];
-            state.roomNights=d.room_nights||[];
-        }).catch(function(){});
+    state._beRoomDayNights=[];
+    // Always refetch room nights for THIS booking so a stale value from a
+    // previously opened booking can never render/save the wrong room or date
+    var nightsPromise=apiGet('ticket-data?booking_id='+_beBookingId+'&_='+Date.now()).then(function(d){
+        state.bookingRooms=d.booking_rooms||[];
+        state.roomNights=d.room_nights||[];
+    }).catch(function(){
+        state.roomNights=[];state.bookingRooms=[];
+    });
     Promise.all([
         apiGet('ticket-room-day-notes?booking_id='+_beBookingId+'&_='+Date.now()),
         nightsPromise
@@ -3484,11 +3486,16 @@ function submitEditBooking(){
         // Save room day notes
         var updatedNotes=[];
         var textareas=document.querySelectorAll('#be-room-day-notes textarea[data-br-id]');
+        var validRoomIds=(state._beRoomDayNights||[]).map(function(n){return String(n.booking_room_id);});
         textareas.forEach(function(ta){
+            var brid=ta.getAttribute('data-br-id');
+            var noteText=ta.value.trim();
+            if(!noteText) return;
+            if(validRoomIds.indexOf(brid)<0) return;
             updatedNotes.push({
-                booking_room_id:parseInt(ta.getAttribute('data-br-id'),10),
+                booking_room_id:parseInt(brid,10),
                 stay_date:ta.getAttribute('data-stay-date'),
-                note_text:ta.value.trim()
+                note_text:noteText
             });
         });
         if(updatedNotes.length){
@@ -3731,6 +3738,7 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('ticket-close').addEventListener('click',function(){
         state.activeBookingId=0;state.activeRoomId=0;state.activeBooking=null;
         state.ticketItems=[];state.savedItems=[];
+        state.roomNights=[];state.bookingRooms=[];
         render();
     });
     document.getElementById('pay-ticket').addEventListener('click',function(){showPayModal();});
