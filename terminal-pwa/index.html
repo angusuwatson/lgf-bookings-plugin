@@ -623,13 +623,13 @@ input,select{font-family:inherit;font-size:16px}
         <input type="text" id="qb-guest-search" placeholder="Start typing guest name…" autocomplete="off">
         <div id="qb-guest-results" style="display:none;position:absolute;top:100%;left:60px;right:0;background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:160px;overflow-y:auto;z-index:10;font-size:13px"></div>
       </div>
-      <div class="be-3col" id="qb-guest-fields" style="display:none">
-        <div class="bedit-row"><label>First name</label><input type="text" id="qb-first-name" readonly></div>
-        <div class="bedit-row"><label>Last name</label><input type="text" id="qb-last-name" readonly></div>
-        <div class="bedit-row"><label>Phone</label><input type="tel" id="qb-phone" readonly></div>
-        <div class="bedit-row"><label>Email</label><input type="email" id="qb-email" readonly></div>
-        <div class="bedit-row"><label>City</label><input type="text" id="qb-city" readonly></div>
-        <div class="bedit-row"><label>Country</label><input type="text" id="qb-country" readonly></div>
+      <div class="be-3col" id="qb-guest-fields" style="margin-top:8px">
+        <div class="bedit-row"><label>First name</label><input type="text" id="qb-first-name"></div>
+        <div class="bedit-row"><label>Last name</label><input type="text" id="qb-last-name"></div>
+        <div class="bedit-row"><label>Phone</label><input type="tel" id="qb-phone"></div>
+        <div class="bedit-row"><label>Email</label><input type="email" id="qb-email"></div>
+        <div class="bedit-row"><label>City</label><input type="text" id="qb-city"></div>
+        <div class="bedit-row"><label>Country</label><input type="text" id="qb-country"></div>
       </div>
     </div>
     <!-- Booking -->
@@ -3069,7 +3069,6 @@ function openQuickBookingModal(roomId,date){
     _qbGuestId=0;
     document.getElementById('qb-guest-search').value='';
     document.getElementById('qb-guest-results').style.display='none';
-    document.getElementById('qb-guest-fields').style.display='none';
     document.getElementById('qb-first-name').value='';
     document.getElementById('qb-last-name').value='';
     document.getElementById('qb-phone').value='';
