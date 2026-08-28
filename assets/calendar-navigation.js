@@ -110,6 +110,11 @@
             var $modal = getModal();
             $modal.hide().attr('aria-hidden', 'true');
             $modal.find('.simple-hotel-crm-quick-booking-message').removeClass('error success').text('');
+            $('#popup_guest_search').val('');
+            $('#popup_guest_id').val('');
+            $('#popup_guest_search_results').hide().empty();
+            $('#popup_guest_preferences_display').hide();
+            $('#popup_clear_guest_search').hide();
         }
 
         function closeRoomNoteModal() {
@@ -214,6 +219,89 @@
                 } catch (e) {}
             }
         });
+
+        // Guest search in popup
+        (function() {
+            var $searchInput = $('#popup_guest_search');
+            var $guestIdInput = $('#popup_guest_id');
+            var $resultsBox = $('#popup_guest_search_results');
+            var $prefsDisplay = $('#popup_guest_preferences_display');
+            var $clearBtn = $('#popup_clear_guest_search');
+            if (!$searchInput.length) return;
+            var debounceTimer;
+            function escHtml(s) {
+                if (typeof s !== 'string') return '';
+                return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+            $searchInput.on('input', function() {
+                clearTimeout(debounceTimer);
+                var q = $searchInput.val().trim();
+                if (q.length < 2) {
+                    $resultsBox.hide();
+                    return;
+                }
+                debounceTimer = setTimeout(function() {
+                    request({
+                        url: guestSearchUrl,
+                        method: 'GET',
+                        data: { q: q },
+                        success: function(data) {
+                            var guests = data.guests || [];
+                            if (!guests.length) {
+                                $resultsBox.html('<div style="padding:8px;color:#666;">No guests found</div>').show();
+                                return;
+                            }
+                            var html = '';
+                            guests.forEach(function(g) {
+                                var name = (g.first_name || '') + ' ' + (g.last_name || '');
+                                var infoParts = [];
+                                if (g.email) infoParts.push(g.email);
+                                if (g.phone) infoParts.push(g.phone);
+                                html += '<div class="popup-guest-search-result" data-guest=\'' + JSON.stringify(g).replace(/'/g, '&#39;') + '\' style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;">';
+                                html += '<strong>' + escHtml(name) + '</strong>';
+                                if (infoParts.length) html += ' &mdash; ' + escHtml(infoParts.join(' | '));
+                                html += ' <span style="color:#888;font-size:0.85em;">(' + (g.booking_count || 0) + ' bookings)</span>';
+                                html += '</div>';
+                            });
+                            $resultsBox.html(html).show();
+                            $resultsBox.find('.popup-guest-search-result').on('click', function() {
+                                var g = JSON.parse($(this).attr('data-guest'));
+                                $searchInput.val((g.first_name || '') + ' ' + (g.last_name || ''));
+                                $guestIdInput.val(g.id);
+                                $resultsBox.hide();
+                                $clearBtn.show();
+                                var $form = $searchInput.closest('form');
+                                $form.find('[name="guest_name"]').val((g.first_name || '') + ' ' + (g.last_name || ''));
+                                $form.find('[name="phone"]').val(g.phone || '');
+                                $form.find('[name="email"]').val(g.email || '');
+                                $form.find('[name="country"]').val(g.country || '');
+                                if (g.preferences && g.preferences.length) {
+                                    var phtml = '<div style="padding:6px 8px;background:#f9f9f9;border:1px solid #e0e0e0;border-radius:4px;font-size:0.9em;"><strong>Preferences:</strong> ';
+                                    var parts = [];
+                                    g.preferences.forEach(function(p) { parts.push(escHtml(p.pref_key) + ': ' + escHtml(p.pref_value)); });
+                                    phtml += parts.join(', ') + '</div>';
+                                    $prefsDisplay.html(phtml).show();
+                                } else {
+                                    $prefsDisplay.hide();
+                                }
+                            });
+                        }
+                    });
+                }, 300);
+            });
+            $clearBtn.on('click', function() {
+                $searchInput.val('');
+                $guestIdInput.val('');
+                $resultsBox.hide().empty();
+                $prefsDisplay.hide();
+                $clearBtn.hide();
+            });
+            $(document).on('click', function(e) {
+                if ($resultsBox.length && !$(e.target).closest('#popup_guest_search_results').length && e.target !== $searchInput[0]) {
+                    $resultsBox.hide();
+                }
+            });
+        })();
 
         $(document).on('submit', '.simple-hotel-crm-quick-booking-form', function(e) {
             e.preventDefault();

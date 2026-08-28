@@ -238,6 +238,21 @@ add_action( 'rest_api_init', function() {
         'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
     ] );
 
+    register_rest_route( 'simple-hotel-crm/v1', '/ticket-room-day-notes', [
+        'methods'  => 'GET',
+        'callback' => 'simple_hotel_crm_rest_ticket_room_day_notes',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+        'args'     => [
+            'booking_id' => [ 'required' => true, 'type' => 'integer' ],
+        ],
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/ticket-room-day-notes', [
+        'methods'  => 'POST',
+        'callback' => 'simple_hotel_crm_rest_ticket_save_room_day_notes',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
     register_rest_route( 'simple-hotel-crm/v1', '/ticket-daily-note', [
         'methods'  => 'GET',
         'callback' => 'simple_hotel_crm_rest_ticket_daily_note',
@@ -596,6 +611,56 @@ function simple_hotel_crm_rest_save_room_day_note( WP_REST_Request $request ) {
     }
 
     simple_hotel_crm_upsert_booking_note( $booking_id, $note, $booking_room_id, $stay_date, 'night' );
+    simple_hotel_crm_clear_calendar_cache();
+
+    return rest_ensure_response( [ 'success' => true ] );
+}
+
+function simple_hotel_crm_rest_ticket_room_day_notes( WP_REST_Request $request ) {
+    global $wpdb;
+
+    $booking_id = absint( $request->get_param( 'booking_id' ) );
+    if ( $booking_id <= 0 ) {
+        return new WP_Error( 'invalid_booking', __( 'Invalid booking ID.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+
+    $booking_notes_table = simple_hotel_crm_booking_notes_table();
+    $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
+    $rooms_table = simple_hotel_crm_rooms_table();
+
+    $notes = $wpdb->get_results( $wpdb->prepare( "
+        SELECT bn.id, bn.booking_room_id, bn.stay_date, bn.note_text,
+               r.room_code, r.room_name
+        FROM {$booking_notes_table} bn
+        JOIN {$booking_rooms_table} br ON br.id = bn.booking_room_id
+        JOIN {$rooms_table} r ON r.id = br.room_id
+        WHERE bn.booking_id = %d AND bn.note_scope = 'night'
+        ORDER BY bn.stay_date ASC, r.sort_order ASC
+    ", $booking_id ), ARRAY_A );
+
+    return rest_ensure_response( [ 'notes' => $notes ] );
+}
+
+function simple_hotel_crm_rest_ticket_save_room_day_notes( WP_REST_Request $request ) {
+    $booking_id = absint( $request->get_param( 'booking_id' ) );
+    $notes = $request->get_param( 'notes' ) ?: [];
+
+    if ( $booking_id <= 0 ) {
+        return new WP_Error( 'invalid_booking', __( 'Invalid booking ID.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+
+    foreach ( $notes as $note ) {
+        $booking_room_id = absint( $note['booking_room_id'] ?? 0 );
+        $stay_date = sanitize_text_field( (string) ( $note['stay_date'] ?? '' ) );
+        $note_text = sanitize_textarea_field( (string) ( $note['note_text'] ?? '' ) );
+
+        if ( $booking_room_id <= 0 || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $stay_date ) ) {
+            continue;
+        }
+
+        simple_hotel_crm_upsert_booking_note( $booking_id, $note_text, $booking_room_id, $stay_date, 'night' );
+    }
+
     simple_hotel_crm_clear_calendar_cache();
 
     return rest_ensure_response( [ 'success' => true ] );
@@ -981,6 +1046,7 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
     $bookings = $wpdb->get_results( $wpdb->prepare( "
         SELECT b.id, b.status_code, b.total_amount, b.check_in_date, b.check_out_date, b.payment_status,
                b.source_channel, b.adults, b.children, b.babies,
+               b.contacted_date, b.booking_type, b.internal_notes,
                g.first_name, g.last_name, g.id AS guest_id,
                g.phone, g.email,
                g.address_line_1, g.address_line_2, g.city, g.postcode, g.country,
@@ -1000,7 +1066,8 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
     if ( ! empty( $booking_ids ) ) {
         $placeholders = implode( ',', array_fill( 0, count( $booking_ids ), '%d' ) );
         $room_results = $wpdb->get_results( $wpdb->prepare( "
-            SELECT br.booking_id, br.id AS booking_room_id, r.room_name, r.room_code, r.id AS room_id
+            SELECT br.booking_id, br.id AS booking_room_id, r.room_name, r.room_code, r.id AS room_id,
+                   br.discount_type, br.discount_value
             FROM {$booking_rooms_table} br
             JOIN {$rooms_table} r ON r.id = br.room_id
             WHERE br.booking_id IN ({$placeholders})
@@ -1088,6 +1155,9 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
         ORDER BY brn.stay_date ASC, r.sort_order ASC
     ", $week_start, $week_end ), ARRAY_A );
 
+    $booking_types_table = simple_hotel_crm_booking_types_table();
+    $booking_types = $wpdb->get_results( "SELECT id, type_key, type_label FROM {$booking_types_table} ORDER BY sort_order ASC", ARRAY_A );
+
     return rest_ensure_response( [
         'catalog'          => $catalog,
         'bookings'         => $bookings,
@@ -1098,6 +1168,7 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
         'daily_notes'      => $daily_notes,
         'occupancy'        => $occupancy,
         'rooms'            => $rooms,
+        'booking_types'    => $booking_types,
     ] );
 }
 
@@ -1824,6 +1895,8 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
     $guest_name = trim( sanitize_text_field( (string) $request->get_param( 'guest_name' ) ) );
     $phone = sanitize_text_field( (string) $request->get_param( 'phone' ) );
     $email = sanitize_email( (string) $request->get_param( 'email' ) );
+    $city = sanitize_text_field( (string) $request->get_param( 'city' ) );
+    $country = sanitize_text_field( (string) $request->get_param( 'country' ) );
     $check_in = sanitize_text_field( (string) $request->get_param( 'check_in' ) );
     $check_out = sanitize_text_field( (string) $request->get_param( 'check_out' ) );
     $room_id = absint( $request->get_param( 'room_id' ) );
@@ -1831,6 +1904,13 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
     $children = absint( $request->get_param( 'children' ) );
     $babies = absint( $request->get_param( 'babies' ) );
     $total_amount = (float) $request->get_param( 'total_amount' ) ?: 0;
+    $status_code = sanitize_text_field( (string) ( $request->get_param( 'status_code' ) ?: 'confirmed' ) );
+    $booking_type = sanitize_text_field( (string) $request->get_param( 'booking_type' ) );
+    $contacted_date = sanitize_text_field( (string) $request->get_param( 'contacted_date' ) );
+    $discount_type = sanitize_text_field( (string) ( $request->get_param( 'discount_type' ) ?: 'none' ) );
+    $discount_value = round( abs( (float) $request->get_param( 'discount_value' ) ), 2 );
+    $source_channel = sanitize_text_field( (string) ( $request->get_param( 'source_channel' ) ?: 'direct' ) );
+    $internal_notes = sanitize_textarea_field( (string) $request->get_param( 'internal_notes' ) );
 
     if ( '' === $guest_name ) {
         return new WP_Error( 'missing_guest_name', 'Guest name is required.', [ 'status' => 400 ] );
@@ -1857,23 +1937,35 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
 
     $today = current_time( 'Y-m-d' );
 
-    list( $first_name, $last_name ) = simple_hotel_crm_split_guest_name( $guest_name );
-    $guest_inserted = $wpdb->insert(
-        $guests_table,
-        [
-            'first_name' => $first_name,
-            'last_name'  => $last_name,
-            'phone'      => $phone,
-            'email'      => $email,
-            'created_at' => current_time( 'mysql' ),
-            'updated_at' => current_time( 'mysql' ),
-        ],
-        [ '%s', '%s', '%s', '%s', '%s', '%s' ]
-    );
-    if ( ! $guest_inserted ) {
-        return new WP_Error( 'guest_create_failed', 'Could not create guest.', [ 'status' => 500 ] );
+    // Use existing guest if guest_id provided, otherwise create new
+    $existing_guest_id = absint( $request->get_param( 'guest_id' ) );
+    if ( $existing_guest_id > 0 ) {
+        $guest_exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$guests_table} WHERE id = %d AND is_deleted = 0 LIMIT 1", $existing_guest_id ) );
+        if ( $guest_exists ) {
+            $guest_id = $existing_guest_id;
+        }
     }
-    $guest_id = $wpdb->insert_id;
+    if ( ! isset( $guest_id ) || ! $guest_id ) {
+        list( $first_name, $last_name ) = simple_hotel_crm_split_guest_name( $guest_name );
+        $guest_inserted = $wpdb->insert(
+            $guests_table,
+            [
+                'first_name' => $first_name,
+                'last_name'  => $last_name,
+                'phone'      => $phone,
+                'email'      => $email,
+                'city'       => $city,
+                'country'    => $country,
+                'created_at' => current_time( 'mysql' ),
+                'updated_at' => current_time( 'mysql' ),
+            ],
+            [ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
+        );
+        if ( ! $guest_inserted ) {
+            return new WP_Error( 'guest_create_failed', 'Could not create guest.', [ 'status' => 500 ] );
+        }
+        $guest_id = $wpdb->insert_id;
+    }
 
     $nights = max( 1, (int) round( ( strtotime( $check_out ) - strtotime( $check_in ) ) / DAY_IN_SECONDS ) );
     $guest_count = $adults + $children + $babies;
@@ -1882,8 +1974,9 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
         $bookings_table,
         [
             'guest_id'       => $guest_id,
-            'source_channel' => 'direct',
-            'status_code'    => 'confirmed',
+            'source_channel' => $source_channel,
+            'status_code'    => $status_code,
+            'contacted_date' => preg_match( '/^\d{4}-\d{2}-\d{2}$/', $contacted_date ) ? $contacted_date : null,
             'check_in_date'  => $check_in,
             'check_out_date' => $check_out,
             'adults'         => $adults,
@@ -1891,10 +1984,12 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
             'babies'         => $babies,
             'total_amount'   => $total_amount,
             'currency'       => 'EUR',
+            'booking_type'   => $booking_type ?: null,
+            'internal_notes' => $internal_notes ?: null,
             'created_at'     => current_time( 'mysql' ),
             'updated_at'     => current_time( 'mysql' ),
         ],
-        [ '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%f', '%s', '%s', '%s' ]
+        [ '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%f', '%s', '%s', '%s', '%s', '%s', '%s' ]
     );
     if ( ! $booking_inserted ) {
         return new WP_Error( 'booking_create_failed', 'Could not create booking.', [ 'status' => 500 ] );
@@ -1912,8 +2007,10 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
                 'adults'       => $adults,
                 'children'     => $children,
                 'babies'       => $babies,
+                'discount_type'  => in_array( $discount_type, [ 'none', 'percentage', 'fixed' ], true ) ? $discount_type : 'none',
+                'discount_value' => $discount_value,
             ],
-            [ '%d', '%d', '%d', '%d', '%d', '%d', '%d' ]
+            [ '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%f' ]
         );
         $booking_room_id = $wpdb->insert_id;
 
@@ -1934,6 +2031,80 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
                 [ '%d', '%s', '%d', '%d', '%d', '%d', '%f', '%f' ]
             );
         }
+
+        // Calculate room pricing
+        $room_line = [
+            'adults'           => $adults,
+            'children'         => $children,
+            'babies'           => $babies,
+            'room_rate_amount' => 0,
+            'discount_type'    => $discount_type,
+            'discount_value'   => $discount_value,
+            'extras_amount'    => 0,
+        ];
+        $room_pricing = simple_hotel_crm_calculate_room_pricing( $room_line, $nights, $room_id, $source_channel );
+        $wpdb->update(
+            $booking_rooms_table,
+            [
+                'pricing_room_id'    => $room_pricing['pricing_room_id'] > 0 ? $room_pricing['pricing_room_id'] : null,
+                'occupancy_adults'   => $room_pricing['occupancy_adults'],
+                'guest_count'        => $room_pricing['guest_count'],
+                'base_price_amount'  => $room_pricing['base_price_amount'],
+                'discount_amount'    => $room_pricing['discount_amount'],
+                'subtotal_amount'    => $room_pricing['subtotal_amount'],
+                'commission_amount'  => $room_pricing['commission_amount'],
+                'room_rate_amount'   => $room_pricing['room_rate_amount'],
+                'tourist_tax_amount' => $room_pricing['tourist_tax_total'],
+                'total_amount'       => $room_pricing['total_amount'],
+            ],
+            [ 'id' => $booking_room_id ],
+            [ '%d', '%d', '%d', '%f', '%f', '%f', '%f', '%f', '%f', '%f' ],
+            [ '%d' ]
+        );
+        $room_rate_nightly    = simple_hotel_crm_distribute_amounts( $room_pricing['room_rate_amount'], $nights );
+        $base_price_nightly   = simple_hotel_crm_distribute_amounts( $room_pricing['base_price_amount'], $nights );
+        $discount_nightly     = simple_hotel_crm_distribute_amounts( $room_pricing['discount_amount'], $nights );
+        $subtotal_nightly     = simple_hotel_crm_distribute_amounts( $room_pricing['subtotal_amount'], $nights );
+        $commission_nightly   = simple_hotel_crm_distribute_amounts( $room_pricing['commission_amount'], $nights );
+        $tax_nightly          = simple_hotel_crm_distribute_amounts( $room_pricing['tourist_tax_total'], $nights );
+        $existing_nights      = $wpdb->get_results(
+            $wpdb->prepare( "SELECT id, stay_date, extras_amount FROM {$booking_nights_table} WHERE booking_room_id = %d ORDER BY stay_date ASC", $booking_room_id ),
+            ARRAY_A
+        );
+        foreach ( $existing_nights as $i => $night ) {
+            $night_extras = (float) ( $night['extras_amount'] ?? 0 );
+            $night_total  = round( $room_rate_nightly[ $i ] + $night_extras + $tax_nightly[ $i ], 2 );
+            $wpdb->update(
+                $booking_nights_table,
+                [
+                    'base_price_amount'  => $base_price_nightly[ $i ],
+                    'discount_amount'    => $discount_nightly[ $i ],
+                    'subtotal_amount'    => $subtotal_nightly[ $i ],
+                    'commission_amount'  => $commission_nightly[ $i ],
+                    'room_rate_amount'   => $room_rate_nightly[ $i ],
+                    'tourist_tax_amount' => $tax_nightly[ $i ],
+                    'total_amount'       => $night_total,
+                    'guest_count'        => $room_pricing['guest_count'],
+                    'adults'             => $room_pricing['adults'],
+                    'children'           => $room_pricing['children'],
+                    'babies'             => $room_pricing['babies'],
+                ],
+                [ 'id' => (int) $night['id'] ],
+                [ '%f', '%f', '%f', '%f', '%f', '%f', '%f', '%d', '%d', '%d', '%d' ],
+                [ '%d' ]
+            );
+        }
+        // Update booking header totals
+        $wpdb->update(
+            $bookings_table,
+            [
+                'room_rate_amount' => round( (float) $room_pricing['room_rate_amount'], 2 ),
+                'total_amount'     => round( (float) $room_pricing['total_amount'], 2 ),
+            ],
+            [ 'id' => $booking_id ],
+            [ '%f', '%f' ],
+            [ '%d' ]
+        );
     }
 
     simple_hotel_crm_clear_calendar_cache();
@@ -2134,6 +2305,139 @@ function simple_hotel_crm_rest_ticket_update_booking( WP_REST_Request $request )
         $wpdb->update( $bookings_table, $update, [ 'id' => $booking_id ], $formats, [ '%d' ] );
     }
 
+    // Update status_code
+    $new_status = (string) $request->get_param( 'status_code' );
+    if ( $new_status && in_array( $new_status, [ 'confirmed', 'checked_in', 'checked_out', 'cancelled' ], true ) && $new_status !== $booking->status_code ) {
+        $wpdb->update( $bookings_table, [ 'status_code' => $new_status ], [ 'id' => $booking_id ], [ '%s' ], [ '%d' ] );
+    }
+
+    // Update source_channel
+    $new_channel = sanitize_text_field( (string) $request->get_param( 'source_channel' ) );
+    if ( $new_channel && $new_channel !== (string) $booking->source_channel ) {
+        $wpdb->update( $bookings_table, [ 'source_channel' => $new_channel ], [ 'id' => $booking_id ], [ '%s' ], [ '%d' ] );
+    }
+
+    // Update guest fields (first_name, last_name, email, phone)
+    $guests_table = simple_hotel_crm_guests_table();
+    $guest_update = [];
+    $guest_formats = [];
+    $guest_fields = [
+        'first_name' => 'first_name',
+        'last_name'  => 'last_name',
+        'email'      => 'email',
+        'phone'      => 'phone',
+        'country'    => 'country',
+        'city'       => 'city',
+    ];
+    foreach ( $guest_fields as $param => $col ) {
+        $val = $request->get_param( $param );
+        if ( null !== $val && (string) $val !== (string) ( $booking->$col ?? '' ) ) {
+            $guest_update[ $col ] = sanitize_text_field( (string) $val );
+            $guest_formats[] = '%s';
+        }
+    }
+    if ( ! empty( $guest_update ) && $booking->guest_id ) {
+        $wpdb->update( $guests_table, $guest_update, [ 'id' => (int) $booking->guest_id ], $guest_formats, [ '%d' ] );
+    }
+
+    // Update occupancy (adults, children, babies)
+    $occ_fields = [ 'adults', 'children', 'babies' ];
+    $occ_changed = false;
+    foreach ( $occ_fields as $field ) {
+        $val = $request->get_param( $field );
+        if ( null !== $val && is_numeric( $val ) ) {
+            $new_val = max( 0, absint( $val ) );
+            if ( $new_val !== (int) ( $booking->$field ?? 0 ) ) {
+                $wpdb->update( $bookings_table, [ $field => $new_val ], [ 'id' => $booking_id ], [ '%d' ], [ '%d' ] );
+                $booking->$field = $new_val;
+                $occ_changed = true;
+            }
+        }
+    }
+    if ( $occ_changed ) {
+        $booking_rooms_table  = simple_hotel_crm_booking_rooms_table();
+        $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
+        $wpdb->update( $booking_rooms_table, [
+            'adults'   => (int) $booking->adults,
+            'children' => (int) $booking->children,
+            'babies'   => (int) $booking->babies,
+        ], [ 'booking_id' => $booking_id ], [ '%d', '%d', '%d' ], [ '%d' ] );
+        $wpdb->update( $booking_nights_table, [
+            'adults'   => (int) $booking->adults,
+            'children' => (int) $booking->children,
+            'babies'   => (int) $booking->babies,
+        ], [ 'booking_id' => $booking_id ], [ '%d', '%d', '%d' ], [ '%d' ] );
+    }
+
+    // Update contacted_date
+    $contacted_date = (string) $request->get_param( 'contacted_date' );
+    if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $contacted_date ) || '' === $contacted_date ) {
+        if ( $contacted_date !== (string) ( $booking->contacted_date ?? '' ) ) {
+            $wpdb->update( $bookings_table, [ 'contacted_date' => $contacted_date ?: null ], [ 'id' => $booking_id ], [ '%s' ], [ '%d' ] );
+        }
+    }
+
+    // Update booking_type (stay purpose)
+    $booking_type = $request->get_param( 'booking_type' );
+    if ( null !== $booking_type ) {
+        $booking_type = sanitize_text_field( (string) $booking_type );
+        if ( $booking_type !== (string) ( $booking->booking_type ?? '' ) ) {
+            $wpdb->update( $bookings_table, [ 'booking_type' => $booking_type ?: null ], [ 'id' => $booking_id ], [ '%s' ], [ '%d' ] );
+        }
+    }
+
+    // Update internal_notes
+    $internal_notes = $request->get_param( 'internal_notes' );
+    if ( null !== $internal_notes ) {
+        $clean_notes = sanitize_textarea_field( (string) $internal_notes );
+        // Preserve [ICS_SKELETON] marker if present in existing notes
+        $existing_notes = (string) $booking->internal_notes;
+        if ( false !== strpos( $existing_notes, '[ICS_SKELETON]' ) ) {
+            // Strip any duplicate marker from user input before prepending
+            $clean_notes = str_replace( '[ICS_SKELETON]', '', $clean_notes );
+            $clean_notes = trim( '[ICS_SKELETON] ' . trim( $clean_notes ) );
+        }
+        if ( $clean_notes !== $existing_notes ) {
+            $wpdb->update( $bookings_table, [ 'internal_notes' => $clean_notes ], [ 'id' => $booking_id ], [ '%s' ], [ '%d' ] );
+            // Re-read so downstream code (add_room) sees updated notes
+            $booking = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$bookings_table} WHERE id = %d LIMIT 1", $booking_id ) );
+        }
+    }
+
+    // Update discount on all booking rooms for this booking
+    $discount_type = $request->get_param( 'discount_type' );
+    $discount_value = $request->get_param( 'discount_value' );
+    if ( null !== $discount_type || null !== $discount_value ) {
+        $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
+        $existing_rooms = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$booking_rooms_table} WHERE booking_id = %d", $booking_id ) );
+        foreach ( $existing_rooms as $br_id ) {
+            $br_update = [];
+            $br_formats = [];
+            if ( null !== $discount_type ) {
+                $dt = in_array( $discount_type, [ 'none', 'percentage', 'fixed' ], true ) ? $discount_type : 'none';
+                $br_update['discount_type'] = $dt;
+                $br_formats[] = '%s';
+            }
+            if ( null !== $discount_value && is_numeric( $discount_value ) ) {
+                $br_update['discount_value'] = round( abs( (float) $discount_value ), 2 );
+                $br_formats[] = '%f';
+            }
+            if ( ! empty( $br_update ) ) {
+                $wpdb->update( $booking_rooms_table, $br_update, [ 'id' => $br_id ], $br_formats, [ '%d' ] );
+            }
+        }
+    }
+
+    // Transfer booking to another guest
+    $target_guest_id = absint( $request->get_param( 'target_guest_id' ) );
+    if ( $target_guest_id > 0 && $target_guest_id !== (int) $booking->guest_id ) {
+        $guests_table = simple_hotel_crm_guests_table();
+        $guest_exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$guests_table} WHERE id = %d AND is_deleted = 0 LIMIT 1", $target_guest_id ) );
+        if ( $guest_exists ) {
+            $wpdb->update( $bookings_table, [ 'guest_id' => $target_guest_id ], [ 'id' => $booking_id ], [ '%d' ], [ '%d' ] );
+        }
+    }
+
     $add_room_id = absint( $request->get_param( 'add_room_id' ) );
     if ( $add_room_id > 0 ) {
         // Strip [ICS_SKELETON] marker when a human adds a room via the calendar popup
@@ -2185,6 +2489,153 @@ function simple_hotel_crm_rest_ticket_update_booking( WP_REST_Request $request )
             }
         }
     }
+
+    // Recalculate room pricing for all booking rooms
+    $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
+    $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
+    // Re-read booking after all updates
+    $booking = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$bookings_table} WHERE id = %d LIMIT 1", $booking_id ) );
+    $nights = max( 1, (int) round( ( strtotime( $booking->check_out_date ) - strtotime( $booking->check_in_date ) ) / DAY_IN_SECONDS ) );
+    $room_ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$booking_rooms_table} WHERE booking_id = %d", $booking_id ) );
+    foreach ( $room_ids as $br_id ) {
+        $br_row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$booking_rooms_table} WHERE id = %d", $br_id ), ARRAY_A );
+        if ( ! $br_row ) {
+            continue;
+        }
+        $room_line = [
+            'adults'           => (int) $br_row['adults'],
+            'children'         => (int) $br_row['children'],
+            'babies'           => (int) $br_row['babies'],
+            'room_rate_amount' => (float) $br_row['room_rate_amount'],
+            'discount_type'    => $br_row['discount_type'] ?: 'none',
+            'discount_value'   => (float) $br_row['discount_value'],
+            'extras_amount'    => (float) $br_row['extras_amount'],
+        ];
+        $room_pricing = simple_hotel_crm_calculate_room_pricing(
+            $room_line,
+            $nights,
+            (int) $br_row['room_id'],
+            (string) $booking->source_channel
+        );
+        $wpdb->update(
+            $booking_rooms_table,
+            [
+                'pricing_room_id'    => $room_pricing['pricing_room_id'] > 0 ? $room_pricing['pricing_room_id'] : null,
+                'occupancy_adults'   => $room_pricing['occupancy_adults'],
+                'guest_count'        => $room_pricing['guest_count'],
+                'base_price_amount'  => $room_pricing['base_price_amount'],
+                'discount_amount'    => $room_pricing['discount_amount'],
+                'subtotal_amount'    => $room_pricing['subtotal_amount'],
+                'commission_amount'  => $room_pricing['commission_amount'],
+                'room_rate_amount'   => $room_pricing['room_rate_amount'],
+                'tourist_tax_amount' => $room_pricing['tourist_tax_total'],
+                'total_amount'       => $room_pricing['total_amount'],
+            ],
+            [ 'id' => $br_id ],
+            [ '%d', '%d', '%d', '%f', '%f', '%f', '%f', '%f', '%f', '%f' ],
+            [ '%d' ]
+        );
+        $room_rate_nightly  = simple_hotel_crm_distribute_amounts( $room_pricing['room_rate_amount'], $nights );
+        $base_price_nightly = simple_hotel_crm_distribute_amounts( $room_pricing['base_price_amount'], $nights );
+        $discount_nightly   = simple_hotel_crm_distribute_amounts( $room_pricing['discount_amount'], $nights );
+        $subtotal_nightly   = simple_hotel_crm_distribute_amounts( $room_pricing['subtotal_amount'], $nights );
+        $commission_nightly = simple_hotel_crm_distribute_amounts( $room_pricing['commission_amount'], $nights );
+        $tax_nightly        = simple_hotel_crm_distribute_amounts( $room_pricing['tourist_tax_total'], $nights );
+        $existing_nights    = $wpdb->get_results(
+            $wpdb->prepare( "SELECT id, stay_date, extras_amount FROM {$booking_nights_table} WHERE booking_room_id = %d ORDER BY stay_date ASC", $br_id ),
+            ARRAY_A
+        );
+        // Recreate nights if count changed OR dates shifted
+        $first_night_date = $existing_nights[0]['stay_date'] ?? '';
+        $dates_shifted = (string) $booking->check_in_date !== $first_night_date;
+        if ( count( $existing_nights ) !== $nights || $dates_shifted ) {
+            // Carry over extras from old nights by index
+            $old_extras = [];
+            foreach ( $existing_nights as $en ) {
+                $old_extras[] = (float) ( $en['extras_amount'] ?? 0 );
+            }
+            $wpdb->delete( $booking_nights_table, [ 'booking_room_id' => $br_id ], [ '%d' ] );
+            $existing_nights = [];
+            $check_in = $booking->check_in_date;
+            for ( $i = 0; $i < $nights; $i++ ) {
+                $stay_date = gmdate( 'Y-m-d', strtotime( $check_in . ' +' . $i . ' days' ) );
+                $wpdb->insert(
+                    $booking_nights_table,
+                    [
+                        'booking_room_id' => $br_id,
+                        'stay_date'       => $stay_date,
+                        'guest_count'     => $room_pricing['guest_count'],
+                        'adults'          => $room_pricing['adults'],
+                        'children'        => $room_pricing['children'],
+                        'babies'          => $room_pricing['babies'],
+                    ],
+                    [ '%d', '%s', '%d', '%d', '%d', '%d' ]
+                );
+                $existing_nights[] = [
+                    'id'            => $wpdb->insert_id,
+                    'stay_date'     => $stay_date,
+                    'extras_amount' => $old_extras[ $i ] ?? 0,
+                ];
+            }
+        }
+        foreach ( $existing_nights as $i => $night ) {
+            $night_extras = (float) ( $night['extras_amount'] ?? 0 );
+            $night_total  = round( $room_rate_nightly[ $i ] + $night_extras + $tax_nightly[ $i ], 2 );
+            $wpdb->update(
+                $booking_nights_table,
+                [
+                    'base_price_amount'  => $base_price_nightly[ $i ],
+                    'discount_amount'    => $discount_nightly[ $i ],
+                    'subtotal_amount'    => $subtotal_nightly[ $i ],
+                    'commission_amount'  => $commission_nightly[ $i ],
+                    'room_rate_amount'   => $room_rate_nightly[ $i ],
+                    'tourist_tax_amount' => $tax_nightly[ $i ],
+                    'total_amount'       => $night_total,
+                    'guest_count'        => $room_pricing['guest_count'],
+                    'adults'             => $room_pricing['adults'],
+                    'children'           => $room_pricing['children'],
+                    'babies'             => $room_pricing['babies'],
+                ],
+                [ 'id' => (int) $night['id'] ],
+                [ '%f', '%f', '%f', '%f', '%f', '%f', '%f', '%d', '%d', '%d', '%d' ],
+                [ '%d' ]
+            );
+        }
+    }
+    // Update booking header totals
+    $totals = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT COALESCE(SUM(room_rate_amount), 0) AS room_rate,
+                    COALESCE(SUM(extras_amount), 0) AS extras,
+                    COALESCE(SUM(tourist_tax_amount), 0) AS tax,
+                    COALESCE(SUM(total_amount), 0) AS total
+             FROM {$booking_rooms_table}
+             WHERE booking_id = %d",
+            $booking_id
+        ),
+        ARRAY_A
+    );
+    $b_adults   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(adults), 0) FROM {$booking_rooms_table} WHERE booking_id = %d", $booking_id ) );
+    $b_children = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(children), 0) FROM {$booking_rooms_table} WHERE booking_id = %d", $booking_id ) );
+    $b_babies   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(babies), 0) FROM {$booking_rooms_table} WHERE booking_id = %d", $booking_id ) );
+    $items_table   = simple_hotel_crm_booking_items_table();
+    $items_total   = (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(quantity * unit_price), 0) FROM {$items_table} WHERE booking_id = %d", $booking_id ) );
+    $wpdb->update(
+        $bookings_table,
+        [
+            'adults'           => $b_adults,
+            'children'         => $b_children,
+            'babies'           => $b_babies,
+            'room_rate_amount' => round( (float) $totals['room_rate'], 2 ),
+            'extras_amount'    => round( (float) $totals['extras'], 2 ),
+            'tourist_tax_amount' => round( (float) $totals['tax'], 2 ),
+            'total_amount'     => round( (float) $totals['total'] + $items_total, 2 ),
+            'updated_at'       => current_time( 'mysql' ),
+        ],
+        [ 'id' => $booking_id ],
+        [ '%d', '%d', '%d', '%f', '%f', '%f', '%f', '%s' ],
+        [ '%d' ]
+    );
 
     simple_hotel_crm_clear_calendar_cache();
 

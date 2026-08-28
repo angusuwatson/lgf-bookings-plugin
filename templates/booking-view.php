@@ -218,6 +218,16 @@ $scroll_to_today = ( (int) $month === $today_month && (int) $year === $today_yea
             <form class="simple-hotel-crm-quick-booking-form">
                 <input type="hidden" name="booking_id" value="" />
                 <input type="hidden" name="reserved_room_id" value="" />
+                <input type="hidden" name="guest_id" id="popup_guest_id" value="" />
+                <div style="margin-bottom:8px;">
+                    <label style="font-weight:600;"><?php esc_html_e( 'Returning guest', 'simple-hotel-crm' ); ?>:</label>
+                    <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
+                        <input type="text" id="popup_guest_search" class="regular-text" placeholder="<?php esc_attr_e( 'Search name, email or phone...', 'simple-hotel-crm' ); ?>" autocomplete="off" style="flex:1;min-width:180px;" />
+                        <button type="button" id="popup_clear_guest_search" class="button button-secondary" style="display:none;"><?php esc_html_e( 'Clear', 'simple-hotel-crm' ); ?></button>
+                    </div>
+                    <div id="popup_guest_search_results" style="max-height:160px;overflow-y:auto;border:1px solid #ccd0d4;background:#fff;display:none;position:absolute;z-index:100;min-width:350px;"></div>
+                    <div id="popup_guest_preferences_display" style="margin-top:4px;display:none;"></div>
+                </div>
                 <div class="simple-hotel-crm-form-grid simple-hotel-crm-form-grid-3">
                     <p><label><?php esc_html_e( 'Guest name', 'simple-hotel-crm' ); ?><span class="simple-hotel-crm-copy-field"><input type="text" name="guest_name" class="regular-text" /><button type="button" class="button button-small simple-hotel-crm-copy-button" data-copy-target="guest_name"><?php esc_html_e( 'Copy', 'simple-hotel-crm' ); ?></button></span></label></p>
                     <p><label><?php esc_html_e( 'Phone', 'simple-hotel-crm' ); ?><span class="simple-hotel-crm-copy-field"><input type="text" name="phone" class="regular-text" /><button type="button" class="button button-small simple-hotel-crm-copy-button" data-copy-target="phone"><?php esc_html_e( 'Copy', 'simple-hotel-crm' ); ?></button></span></label></p>
