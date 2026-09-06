@@ -72,6 +72,20 @@ function simple_hotel_crm_enqueue_admin_assets( $hook_suffix ) {
     simple_hotel_crm_enqueue_shared_assets( 'admin' );
 }
 
+add_action( 'admin_head', 'simple_hotel_crm_output_viewport_meta' );
+function simple_hotel_crm_output_viewport_meta() {
+    if ( ! simple_hotel_crm_user_can_access() ) {
+        return;
+    }
+
+    $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+    if ( 0 !== strpos( $page, 'simple-hotel-crm' ) ) {
+        return;
+    }
+
+    echo '<meta name="viewport" content="width=device-width, initial-scale=1">' . "\n";
+}
+
 function simple_hotel_crm_get_daily_notes_for_month( $year, $month ) {
     global $wpdb;
 
