@@ -233,6 +233,8 @@ input,select{font-family:inherit;font-size:16px}
   .hamburger{display:inline-flex}
   .header > .view-btn{display:none}
   .header > .view-btn{display:none}
+  .header .account-btn{display:none}
+  .account-menu{display:none!important}
 }
 /* Ticket panel */
 .ticket-panel{width:380px;flex-shrink:0;display:flex;flex-direction:column;background:var(--card);overflow:hidden;border-left:2px solid var(--border)}
@@ -433,6 +435,8 @@ input,select{font-family:inherit;font-size:16px}
       <button class="view-btn" data-view="fin" id="hm-view-fin">💰 Fin</button>
       <button class="view-btn" data-view="pricing" id="hm-view-pricing">💲 Pricing</button>
       <button class="view-btn" data-view="maint" id="hm-view-maint">🔧 Maintenance</button>
+      <button class="view-btn" id="hm-qb">＋ Quick booking</button>
+      <button class="view-btn" id="hm-fs">⛶ Fullscreen</button>
       <span class="hm-user" id="hm-user"></span>
       <button class="hm-logout" id="hm-logout">Sign Out</button>
     </div>
@@ -3728,6 +3732,8 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('hm-view-maint').addEventListener('click',function(){closeHm();setViewMode('maint');});
     document.getElementById('hm-view-fin').addEventListener('click',function(){closeHm();setViewMode('fin');});
     document.getElementById('hm-view-pricing').addEventListener('click',function(){closeHm();setViewMode('pricing');});
+    document.getElementById('hm-qb').addEventListener('click',function(){closeHm();openQuickBookingModal();});
+    document.getElementById('hm-fs').addEventListener('click',function(){closeHm();toggleFullscreen();});
 
     // List date bar
     document.getElementById('ticket-date').addEventListener('change',function(){
