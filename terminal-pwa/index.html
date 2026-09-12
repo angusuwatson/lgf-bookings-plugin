@@ -74,9 +74,8 @@ input,select{font-family:inherit;font-size:16px}
 .item-card:active .item-price{color:rgba(255,255,255,.7)}
 /* Calendar */
 .cal-scroll{flex:1;overflow:auto;padding:6px 6px 0;background:var(--card);-webkit-overflow-scrolling:touch}
-.cal-nav{display:flex;flex-direction:column;gap:4px;padding:6px 0;background:var(--card)}
-.cal-nav-top{display:flex;align-items:center;justify-content:space-between;padding:0 4px}
-.cal-nav-between{display:flex;align-items:center;gap:6px}
+.cal-nav{display:flex;align-items:center;gap:6px;padding:6px 0;background:var(--card)}
+.cal-nav-between{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
 .cal-nav-between > button{flex-shrink:0}
 .cal-nav button{background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:18px;cursor:pointer;padding:4px 12px;border-radius:4px}
 .cal-nav span{font-weight:700;font-size:14px}
@@ -461,16 +460,13 @@ input,select{font-family:inherit;font-size:16px}
       <div class="catalog-scroll" id="item-grid"></div>
       <div id="dash-view" class="dash-scroll" style="display:none"></div>
       <div id="cal-navbar" class="cal-nav" style="display:none">
-        <div class="cal-nav-top">
-          <span id="cal-nav-label">May 2026</span>
-          <select id="cal-year" class="cal-year"></select>
-        </div>
         <div class="cal-nav-between">
           <button id="cal-prev">‹</button>
           <div id="cal-months" class="cal-months">
             <button data-m="0">Jan</button><button data-m="1">Feb</button><button data-m="2">Mar</button><button data-m="3">Apr</button><button data-m="4">May</button><button data-m="5">Jun</button><button data-m="6">Jul</button><button data-m="7">Aug</button><button data-m="8">Sep</button><button data-m="9">Oct</button><button data-m="10">Nov</button><button data-m="11">Dec</button>
           </div>
           <button id="cal-next">›</button>
+          <select id="cal-year" class="cal-year"></select>
         </div>
       </div>
       <div id="cal-view" class="cal-scroll" style="display:none"></div>
@@ -2298,7 +2294,6 @@ function renderPricingAudit(root){
 function updateCalNav(){
     var d=new Date(state.calDate+'T12:00:00');
     var y=d.getFullYear(),m=d.getMonth();
-    document.getElementById('cal-nav-label').textContent=d.toLocaleString('en',{month:'long',year:'numeric'});
     var sel=document.getElementById('cal-year');
     if(sel&&sel.value!==String(y)) sel.value=String(y);
     var btns=document.querySelectorAll('#cal-months [data-m]');
@@ -2385,8 +2380,6 @@ function renderCalendar(){
     var d=new Date(state.calDate+'T12:00:00');
     var year=d.getFullYear();
     var month=d.getMonth();
-    var monthLabel=new Date(year,month).toLocaleString('en',{month:'long',year:'numeric'});
-    document.getElementById('cal-nav-label').textContent=monthLabel;
     var daysInMonth=new Date(year,month+1,0).getDate();
     var dates=[];
     for(var i=1;i<=daysInMonth;i++){
