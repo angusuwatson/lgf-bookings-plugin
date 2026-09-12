@@ -35,35 +35,18 @@ input,select{font-family:inherit;font-size:16px}
 .header{background:var(--bg);color:#fff;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;position:relative;z-index:100}
 .header h1{font-size:18px;font-weight:700;flex-shrink:0;margin-right:4px}
 .header input[type=date]{font-size:15px;padding:6px 10px;border-radius:8px;border:none;background:var(--card);color:var(--text);min-height:36px}
-.header .user-name{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px}
-.header .fs-btn{font-size:18px;background:none;border:2px solid rgba(255,255,255,.5);color:#fff;border-radius:6px;padding:4px 8px;line-height:1;flex-shrink:0}
-.header .fs-btn:active{border-color:#fff;background:rgba(255,255,255,.15)}
+.header .account-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:2px 10px;font-size:18px;line-height:1.5;min-height:32px;flex-shrink:0}
+.header .account-btn:active{background:rgba(255,255,255,.3)}
+.account-menu{display:none;position:absolute;top:100%;right:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px;z-index:600;flex-direction:column;gap:4px;min-width:190px}
+.account-menu.active{display:flex}
+.account-menu .account-user{display:block;padding:6px 14px;font-size:12px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.account-menu .account-item{display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;color:#fff;background:none;border:none;border-radius:6px;cursor:pointer}
+.account-menu .account-item:active{background:var(--hover-bg)}
+.account-menu .account-logout{color:#e57373}
 .view-btn{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;min-height:32px;flex-shrink:0}
 .view-btn.active{border-color:#fff;color:#fff;background:rgba(255,255,255,.15)}
 .view-btn:active{background:rgba(255,255,255,.2)}
 @keyframes spin{to{transform:rotate(360deg)}}
-.gs-input{font-size:14px;padding:6px 10px;border-radius:8px;border:none;background:rgba(255,255,255,.15);color:#fff;min-height:32px;flex:1;min-width:80px;max-width:200px;outline:none}
-.gs-input::placeholder{color:rgba(255,255,255,.5)}
-.gs-input:focus{background:rgba(255,255,255,.25)}
-.gs-wrap{display:flex;align-items:center;gap:4px;flex:1;max-width:200px;position:relative;transition:flex .2s,max-width .2s}
-.gs-toggle{background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0;line-height:1;min-height:32px}
-.gs-toggle:active{color:#fff}
-.gs-wrap .gs-input{flex:1;min-width:0;max-width:none;transition:width .2s,opacity .2s,padding .2s}
-.gs-wrap.collapsed{flex:0;max-width:32px}
-.gs-wrap.collapsed .gs-input{width:0;padding:6px 0;opacity:0;overflow:hidden;flex:0;border:none}
-.gs-wrap.collapsed .gs-input::placeholder{color:transparent}
-.btn-qb-hdr{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:2px 10px;font-size:22px;font-weight:700;line-height:1;min-height:32px;flex-shrink:0}
-.btn-qb-hdr:active{background:rgba(255,255,255,.3)}
-/* Search results */
-.gs-results{position:absolute;top:100%;left:0;right:0;background:var(--card);border-radius:0 0 12px 12px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:500;max-height:50vh;overflow-y:auto;display:none}
-.gs-results.active{display:block}
-.gs-result{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:8px}
-.gs-result:active{background:var(--hover-bg)}
-.gs-result:last-child{border-bottom:none}
-.gs-result .gsr-name{font-weight:600;font-size:15px;white-space:nowrap}
-.gs-result .gsr-detail{font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gs-result .gsr-action{font-size:11px;color:var(--accent);font-weight:600;flex-shrink:0}
-.gs-no-results{padding:16px;text-align:center;color:var(--muted);font-size:14px}
 /* Bookings row */
 .bookings-row{display:flex;gap:8px;padding:10px;overflow-x:auto;flex-shrink:0;background:var(--card);border-bottom:2px solid var(--border);min-height:70px;-webkit-overflow-scrolling:touch}
 .booking-card{flex:0 0 auto;padding:10px 14px;border-radius:10px;border:2px solid var(--border);background:var(--card);cursor:pointer;text-align:left;min-width:160px;transition:border-color .1s}
@@ -237,14 +220,10 @@ input,select{font-family:inherit;font-size:16px}
 .hm-menu{display:none;position:absolute;top:100%;right:8px;background:var(--bg);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:6px;z-index:600;flex-direction:column;gap:4px;min-width:180px}
 .hm-menu.active{display:flex}
 .hm-menu .view-btn{display:block;width:100%;text-align:left;padding:8px 14px;font-size:14px}
-.hm-menu .hm-search{display:block;width:100%;padding:8px 14px;font-size:14px;background:rgba(255,255,255,.1);border:none;border-radius:6px;color:#fff;outline:none}
-.hm-menu .hm-search::placeholder{color:rgba(255,255,255,.4)}
 .hm-menu .hm-user{display:block;padding:6px 14px;font-size:12px;color:rgba(255,255,255,.5);text-align:center;border-top:1px solid rgba(255,255,255,.1);margin-top:4px}
 .hm-menu .hm-logout{display:block;width:100%;padding:8px 14px;font-size:13px;background:none;border:none;color:#e57373;border-radius:6px;cursor:pointer;text-align:center}
 .hm-menu .hm-logout:active{background:rgba(255,255,255,.1)}
 .hm-theme-label{display:block;padding:6px 14px 2px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.hm-theme{display:block;width:100%;margin:4px 0;padding:8px 14px;font-size:13px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px}
-.header .theme-select{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:var(--card);color:var(--text);min-height:32px;cursor:pointer;flex-shrink:0;appearance:auto}
 /* Responsive */
 @media(max-width:768px){
   .main{flex-direction:column}
@@ -253,9 +232,6 @@ input,select{font-family:inherit;font-size:16px}
   .hamburger{display:inline-flex}
   .header > .view-btn{display:none}
   .header > .view-btn{display:none}
-  .header .gs-wrap{display:none}
-  .header .user-name{display:none}
-  .header #logout-btn{display:none}
 }
 /* Ticket panel */
 .ticket-panel{width:380px;flex-shrink:0;display:flex;flex-direction:column;background:var(--card);overflow:hidden;border-left:2px solid var(--border)}
@@ -433,29 +409,21 @@ input,select{font-family:inherit;font-size:16px}
 <div id="app">
   <div class="header">
     <h1>LGF</h1>
-    <div class="gs-wrap collapsed" id="gs-wrap">
-      <button class="gs-toggle" id="gs-toggle">🔍</button>
-      <input type="search" id="gs-input" placeholder="Search" class="gs-input" autocomplete="off">
-    </div>
     <button class="view-btn active" data-view="dash" id="view-dash">Dash</button>
     <button class="view-btn" data-view="list" id="view-list">Tickets</button>
     <button class="view-btn" data-view="cal" id="view-cal">Cal</button>
     <button class="view-btn" data-view="fin" id="view-fin">Fin</button>
     <button class="view-btn" data-view="pricing" id="view-pricing">💰</button>
     <button class="view-btn" data-view="maint" id="view-maint">Maint</button>
-    <select id="theme-select" class="theme-select">
-      <option value="default">LGF Original</option>
-      <option value="darklgf">LGF Dark</option>
-    </select>
     <button class="hamburger" id="hamburger">☰</button>
-    <button class="btn-qb-hdr" id="qb-open" title="Quick booking">+</button>
-    <span class="user-name" id="user-label"></span>
-    <button class="fs-btn" id="fs-btn" title="Toggle fullscreen">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-    </button>
-    <button id="logout-btn" style="background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 8px;font-size:11px;min-height:32px">Logout</button>
+    <button class="account-btn" id="account-btn" title="Account">👤</button>
+    <div class="account-menu" id="account-menu">
+    <span class="account-user" id="account-user"></span>
+    <button class="account-item" id="account-qb">＋ Quick booking</button>
+    <button class="account-item" id="account-fs">⛶ Fullscreen</button>
+    <button class="account-item account-logout" id="account-logout">Sign Out</button>
+    </div>
     <div class="hm-menu" id="hm-menu">
-      <input type="search" id="hm-search" placeholder="Search" class="hm-search" autocomplete="off">
       <button class="view-btn active" data-view="dash" id="hm-view-dash">📊 Dash</button>
       <button class="view-btn" data-view="list" id="hm-view-list">📋 Tickets</button>
       <button class="view-btn" data-view="cal" id="hm-view-cal">📅 Calendar</button>
@@ -466,8 +434,6 @@ input,select{font-family:inherit;font-size:16px}
       <button class="hm-logout" id="hm-logout">Sign Out</button>
     </div>
   </div>
-
-  <div class="gs-results" id="gs-results"></div>
 
   <div class="main">
     <div class="left-panel">
@@ -788,7 +754,7 @@ var AUTH_KEY = 'lgf_terminal_key';
 var FIRST_NAME_KEY = 'lgf_terminal_name';
 
 var state = {
-    theme: 'default',
+    theme: 'darklgf',
     date: '',
     bookings: [],
     catalog: [],
@@ -901,7 +867,7 @@ function doLogin(){
         document.getElementById('login-pass').value='';
         document.getElementById('login-user').value='';
         hideLogin();
-        try{applyTheme(localStorage.getItem('lgf_theme')||'default')}catch(e){}
+        applyTheme('darklgf');
         fetchData();
     }).catch(function(err){
         clearTimeout(safetyTimer);
@@ -924,8 +890,8 @@ function doLogout(){
 }
 
 function setUserLabel(name){
-    document.getElementById('user-label').textContent=name||'';
     document.getElementById('hm-user').textContent=name||'';
+    document.getElementById('account-user').textContent=name||'';
 }
 
 /* ---- Helpers ---- */
@@ -971,6 +937,10 @@ function toggleHm(){
 }
 function closeHm(){
     document.getElementById('hm-menu').classList.remove('active');
+}
+function closeAccountMenu(){
+    var m=document.getElementById('account-menu');
+    if(m) m.classList.remove('active');
 }
 
 function apiGet(path){
@@ -2593,61 +2563,6 @@ function escapeHtml(s){
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-/* ---- Guest Search ---- */
-var _gsTimer=0;
-function doGuestSearch(){
-    var q=document.getElementById('gs-input').value.trim();
-    var resultsEl=document.getElementById('gs-results');
-    if(q.length<2){
-        resultsEl.classList.remove('active');
-        return;
-    }
-    clearTimeout(_gsTimer);
-    _gsTimer=setTimeout(function(){
-        apiGet('ticket-guest-search?q='+encodeURIComponent(q)).then(function(data){
-            showGuestResults(data.guests||[]);
-        }).catch(function(err){
-            if(err.message!=='unauthorized') showError('Search failed.');
-        });
-    },300);
-}
-function showGuestResults(guests){
-    var el=document.getElementById('gs-results');
-    if(guests.length===0){
-        el.innerHTML='<div class="gs-no-results">No guests found.</div>';
-        el.classList.add('active');
-        return;
-    }
-    var html='';
-    guests.forEach(function(g){
-        var name=((g.first_name||'')+' '+(g.last_name||'')).trim()||'Guest #'+g.id;
-        var detail=g.phone||g.email||'';
-        var lastVisit=g.last_visit?'Last: '+g.last_visit:'';
-        html+='<div class="gs-result" onclick="window._selectGuestResult('+g.id+')">';
-        html+='<span class="gsr-name">'+escapeHtml(name)+'</span>';
-        html+='<span class="gsr-detail">'+escapeHtml(detail)+(lastVisit?' · '+lastVisit:'')+'</span>';
-        html+='<span class="gsr-action">'+(g.booking_count||0)+' bookings</span>';
-        html+='</div>';
-    });
-    el.innerHTML=html;
-    el.classList.add('active');
-}
-window._selectGuestResult=function(guestId){
-    // Switch to list view, search will close
-    setViewMode('list');
-    document.getElementById('gs-input').value='';
-    document.getElementById('gs-wrap').classList.add('collapsed');
-    document.getElementById('gs-results').classList.remove('active');
-    // Try to find a booking for this guest in current data
-    for(var i=0;i<state.bookings.length;i++){
-        if(parseInt(state.bookings[i].guest_id,10)===guestId){
-            selectBooking(parseInt(state.bookings[i].id,10));
-            return;
-        }
-    }
-    showError('Guest found — change date to their booking date.');
-};
-
 /* ---- Ticket ---- */
 function getRoomCharges(){
     var groups={};
@@ -3764,24 +3679,14 @@ document.addEventListener('DOMContentLoaded',function(){
     document.addEventListener('fullscreenchange',fixViewport);
     document.addEventListener('webkitfullscreenchange',fixViewport);
 
-    var savedTheme='default';
-    try{savedTheme=localStorage.getItem('lgf_theme')||'default'}catch(e){}
-    applyTheme(savedTheme);
-    var themeSelect=document.getElementById('theme-select');
-    if(themeSelect){
-        themeSelect.value=THEMES[savedTheme]?savedTheme:'default';
-        themeSelect.addEventListener('change',function(){
-            applyTheme(this.value);
-            if(state.viewMode==='cal') renderCalendar();
-        });
-    }
+    applyTheme('darklgf');
 
     document.addEventListener('click',function(e){
-        if(!e.target.closest('.header')&&!e.target.closest('.gs-results')){
-            document.getElementById('gs-results').classList.remove('active');
-        }
         if(!e.target.closest('.hm-menu')&&!e.target.closest('#hamburger')){
             closeHm();
+        }
+        if(!e.target.closest('.account-menu')&&!e.target.closest('#account-btn')){
+            closeAccountMenu();
         }
     });
 
@@ -3797,16 +3702,14 @@ document.addEventListener('DOMContentLoaded',function(){
         fetchData();
     }
 
-    // Search toggle
-    document.getElementById('gs-toggle').addEventListener('click',function(){
-        var wrap=document.getElementById('gs-wrap');
-        var input=document.getElementById('gs-input');
-        wrap.classList.toggle('collapsed');
-        if(!wrap.classList.contains('collapsed')){input.focus();}
+    // Account dropdown
+    document.getElementById('account-btn').addEventListener('click',function(e){
+        e.stopPropagation();
+        document.getElementById('account-menu').classList.toggle('active');
     });
-    document.getElementById('gs-input').addEventListener('blur',function(){
-        if(!this.value.trim()) document.getElementById('gs-wrap').classList.add('collapsed');
-    });
+    document.getElementById('account-qb').addEventListener('click',function(){closeAccountMenu();openQuickBookingModal();});
+    document.getElementById('account-fs').addEventListener('click',function(){closeAccountMenu();toggleFullscreen();});
+    document.getElementById('account-logout').addEventListener('click',function(){closeAccountMenu();doLogout();});
 
     // View switching
     document.getElementById('hamburger').addEventListener('click',function(e){e.stopPropagation();toggleHm();});
@@ -3872,19 +3775,7 @@ document.addEventListener('DOMContentLoaded',function(){
         });
     });
 
-    // Guest search
-    document.getElementById('gs-input').addEventListener('input',function(){doGuestSearch();});
-    document.getElementById('hm-search').addEventListener('input',function(){
-        var v=this.value;
-        document.getElementById('gs-input').value=v;
-        if(v.trim()){doGuestSearch();}else{document.getElementById('gs-results').classList.remove('active');}
-    });
-    document.getElementById('hm-search').addEventListener('keydown',function(e){
-        if(e.key==='Enter'&&this.value.trim()){closeHm();}
-    });
-
     // Quick booking
-    document.getElementById('qb-open').addEventListener('click',function(){openQuickBookingModal();});
     document.getElementById('qb-check-in').addEventListener('change',function(){loadQbRooms();renderQbRoomNotes();});
     document.getElementById('qb-check-out').addEventListener('change',function(){loadQbRooms();renderQbRoomNotes();});
     document.getElementById('qb-room').addEventListener('change',function(){renderQbRoomNotes();});
@@ -3980,9 +3871,7 @@ document.addEventListener('DOMContentLoaded',function(){
         };
         reader.readAsDataURL(file);
     });
-    document.getElementById('fs-btn').addEventListener('click',function(){toggleFullscreen();});
     document.getElementById('login-btn').addEventListener('click',function(){doLogin();});
-    document.getElementById('logout-btn').addEventListener('click',function(){doLogout();});
     document.getElementById('hm-logout').addEventListener('click',function(){closeHm();doLogout();});
     document.getElementById('login-pass').addEventListener('keydown',function(e){if(e.key==='Enter') doLogin();});
     document.getElementById('login-user').addEventListener('keydown',function(e){if(e.key==='Enter') document.getElementById('login-pass').focus();});
