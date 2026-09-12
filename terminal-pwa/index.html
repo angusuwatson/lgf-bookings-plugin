@@ -3425,39 +3425,17 @@ function openEditModal(){
         // Populate room/date dropdowns from booking rooms + full stay range.
         // Room list = all rooms on the booking (even without night rows), so a
         // room+date note can be chosen for any room/night of the stay.
-        var roomMap={};
-        (state.bookingRooms||[]).forEach(function(br){
-            var rid=String(br.booking_room_id||br.id);
-            if(!roomMap[rid]) roomMap[rid]=((br.room_code||'')+' '+(br.room_name||'')).trim()||('Room #'+rid);
-        });
-        nights.forEach(function(n){
-            if(!roomMap[n.booking_room_id]) roomMap[n.booking_room_id]=((n.room_code||'')+' '+(n.room_name||'')).trim();
-        });
-        Object.keys(roomMap).forEach(function(rid){
-            roomSel.add(new Option(roomMap[rid],rid));
-        });
-        var dateSet={};
-        var b=state.activeBooking||{};
-        var ci=String(b.check_in_date||''), co=String(b.check_out_date||'');
-        var dateRe=/^\d{4}-\d{2}-\d{2}$/;
-        if(dateRe.test(ci)&&dateRe.test(co)&&co>ci){
-            var dd=new Date(ci+'T12:00:00');
-            var ds=ci;
-            while(ds<co){
-                dateSet[ds]=true;
-                dd.setDate(dd.getDate()+1);
-                ds=dd.getFullYear()+'-'+('0'+(dd.getMonth()+1)).slice(-2)+'-'+('0'+dd.getDate()).slice(-2);
-            }
-        }
-        nights.forEach(function(n){dateSet[n.stay_date]=true;});
-        Object.keys(noteMap).forEach(function(key){
-            if(!noteMap[key]) return;
-            dateSet[key.split('|')[1]]=true;
-        });
-        Object.keys(dateSet).sort().forEach(function(d){
-            dateSel.add(new Option(d,d));
-        });
-
+function searchTransferGuest(q){
+    clearTimeout(_beTransferTimer);
+    var res=document.getElementById('be-transfer-results');
+    var tgt=document.getElementById('be-transfer-target');
+    var btn=document.getElementById('be-transfer-confirm');
+    if(q.length<2){res.innerHTML='';tgt.style.display='none';btn.style.display='none';_beTransferGuestId=0;return;}
+    _beTransferTimer=setTimeout(function(){
+        apiGet('ticket-guest-search?q='+encodeURIComponent(q)).then(function(data){
+            var guests=data.guests||[];
+            res.innerHTML='';
+            if(!guests.length){res.innerHTML='<div style="padding:8px;color:var(--muted)">No guests found</div>';return;}
             guests.forEach(function(g){
                 var div=document.createElement('div');
                 div.style.cssText='padding:6px 8px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
