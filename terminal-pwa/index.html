@@ -3221,47 +3221,21 @@ function renderQbRoomNotes(){
         return;
     }
     var html='';
-    Object.keys(_qbRoomNotes).sort().forEach(function(ds){
-        if(!_qbRoomNotes[ds]) return;
+    dates.forEach(function(ds){
         html+='<div style="margin-bottom:6px;padding:6px 8px;background:var(--hover-bg);border-radius:6px">';
-        html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+ds+' — '+roomLabel+'</div>';
+        html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+ds+' \u2014 '+roomLabel+'</div>';
+        html+='<textarea data-stay-date="'+ds+'" rows="2" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+((_qbRoomNotes[ds]||'').replace(/</g,'&lt;'))+'</textarea>';
+        html+='</div>';
+    });
+    // Append any leftover saved notes whose night is outside the current stay dates.
+    Object.keys(_qbRoomNotes).sort().forEach(function(ds){
+        if(!_qbRoomNotes[ds]||dates.indexOf(ds)>=0) return;
+        html+='<div style="margin-bottom:6px;padding:6px 8px;background:var(--hover-bg);border-radius:6px">';
+        html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+ds+' \u2014 '+roomLabel+' (outside stay)</div>';
         html+='<textarea data-stay-date="'+ds+'" rows="2" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+(_qbRoomNotes[ds]||'').replace(/</g,'&lt;')+'</textarea>';
         html+='</div>';
     });
-    html+='<div id="qb-rdn-add" style="margin-bottom:6px;padding:6px 8px;background:var(--hover-bg);border-radius:6px;display:none">';
-    html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">Add note</div>';
-    html+='<div style="display:flex;gap:6px;margin-bottom:4px">';
-    html+='<select id="qb-rdn-room" style="flex:1;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--bg);color:var(--text)"></select>';
-    html+='<select id="qb-rdn-date" style="flex:1;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--bg);color:var(--text)"></select>';
-    html+='</div>';
-    html+='<textarea id="qb-rdn-text" rows="2" placeholder="Note text…" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit"></textarea>';
-    html+='<div style="display:flex;gap:6px;margin-top:4px">';
-    html+='<button type="button" class="btn-ci" id="qb-rdn-save" style="font-size:12px;padding:4px 12px">Save</button>';
-    html+='<button type="button" class="btn-ci" id="qb-rdn-cancel" style="font-size:12px;padding:4px 12px">Cancel</button>';
-    html+='</div></div>';
-    html+='<div id="qb-rdn-toggle" style="margin-bottom:6px"><button type="button" class="btn-ci" id="qb-rdn-add-btn" style="font-size:12px;padding:4px 10px">+ Add note</button></div>';
     container.innerHTML=html;
-    var roomOpt=document.getElementById('qb-rdn-room');
-    roomOpt.add(new Option(roomLabel,String(roomId)));
-    var dateOpt=document.getElementById('qb-rdn-date');
-    dates.forEach(function(ds){dateOpt.add(new Option(ds,ds));});
-    document.getElementById('qb-rdn-add-btn').addEventListener('click',function(){
-        document.getElementById('qb-rdn-add').style.display='';
-        document.getElementById('qb-rdn-toggle').style.display='none';
-        document.getElementById('qb-rdn-text').focus();
-    });
-    document.getElementById('qb-rdn-cancel').addEventListener('click',function(){
-        document.getElementById('qb-rdn-add').style.display='none';
-        document.getElementById('qb-rdn-toggle').style.display='';
-        document.getElementById('qb-rdn-text').value='';
-    });
-    document.getElementById('qb-rdn-save').addEventListener('click',function(){
-        var ds=document.getElementById('qb-rdn-date').value;
-        var text=document.getElementById('qb-rdn-text').value.trim();
-        if(!ds) return;
-        if(text){_qbRoomNotes[ds]=text;}else{delete _qbRoomNotes[ds];}
-        renderQbRoomNotes();
-    });
 }
 
 function collectQbRoomNotes(){
@@ -3426,18 +3400,6 @@ function openEditModal(){
         var noteMap={};
         existingNotes.forEach(function(n){noteMap[n.booking_room_id+'|'+n.stay_date]=n.note_text||'';});
         var nights=state.roomNights||[];
-        var html='<div id="be-rdn-add" style="margin-bottom:6px;padding:6px 8px;background:var(--hover-bg);border-radius:6px;display:none">';
-        html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">Add note</div>';
-        html+='<div style="display:flex;gap:6px;margin-bottom:4px">';
-        html+='<select id="be-rdn-room" style="flex:1;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--bg);color:var(--text)"><option value="">Room</option></select>';
-        html+='<select id="be-rdn-date" style="flex:1;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--bg);color:var(--text)"><option value="">Date</option></select>';
-        html+='</div>';
-        html+='<textarea id="be-rdn-text" rows="2" placeholder="Note text…" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit"></textarea>';
-        html+='<div style="display:flex;gap:6px;margin-top:4px">';
-        html+='<button type="button" class="btn-ci" id="be-rdn-save" style="font-size:12px;padding:4px 12px">Save</button>';
-        html+='<button type="button" class="btn-ci" id="be-rdn-cancel" style="font-size:12px;padding:4px 12px">Cancel</button>';
-        html+='</div></div>';
-        html+='<div id="be-rdn-toggle" style="margin-bottom:6px"><button type="button" class="btn-ci" id="be-rdn-add-btn" style="font-size:12px;padding:4px 10px">+ Add note</button></div>';
         if(!nights.length){html+='<div style="color:var(--muted);font-size:13px">No room nights.</div>';}
         nights.forEach(function(n,i){
             var key=n.booking_room_id+'|'+n.stay_date;
@@ -3463,8 +3425,6 @@ function openEditModal(){
         // Populate room/date dropdowns from booking rooms + full stay range.
         // Room list = all rooms on the booking (even without night rows), so a
         // room+date note can be chosen for any room/night of the stay.
-        var roomSel=document.getElementById('be-rdn-room');
-        var dateSel=document.getElementById('be-rdn-date');
         var roomMap={};
         (state.bookingRooms||[]).forEach(function(br){
             var rid=String(br.booking_room_id||br.id);
@@ -3498,81 +3458,6 @@ function openEditModal(){
             dateSel.add(new Option(d,d));
         });
 
-        document.getElementById('be-rdn-add-btn').addEventListener('click',function(){
-            document.getElementById('be-rdn-add').style.display='';
-            document.getElementById('be-rdn-toggle').style.display='none';
-            document.getElementById('be-rdn-text').focus();
-        });
-        document.getElementById('be-rdn-cancel').addEventListener('click',function(){
-            document.getElementById('be-rdn-add').style.display='none';
-            document.getElementById('be-rdn-toggle').style.display='';
-            document.getElementById('be-rdn-text').value='';
-        });
-        document.getElementById('be-rdn-save').addEventListener('click',function(){
-            var brId=parseInt(roomSel.value,10)||0;
-            var stayDate=dateSel.value;
-            var noteText=document.getElementById('be-rdn-text').value.trim();
-            if(!brId||!stayDate){return;}
-            var key=brId+'|'+stayDate;
-            // Check if entry already exists, update or append
-            var existing=notesContainer.querySelector('[data-br-id="'+brId+'"][data-stay-date="'+stayDate+'"]');
-            if(existing){existing.value=noteText;}
-            else{
-                var label=stayDate+' — '+(roomMap[brId]||'');
-                var div=document.createElement('div');
-                div.style.cssText='margin-bottom:6px;padding:6px 8px;background:var(--hover-bg);border-radius:6px';
-                div.innerHTML='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+label+'</div>';
-                var ta=document.createElement('textarea');
-                ta.setAttribute('data-br-id',brId);
-                ta.setAttribute('data-stay-date',stayDate);
-                ta.rows=2;
-                ta.style.cssText='width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit';
-                ta.value=noteText;
-                div.appendChild(ta);
-                notesContainer.appendChild(div);
-            }
-            document.getElementById('be-rdn-add').style.display='none';
-            document.getElementById('be-rdn-toggle').style.display='';
-            document.getElementById('be-rdn-text').value='';
-        });
-    }).catch(function(){notesContainer.innerHTML='<div style="color:var(--red);font-size:13px">Failed to load notes.</div>';});
-
-    // Reset transfer section
-    document.getElementById('be-transfer-section').style.display='none';
-    document.getElementById('be-transfer-toggle').textContent='\u25B8 Transfer booking';
-    document.getElementById('be-transfer-search').value='';
-    document.getElementById('be-transfer-results').innerHTML='';
-    document.getElementById('be-transfer-target').style.display='none';
-    document.getElementById('be-transfer-confirm').style.display='none';
-
-    document.getElementById('be-modal').classList.add('active');
-}
-
-function closeEditModal(){
-    var btn=document.getElementById('be-confirm');
-    btn.disabled=false;
-    btn.textContent='✓ Save Changes';
-    document.getElementById('be-modal').classList.remove('active');
-    _beBookingId=0;
-    _beTransferGuestId=0;
-}
-function toggleTransferSection(){
-    var sec=document.getElementById('be-transfer-section');
-    var toggle=document.getElementById('be-transfer-toggle');
-    if(sec.style.display==='none'){sec.style.display='';toggle.textContent='\u25BC Transfer booking';}
-    else{sec.style.display='none';toggle.textContent='\u25B8 Transfer booking';}
-}
-function searchTransferGuest(q){
-    clearTimeout(_beTransferTimer);
-    var res=document.getElementById('be-transfer-results');
-    var tgt=document.getElementById('be-transfer-target');
-    var btn=document.getElementById('be-transfer-confirm');
-    if(q.length<2){res.innerHTML='';tgt.style.display='none';btn.style.display='none';_beTransferGuestId=0;return;}
-    _beTransferTimer=setTimeout(function(){
-        apiGet('ticket-guest-search?q='+encodeURIComponent(q)).then(function(data){
-            var guests=data.guests||[];
-            res.innerHTML='';
-            if(!guests.length){res.innerHTML='<div style="padding:8px;color:var(--muted)">No guests found</div>';return;}
             guests.forEach(function(g){
                 var div=document.createElement('div');
                 div.style.cssText='padding:6px 8px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
