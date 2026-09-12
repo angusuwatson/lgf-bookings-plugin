@@ -3425,6 +3425,19 @@ function openEditModal(){
         // Populate room/date dropdowns from booking rooms + full stay range.
         // Room list = all rooms on the booking (even without night rows), so a
         // room+date note can be chosen for any room/night of the stay.
+    }).catch(function(){notesContainer.innerHTML='<div style="color:var(--red);font-size:13px">Failed to load notes.</div>';});
+
+    // Reset transfer section
+    document.getElementById('be-transfer-section').style.display='none';
+    document.getElementById('be-transfer-toggle').textContent='\u25B8 Transfer booking';
+    document.getElementById('be-transfer-search').value='';
+    document.getElementById('be-transfer-results').innerHTML='';
+    document.getElementById('be-transfer-target').style.display='none';
+    document.getElementById('be-transfer-confirm').style.display='none';
+
+    document.getElementById('be-modal').classList.add('active');
+}
+
 function searchTransferGuest(q){
     clearTimeout(_beTransferTimer);
     var res=document.getElementById('be-transfer-results');
