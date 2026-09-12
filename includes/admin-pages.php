@@ -4945,6 +4945,8 @@ function simple_hotel_crm_render_settings_page() {
         $api_token = isset( $_POST['simple_hotel_crm_invoice_ninja_token'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_invoice_ninja_token'] ) ) ) : get_option( 'simple_hotel_crm_invoice_ninja_token', '' );
         $booking_com_commission_percent = isset( $_POST['simple_hotel_crm_booking_com_commission_percent'] ) ? max( 0, min( 100, (float) str_replace( ',', '.', wp_unslash( $_POST['simple_hotel_crm_booking_com_commission_percent'] ) ) ) ) : get_option( 'simple_hotel_crm_booking_com_commission_percent', 15 );
         $taxe_sejour_rate = isset( $_POST['simple_hotel_crm_taxe_sejour_rate'] ) ? max( 0, (float) str_replace( ',', '.', wp_unslash( $_POST['simple_hotel_crm_taxe_sejour_rate'] ) ) ) : get_option( 'simple_hotel_crm_taxe_sejour_rate', 0.80 );
+        $property_address = isset( $_POST['simple_hotel_crm_property_address'] ) ? sanitize_textarea_field( trim( wp_unslash( $_POST['simple_hotel_crm_property_address'] ) ) ) : get_option( 'simple_hotel_crm_property_address', '' );
+        $registration_number = isset( $_POST['simple_hotel_crm_registration_number'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_registration_number'] ) ) ) : get_option( 'simple_hotel_crm_registration_number', '' );
         $dashboard_api_key = isset( $_POST['simple_hotel_crm_dashboard_api_key'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_dashboard_api_key'] ) ) ) : get_option( 'simple_hotel_crm_dashboard_api_key', '' );
         $submitted_ics_urls = isset( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) && is_array( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) ? wp_unslash( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) : get_option( 'simple_hotel_crm_booking_com_ics_room_urls', [] );
         $booking_com_ics_urls = [];
@@ -4963,6 +4965,8 @@ function simple_hotel_crm_render_settings_page() {
         update_option( 'simple_hotel_crm_invoice_ninja_token', $api_token );
         update_option( 'simple_hotel_crm_booking_com_commission_percent', $booking_com_commission_percent );
         update_option( 'simple_hotel_crm_taxe_sejour_rate', $taxe_sejour_rate );
+        update_option( 'simple_hotel_crm_property_address', $property_address );
+        update_option( 'simple_hotel_crm_registration_number', $registration_number );
         update_option( 'simple_hotel_crm_dashboard_api_key', $dashboard_api_key );
         update_option( 'simple_hotel_crm_booking_com_ics_room_urls', $booking_com_ics_urls );
         update_option( 'simple_hotel_crm_booking_source', 'wp_sync' );
@@ -5083,6 +5087,8 @@ function simple_hotel_crm_render_settings_page() {
     $api_token = get_option( 'simple_hotel_crm_invoice_ninja_token', '' );
     $booking_com_commission_percent = get_option( 'simple_hotel_crm_booking_com_commission_percent', 15 );
     $taxe_sejour_rate = get_option( 'simple_hotel_crm_taxe_sejour_rate', 0.80 );
+    $property_address = get_option( 'simple_hotel_crm_property_address', '' );
+    $registration_number = get_option( 'simple_hotel_crm_registration_number', '' );
     $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
     $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
     $schema_status = [
@@ -5412,8 +5418,32 @@ function simple_hotel_crm_render_settings_page() {
         echo '<td><input type="text" id="simple_hotel_crm_dashboard_api_key" name="simple_hotel_crm_dashboard_api_key" value="' . esc_attr( $dashboard_api_key ) . '" class="regular-text" placeholder="Leave empty to disable" style="font-family:monospace" /> <button type="button" class="button" onclick="var k=\'\';for(var i=0;i<32;i++)k+=\'0123456789abcdef\'[Math.floor(Math.random()*16)];this.previousElementSibling.value=k">' . esc_html__( 'Generate', 'simple-hotel-crm' ) . '</button><p class="description">' . esc_html__( 'API key for the local dashboard (192.168.1.70). Share this key with your dashboard server.', 'simple-hotel-crm' ) . '</p></td></tr>';
         echo '<tr><th scope="row"><label for="simple_hotel_crm_taxe_sejour_rate">' . esc_html__( 'Taxe de séjour rate per adult per night', 'simple-hotel-crm' ) . '</label></th>';
         echo '<td><input type="number" step="0.01" min="0" id="simple_hotel_crm_taxe_sejour_rate" name="simple_hotel_crm_taxe_sejour_rate" value="' . esc_attr( number_format( (float) $taxe_sejour_rate, 2, '.', '' ) ) . '" class="small-text" /> &euro;</td></tr>';
+        echo '<tr><th scope="row"><label for="simple_hotel_crm_property_address">' . esc_html__( 'Property address (registre des séjours)', 'simple-hotel-crm' ) . '</label></th>';
+        echo '<td><textarea id="simple_hotel_crm_property_address" name="simple_hotel_crm_property_address" rows="2" class="large-text" style="max-width:520px">' . esc_textarea( (string) $property_address ) . '</textarea><p class="description">' . esc_html__( 'Appears as "Adresse de l\'hébergement" on the taxe de séjour export and register of stays.', 'simple-hotel-crm' ) . '</p></td></tr>';
+        echo '<tr><th scope="row"><label for="simple_hotel_crm_registration_number">' . esc_html__( 'Accommodation registration number', 'simple-hotel-crm' ) . '</label></th>';
+        echo '<td><input type="text" id="simple_hotel_crm_registration_number" name="simple_hotel_crm_registration_number" value="' . esc_attr( (string) $registration_number ) . '" class="regular-text" placeholder="e.g. 1234567890001" /><p class="description">' . esc_html__( 'Optional : numéro d\'enregistrement (CGCT) printed on the register of stays export.', 'simple-hotel-crm' ) . '</p></td></tr>';
         echo '</table>';
         submit_button( __( 'Save General Settings', 'simple-hotel-crm' ), 'primary', 'simple_hotel_crm_submit' );
+        echo '</form>';
+
+        echo '<h2>' . esc_html__( 'Registre des séjours', 'simple-hotel-crm' ) . '</h2>';
+        echo '<p>' . esc_html__( 'Export the monthly register of stays (justificatif for your taxe de séjour declaration, CGCT art. L.2333-34).', 'simple-hotel-crm' ) . '</p>';
+        $export_year  = (int) current_time( 'Y' );
+        $export_month = (int) current_time( 'n' );
+        echo '<form method="get" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
+        echo '<input type="hidden" name="action" value="simple_hotel_crm_export_taxe_sejour" />';
+        wp_nonce_field( 'simple_hotel_crm_export_taxe_sejour' );
+        echo '<label>' . esc_html__( 'Year', 'simple-hotel-crm' ) . ' <select name="year" style="min-width:90px">';
+        for ( $yy = $export_year - 1; $yy <= $export_year; $yy++ ) {
+            echo '<option value="' . esc_attr( (string) $yy ) . '" ' . selected( $yy, $export_year, false ) . '>' . esc_html( (string) $yy ) . '</option>';
+        }
+        echo '</select></label>';
+        echo '<label>' . esc_html__( 'Month', 'simple-hotel-crm' ) . ' <select name="month" style="min-width:90px">';
+        for ( $mm = 1; $mm <= 12; $mm++ ) {
+            echo '<option value="' . esc_attr( (string) $mm ) . '" ' . selected( $mm, $export_month, false ) . '>' . esc_html( (string) $mm ) . '</option>';
+        }
+        echo '</select></label>';
+        submit_button( __( 'Export CSV', 'simple-hotel-crm' ), 'secondary', 'simple_hotel_crm_export_taxe_sejour_submit' );
         echo '</form>';
 
         echo '<hr />';

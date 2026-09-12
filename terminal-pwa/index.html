@@ -1060,6 +1060,7 @@ function renderFinances(){
             el('div',{className:'fin-card-title'},['Taxe de S\u00e9jour']),
             el('div',{className:'fin-card-amount orange'},[m.taxe_sejour.toFixed(2)+'\u20AC']),
             el('div',{className:'fin-card-sub'},[m.adults+' adults \u00B7 '+m.children+' children']),
+            el('button',{className:'btn-ci',style:'font-size:12px;padding:4px 10px;margin-top:8px',onclick:exportTaxeSejourCsv},['Exporter registre des s\u00e9jours']),
         ]),
         el('div',{className:'fin-card'},[
             el('div',{className:'fin-card-title'},['Last Quarter']),
@@ -1162,6 +1163,51 @@ function renderFinances(){
     root.innerHTML='';
     var grid=el('div',{className:'fin-grid'},[].concat(cards,[breakdown,qtrCard,yrCard]));
     root.appendChild(grid);
+}
+
+function exportTaxeSejourCsv(){
+    var y=state.finYear, m=state.finMonth;
+    apiGet('taxe-sejour?year='+y+'&month='+m).then(function(data){
+        if(!(data.rows||[]).length){
+            showError('No stays found for '+data.month+'/'+data.year+'.');
+            return;
+        }
+        var meta=data.meta||{};
+        var address=String(meta.property_address||'').replace(/\n/g,' ');
+        var regNo=String(meta.registration_number||'');
+        var header=[
+            'Date d\u00e9but du s\u00e9jour','Date de la perception','Adresse de l\u2019h\u00e9bergement',
+            'Nombre de personnes','Nombre de nuit\u00e9es (mois)','Prix par nuit\u00e9e (\u20AC)',
+            'Montant taxe de s\u00e9jour collect\u00e9e (\u20AC)','Taxes additionnelles (\u20AC)',
+            'Num\u00e9ro d\u2019enregistrement','Motifs d\u2019exon\u00e9ration','Chambre','Client','No r\u00e9servation'
+        ];
+        var lines=[header];
+        data.rows.forEach(function(r){
+            lines.push([
+                r.check_in_date, r.perception_date, address, r.guest_count, r.nights_in_month,
+                Number(r.per_night_rate||0).toFixed(2), Number(r.tourist_tax_amount||0).toFixed(2),
+                '', regNo, '',
+                (String(r.room_code||'')+' '+String(r.room_name||'')).trim(),
+                r.guest_name, String(r.booking_id)
+            ]);
+        });
+        var csv='\uFEFF'+lines.map(function(line){
+            return line.map(function(cell){
+                cell=String(cell==null?'':cell);
+                return /[",\r\n]/.test(cell)?'"'+cell.replace(/"/g,'""')+'"':cell;
+            }).join(';');
+        }).join('\r\n');
+        var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');
+        a.href=url;
+        a.download='registre-sejours-'+String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'.csv';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},100);
+    }).catch(function(err){
+        if(err.message!=='unauthorized') showError(err.message||'Failed to export.');
+    });
 }
 
 function setViewMode(mode){
@@ -2235,6 +2281,11 @@ function loadCalendar(){
 function fetchCalendarData(){
     apiGet('ticket-calendar?date='+state.calDate+'&days=31').then(function(data){
         state.calRooms=data.rooms||[];
+        if(state.rooms&&!state.rooms.length&&data.rooms&&data.rooms.length){
+            state.rooms=data.rooms.map(function(r){
+                return {id:r.id,room_code:r.code||r.room_code||'',room_name:r.title||r.room_name||'',color:r.color||''};
+            });
+        }
         state.calOccupancy=data.occupancy||[];
         state.calDailyNotes=data.daily_notes||[];
         state.calDinnerCounts=data.dinner_counts||{};
@@ -3099,7 +3150,9 @@ function openQuickBookingModal(roomId,date){
     });
 
     state.qbPendingRoom=roomId?String(roomId):'';
+    _qbRoomNotes={};
     loadQbRooms();
+    renderQbRoomNotes();
 
     document.getElementById('qb-modal').classList.add('active');
 }
@@ -3113,20 +3166,30 @@ function loadQbRooms(){
     sel.innerHTML='<option value="">Select room (optional)</option>';
     var dateRe=/^\d{4}-\d{2}-\d{2}$/;
     if(!dateRe.test(checkIn)||!dateRe.test(checkOut)||checkOut<=checkIn){
+        renderQbRoomNotes();
         return;
     }
     apiGet('available-rooms?check_in='+encodeURIComponent(checkIn)+'&check_out='+encodeURIComponent(checkOut)).then(function(data){
+        var roomsList = (state.rooms&&state.rooms.length)?state.rooms:(state.calRooms||[]);
+        if(!roomsList.length){
+            sel.innerHTML='<option value="">Select room (optional)</option><option value="" disabled>— No rooms loaded —</option>';
+            renderQbRoomNotes();
+            return;
+        }
         var available={};
         (data.available||[]).forEach(function(id){available[String(id)]=true;});
         var added=0;
-        state.rooms.forEach(function(r){
+        roomsList.forEach(function(r){
             if(!available[String(r.id)]) return;
-            var label=r.room_code+(r.room_name?' ('+r.room_name+')':'');
+            var rc=r.room_code||r.code||'';
+            var rn=r.room_name||r.title||'';
+            var label=rc+(rn?' ('+rn+')':'');
             sel.add(new Option(label,r.id));
             added++;
         });
         if(added===0){
             sel.innerHTML='<option value="">Select room (optional)</option><option value="" disabled>— No rooms available for these dates —</option>';
+            renderQbRoomNotes();
             return;
         }
         if(prevValue){
@@ -3134,10 +3197,92 @@ function loadQbRooms(){
                 if(sel.options[k].value===prevValue){sel.value=prevValue;break;}
             }
         }
+        renderQbRoomNotes();
     }).catch(function(err){
         if(err.message==='unauthorized') return;
         sel.innerHTML='<option value="">Select room (optional)</option>';
+        renderQbRoomNotes();
     });
+}
+
+// Pending room day notes for the quick booking: keyed by stay_date (single room).
+var _qbRoomNotes={};
+function renderQbRoomNotes(){
+    var container=document.getElementById('qb-room-day-notes');
+    var checkIn=document.getElementById('qb-check-in').value;
+    var checkOut=document.getElementById('qb-check-out').value;
+    var roomSel=document.getElementById('qb-room');
+    var roomId=parseInt(roomSel.value,10)||0;
+    var roomLabel='';
+    if(roomSel.selectedIndex>=0&&roomSel.options[roomSel.selectedIndex]) roomLabel=roomSel.options[roomSel.selectedIndex].text;
+    var dates=[];
+    var re=/^\d{4}-\d{2}-\d{2}$/;
+    if(re.test(checkIn)&&re.test(checkOut)&&checkOut>checkIn){
+        var d=new Date(checkIn+'T12:00:00');
+        var ds=checkIn;
+        while(ds<checkOut){
+            dates.push(ds);
+            d.setDate(d.getDate()+1);
+            ds=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+        }
+    }
+    if(!roomId||!dates.length){
+        container.innerHTML='<div style="color:var(--muted);font-size:13px">'+(roomId?'Add a room with check-in/check-out to add day notes.':'Choose a room above to add day notes.')+'</div>';
+        return;
+    }
+    var html='';
+    Object.keys(_qbRoomNotes).sort().forEach(function(ds){
+        if(!_qbRoomNotes[ds]) return;
+        html+='<div style="margin-bottom:6px;padding:6px 8px;background:var(--hover-bg);border-radius:6px">';
+        html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+ds+' — '+roomLabel+'</div>';
+        html+='<textarea data-stay-date="'+ds+'" rows="2" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+(_qbRoomNotes[ds]||'').replace(/</g,'&lt;')+'</textarea>';
+        html+='</div>';
+    });
+    html+='<div id="qb-rdn-add" style="margin-bottom:6px;padding:6px 8px;background:var(--hover-bg);border-radius:6px;display:none">';
+    html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">Add note</div>';
+    html+='<div style="display:flex;gap:6px;margin-bottom:4px">';
+    html+='<select id="qb-rdn-room" style="flex:1;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--bg);color:var(--text)"></select>';
+    html+='<select id="qb-rdn-date" style="flex:1;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--bg);color:var(--text)"></select>';
+    html+='</div>';
+    html+='<textarea id="qb-rdn-text" rows="2" placeholder="Note text…" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit"></textarea>';
+    html+='<div style="display:flex;gap:6px;margin-top:4px">';
+    html+='<button type="button" class="btn-ci" id="qb-rdn-save" style="font-size:12px;padding:4px 12px">Save</button>';
+    html+='<button type="button" class="btn-ci" id="qb-rdn-cancel" style="font-size:12px;padding:4px 12px">Cancel</button>';
+    html+='</div></div>';
+    html+='<div id="qb-rdn-toggle" style="margin-bottom:6px"><button type="button" class="btn-ci" id="qb-rdn-add-btn" style="font-size:12px;padding:4px 10px">+ Add note</button></div>';
+    container.innerHTML=html;
+    var roomOpt=document.getElementById('qb-rdn-room');
+    roomOpt.add(new Option(roomLabel,String(roomId)));
+    var dateOpt=document.getElementById('qb-rdn-date');
+    dates.forEach(function(ds){dateOpt.add(new Option(ds,ds));});
+    document.getElementById('qb-rdn-add-btn').addEventListener('click',function(){
+        document.getElementById('qb-rdn-add').style.display='';
+        document.getElementById('qb-rdn-toggle').style.display='none';
+        document.getElementById('qb-rdn-text').focus();
+    });
+    document.getElementById('qb-rdn-cancel').addEventListener('click',function(){
+        document.getElementById('qb-rdn-add').style.display='none';
+        document.getElementById('qb-rdn-toggle').style.display='';
+        document.getElementById('qb-rdn-text').value='';
+    });
+    document.getElementById('qb-rdn-save').addEventListener('click',function(){
+        var ds=document.getElementById('qb-rdn-date').value;
+        var text=document.getElementById('qb-rdn-text').value.trim();
+        if(!ds) return;
+        if(text){_qbRoomNotes[ds]=text;}else{delete _qbRoomNotes[ds];}
+        renderQbRoomNotes();
+    });
+}
+
+function collectQbRoomNotes(){
+    var notes=[];
+    if(!parseInt(document.getElementById('qb-room').value,10)) return notes;
+    document.querySelectorAll('#qb-room-day-notes textarea[data-stay-date]').forEach(function(ta){
+        var t=ta.value.trim();
+        if(!t) return;
+        notes.push({stay_date:ta.getAttribute('data-stay-date'),note_text:t});
+    });
+    return notes;
 }
 
 function closeQbModal(){
@@ -3184,6 +3329,7 @@ function submitQuickBooking(){
         discount_type:document.getElementById('qb-discount-type').value,
         discount_value:parseFloat(document.getElementById('qb-discount-value').value)||0,
         internal_notes:document.getElementById('qb-internal-notes').value.trim(),
+        room_day_notes:collectQbRoomNotes(),
     }).then(function(data){
         closeQbModal();
         state.date=checkIn;
@@ -3324,18 +3470,40 @@ function openEditModal(){
         notesContainer.innerHTML=html;
         state._beRoomDayNights=nights;
 
-        // Populate room/date dropdowns from booking rooms and nights
+        // Populate room/date dropdowns from booking rooms + full stay range.
+        // Room list = all rooms on the booking (even without night rows), so a
+        // room+date note can be chosen for any room/night of the stay.
         var roomSel=document.getElementById('be-rdn-room');
         var dateSel=document.getElementById('be-rdn-date');
         var roomMap={};
+        (state.bookingRooms||[]).forEach(function(br){
+            var rid=String(br.booking_room_id||br.id);
+            if(!roomMap[rid]) roomMap[rid]=((br.room_code||'')+' '+(br.room_name||'')).trim()||('Room #'+rid);
+        });
         nights.forEach(function(n){
-            if(!roomMap[n.booking_room_id]){roomMap[n.booking_room_id]=n.room_code+' '+n.room_name;}
+            if(!roomMap[n.booking_room_id]) roomMap[n.booking_room_id]=((n.room_code||'')+' '+(n.room_name||'')).trim();
         });
         Object.keys(roomMap).forEach(function(rid){
             roomSel.add(new Option(roomMap[rid],rid));
         });
         var dateSet={};
+        var b=state.activeBooking||{};
+        var ci=String(b.check_in_date||''), co=String(b.check_out_date||'');
+        var dateRe=/^\d{4}-\d{2}-\d{2}$/;
+        if(dateRe.test(ci)&&dateRe.test(co)&&co>ci){
+            var dd=new Date(ci+'T12:00:00');
+            var ds=ci;
+            while(ds<co){
+                dateSet[ds]=true;
+                dd.setDate(dd.getDate()+1);
+                ds=dd.getFullYear()+'-'+('0'+(dd.getMonth()+1)).slice(-2)+'-'+('0'+dd.getDate()).slice(-2);
+            }
+        }
         nights.forEach(function(n){dateSet[n.stay_date]=true;});
+        Object.keys(noteMap).forEach(function(key){
+            if(!noteMap[key]) return;
+            dateSet[key.split('|')[1]]=true;
+        });
         Object.keys(dateSet).sort().forEach(function(d){
             dateSel.add(new Option(d,d));
         });
@@ -3681,8 +3849,9 @@ document.addEventListener('DOMContentLoaded',function(){
 
     // Quick booking
     document.getElementById('qb-open').addEventListener('click',function(){openQuickBookingModal();});
-    document.getElementById('qb-check-in').addEventListener('change',loadQbRooms);
-    document.getElementById('qb-check-out').addEventListener('change',loadQbRooms);
+    document.getElementById('qb-check-in').addEventListener('change',function(){loadQbRooms();renderQbRoomNotes();});
+    document.getElementById('qb-check-out').addEventListener('change',function(){loadQbRooms();renderQbRoomNotes();});
+    document.getElementById('qb-room').addEventListener('change',function(){renderQbRoomNotes();});
     document.getElementById('qb-confirm').addEventListener('click',function(){submitQuickBooking();});
     document.getElementById('qb-cancel').addEventListener('click',function(){closeQbModal();});
     document.getElementById('qb-modal-close').addEventListener('click',function(){closeQbModal();});

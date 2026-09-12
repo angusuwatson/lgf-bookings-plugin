@@ -138,6 +138,20 @@ add_action( 'rest_api_init', function() {
         ],
     ] );
 
+    register_rest_route( 'simple-hotel-crm/v1', '/taxe-sejour', [
+        'methods'  => 'GET',
+        'callback' => 'simple_hotel_crm_rest_taxe_sejour_register',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+        'args'     => [
+            'month' => [
+                'validate_callback' => function( $param ) { return is_numeric( $param ) && $param >= 1 && $param <= 12; },
+            ],
+            'year' => [
+                'validate_callback' => function( $param ) { return is_numeric( $param ) && $param >= 2000 && $param <= 2100; },
+            ],
+        ],
+    ] );
+
     register_rest_route( 'simple-hotel-crm/v1', '/ticket-save', [
         'methods'  => 'POST',
         'callback' => 'simple_hotel_crm_rest_ticket_save',
@@ -1604,6 +1618,185 @@ function simple_hotel_crm_rest_ticket_finances( WP_REST_Request $request ) {
     ] );
 }
 
+/**
+ * Registre des séjours for the declared month (CGCT art. L.2333-34 justificatif).
+ * One row per booked room for the month, with per-month night/tax aggregates.
+ */
+function simple_hotel_crm_get_taxe_sejour_register( $year, $month ) {
+    global $wpdb;
+
+    $month = max( 1, min( 12, (int) $month ) );
+    $year  = max( 2000, min( 2100, (int) $year ) );
+
+    $month_start = sprintf( '%04d-%02d-01', $year, $month );
+    $month_end   = gmdate( 'Y-m-t', strtotime( $month_start ) );
+    $next_month  = gmdate( 'Y-m-d', strtotime( $month_end . ' +1 day' ) );
+
+    $bookings_table       = simple_hotel_crm_bookings_table();
+    $guests_table         = simple_hotel_crm_guests_table();
+    $booking_rooms_table  = simple_hotel_crm_booking_rooms_table();
+    $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
+    $rooms_table          = simple_hotel_crm_rooms_table();
+
+    $rows = $wpdb->get_results( $wpdb->prepare( "
+        SELECT
+            br.id AS booking_room_id,
+            br.booking_id,
+            b.check_in_date,
+            r.room_code,
+            r.room_name,
+            g.first_name,
+            g.last_name,
+            COALESCE(SUM(brn.guest_count),0)     AS guest_count,
+            COALESCE(SUM(brn.adults),0)          AS adults,
+            COALESCE(SUM(brn.children),0)        AS children,
+            COALESCE(SUM(brn.babies),0)          AS babies,
+            COUNT(*)                             AS nights_in_month,
+            COALESCE(SUM(brn.room_rate_amount),0)  AS room_rate_total,
+            COALESCE(SUM(brn.tourist_tax_amount),0) AS tourist_tax_amount
+        FROM {$booking_nights_table} brn
+        JOIN {$booking_rooms_table} br ON br.id = brn.booking_room_id
+        JOIN {$bookings_table} b ON b.id = br.booking_id
+        JOIN {$rooms_table} r ON r.id = br.room_id
+        JOIN {$guests_table} g ON g.id = b.guest_id
+        WHERE b.is_deleted = 0
+          AND b.status_code IN ('confirmed','checked_in','checked_out')
+          AND brn.stay_date >= %s
+          AND brn.stay_date < %s
+        GROUP BY br.id, br.booking_id, b.check_in_date, r.room_code, r.room_name, g.first_name, g.last_name
+        ORDER BY b.check_in_date ASC, r.sort_order ASC
+    ", $month_start, $next_month ), ARRAY_A );
+
+    $entries = [];
+    $total_tax = 0;
+    $total_nights = 0;
+    foreach ( (array) $rows as $row ) {
+        $nights = max( 1, (int) $row['nights_in_month'] );
+        $rate   = round( (float) $row['room_rate_total'] / $nights, 2 );
+        $tax    = round( (float) $row['tourist_tax_amount'], 2 );
+        $total_tax    += $tax;
+        $total_nights += $nights;
+        $entries[] = [
+            'booking_room_id'   => (int) $row['booking_room_id'],
+            'booking_id'        => (int) $row['booking_id'],
+            'room_code'         => (string) $row['room_code'],
+            'room_name'         => (string) $row['room_name'],
+            'guest_name'        => trim( (string) ( $row['first_name'] . ' ' . $row['last_name'] ) ),
+            'check_in_date'     => (string) $row['check_in_date'],
+            'perception_date'   => (string) $row['check_in_date'],
+            'guest_count'       => (int) $row['guest_count'],
+            'adults'            => (int) $row['adults'],
+            'children'          => (int) $row['children'],
+            'babies'            => (int) $row['babies'],
+            'nights_in_month'   => $nights,
+            'room_rate_total'   => round( (float) $row['room_rate_total'], 2 ),
+            'per_night_rate'    => $rate,
+            'tourist_tax_amount'=> $tax,
+        ];
+    }
+
+    return [
+        'year'  => $year,
+        'month' => $month,
+        'meta'  => [
+            'property_address'    => get_option( 'simple_hotel_crm_property_address', '' ),
+            'registration_number' => get_option( 'simple_hotel_crm_registration_number', '' ),
+        ],
+        'rows'   => $entries,
+        'totals' => [
+            'nights' => $total_nights,
+            'tax'    => round( $total_tax, 2 ),
+        ],
+    ];
+}
+
+function simple_hotel_crm_rest_taxe_sejour_register( WP_REST_Request $request ) {
+    nocache_headers();
+    $year  = absint( $request->get_param( 'year' ) ?: (int) current_time( 'Y' ) );
+    $month = absint( $request->get_param( 'month' ) ?: (int) current_time( 'n' ) );
+    return rest_ensure_response( simple_hotel_crm_get_taxe_sejour_register( $year, $month ) );
+}
+
+/**
+ * Build the registre des séjours CSV (UTF-8 with BOM so accents open cleanly in Excel).
+ */
+function simple_hotel_crm_taxe_sejour_csv( $data ) {
+    $csv = "\xEF\xBB\xBF";
+    $rows_lines = [];
+
+    $meta = $data['meta'];
+    $address = str_replace( "\n", ' ', (string) $meta['property_address'] );
+    $reg_no  = (string) $meta['registration_number'];
+
+    $header = [
+        'Date début du séjour',
+        'Date de la perception',
+        'Adresse de l\'hébergement',
+        'Nombre de personnes',
+        'Nombre de nuitées (mois)',
+        'Prix par nuitée (€)',
+        'Montant taxe de séjour collectée (€)',
+        'Taxes additionnelles (€)',
+        'Numéro d\'enregistrement',
+        'Motifs d\'exonération',
+        'Chambre',
+        'Client',
+        'No réservation',
+    ];
+    $rows_lines[] = $header;
+
+    foreach ( $data['rows'] as $r ) {
+        $rows_lines[] = [
+            $r['check_in_date'],
+            $r['perception_date'],
+            $address,
+            $r['guest_count'],
+            $r['nights_in_month'],
+            number_format( (float) $r['per_night_rate'], 2, '.', '' ),
+            number_format( (float) $r['tourist_tax_amount'], 2, '.', '' ),
+            '',
+            $reg_no,
+            '',
+            trim( (string) ( $r['room_code'] . ' ' . $r['room_name'] ) ),
+            $r['guest_name'],
+            (string) $r['booking_id'],
+        ];
+    }
+
+    foreach ( $rows_lines as $line ) {
+        $cells = [];
+        foreach ( $line as $cell ) {
+            $cell = (string) $cell;
+            if ( preg_match( '/[",\r\n]/', $cell ) ) {
+                $cell = '"' . str_replace( '"', '""', $cell ) . '"';
+            }
+            $cells[] = $cell;
+        }
+        $csv .= implode( ';', $cells ) . "\r\n";
+    }
+
+    return $csv;
+}
+
+function simple_hotel_crm_admin_export_taxe_sejour() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( 'Unauthorized.' );
+    }
+    check_admin_referer( 'simple_hotel_crm_export_taxe_sejour' );
+
+    $year  = isset( $_GET['year'] )  ? absint( $_GET['year'] )  : (int) current_time( 'Y' );
+    $month = isset( $_GET['month'] ) ? absint( $_GET['month'] ) : (int) current_time( 'n' );
+
+    $data = simple_hotel_crm_get_taxe_sejour_register( $year, $month );
+
+    nocache_headers();
+    header( 'Content-Type: text/csv; charset=utf-8' );
+    header( 'Content-Disposition: attachment; filename="registre-sejours-' . sprintf( '%04d-%02d', $year, $month ) . '.csv"' );
+    echo simple_hotel_crm_taxe_sejour_csv( $data );
+    exit;
+}
+add_action( 'admin_post_simple_hotel_crm_export_taxe_sejour', 'simple_hotel_crm_admin_export_taxe_sejour' );
+
 function simple_hotel_crm_rest_ticket_checkin( WP_REST_Request $request ) {
     global $wpdb;
 
@@ -1911,6 +2104,10 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
     $discount_value = round( abs( (float) $request->get_param( 'discount_value' ) ), 2 );
     $source_channel = sanitize_text_field( (string) ( $request->get_param( 'source_channel' ) ?: 'direct' ) );
     $internal_notes = sanitize_textarea_field( (string) $request->get_param( 'internal_notes' ) );
+    $room_day_notes = $request->get_param( 'room_day_notes' );
+    if ( ! is_array( $room_day_notes ) ) {
+        $room_day_notes = [];
+    }
 
     if ( '' === $guest_name ) {
         return new WP_Error( 'missing_guest_name', 'Guest name is required.', [ 'status' => 400 ] );
@@ -2105,6 +2302,19 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
             [ '%f', '%f' ],
             [ '%d' ]
         );
+
+        // Room day notes sent from the PWA Quick Booking popup
+        foreach ( $room_day_notes as $note ) {
+            $stay_date = sanitize_text_field( (string) ( $note['stay_date'] ?? '' ) );
+            $note_text = sanitize_textarea_field( (string) ( $note['note_text'] ?? '' ) );
+            if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $stay_date ) || '' === trim( $note_text ) ) {
+                continue;
+            }
+            if ( $stay_date < $check_in || $stay_date >= $check_out ) {
+                continue;
+            }
+            simple_hotel_crm_upsert_booking_note( $booking_id, $note_text, $booking_room_id, $stay_date, 'night' );
+        }
     }
 
     simple_hotel_crm_clear_calendar_cache();
