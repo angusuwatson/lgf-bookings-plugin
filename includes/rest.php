@@ -1638,7 +1638,7 @@ function simple_hotel_crm_get_taxe_sejour_register( $year, $month ) {
     $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
     $rooms_table          = simple_hotel_crm_rooms_table();
 
-    $rows = $wpdb->get_results( $wpdb->prepare( "
+$rows = $wpdb->get_results( $wpdb->prepare( "
         SELECT
             br.id AS booking_room_id,
             br.booking_id,
@@ -1662,9 +1662,11 @@ function simple_hotel_crm_get_taxe_sejour_register( $year, $month ) {
           AND b.status_code IN ('confirmed','checked_in','checked_out')
           AND brn.stay_date >= %s
           AND brn.stay_date < %s
-        GROUP BY br.id, br.booking_id, b.check_in_date, r.room_code, r.room_name, g.first_name, g.last_name, br.adults, br.children, br.babies
+        GROUP BY br.id, br.booking_id, b.check_in_date, r.room_code, r.room_name, r.sort_order, g.first_name, g.last_name, br.adults, br.children, br.babies
         ORDER BY b.check_in_date ASC, r.sort_order ASC
     ", $month_start, $next_month ), ARRAY_A );
+
+    $db_error = $wpdb->last_error;
 
     $entries = [];
     $total_tax = 0;
@@ -1702,6 +1704,7 @@ function simple_hotel_crm_get_taxe_sejour_register( $year, $month ) {
             'registration_number' => get_option( 'simple_hotel_crm_registration_number', '' ),
         ],
         'rows'   => $entries,
+        'db_error' => empty( $db_error ) ? '' : $db_error,
         'totals' => [
             'nights' => $total_nights,
             'tax'    => round( $total_tax, 2 ),
@@ -1713,7 +1716,12 @@ function simple_hotel_crm_rest_taxe_sejour_register( WP_REST_Request $request ) 
     nocache_headers();
     $year  = absint( $request->get_param( 'year' ) ?: (int) current_time( 'Y' ) );
     $month = absint( $request->get_param( 'month' ) ?: (int) current_time( 'n' ) );
-    return rest_ensure_response( simple_hotel_crm_get_taxe_sejour_register( $year, $month ) );
+    try {
+        return rest_ensure_response( simple_hotel_crm_get_taxe_sejour_register( $year, $month ) );
+    } catch ( \Throwable $e ) {
+        error_log( 'simple-hotel-crm taxe-sejour: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine() );
+        return new WP_Error( 'taxe_sejour_error', 'Taxe de séjour export error: ' . $e->getMessage(), [ 'status' => 500 ] );
+    }
 }
 
 /**

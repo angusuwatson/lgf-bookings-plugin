@@ -1180,6 +1180,7 @@ function exportTaxeSejourCsv(){
     var y=state.finYear||parseInt((state.date||'').slice(0,4),10), m=state.finMonth||parseInt((state.date||'').slice(5,7),10);
     showToast('G\u00e9n\u00e9ration du registre\u2026');
     apiGet('taxe-sejour?year='+y+'&month='+m).then(function(data){
+        if(data.db_error){showError('Database error: '+data.db_error.slice(0,300));return;}
         if(!(data.rows||[]).length){
             showError('No stays found for '+data.month+'/'+data.year+'.');
             return;
