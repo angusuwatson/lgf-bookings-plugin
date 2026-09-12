@@ -74,12 +74,15 @@ input,select{font-family:inherit;font-size:16px}
 .item-card:active .item-price{color:rgba(255,255,255,.7)}
 /* Calendar */
 .cal-scroll{flex:1;overflow:auto;padding:6px 6px 0;background:var(--card);-webkit-overflow-scrolling:touch}
-.cal-nav{display:flex;align-items:center;justify-content:space-between;padding:6px 0;background:var(--card)}
+.cal-nav{display:flex;flex-direction:column;gap:4px;padding:6px 0;background:var(--card)}
+.cal-nav-top{display:flex;align-items:center;justify-content:space-between;padding:0 4px}
+.cal-nav-between{display:flex;align-items:center;gap:6px}
+.cal-nav-between > button{flex-shrink:0}
 .cal-nav button{background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:18px;cursor:pointer;padding:4px 12px;border-radius:4px}
 .cal-nav span{font-weight:700;font-size:14px}
-.cal-nav .cal-year{background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:13px;font-weight:700;border-radius:4px;padding:4px 6px;margin-left:auto;color-scheme:dark}
-.cal-months{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding:0 0 6px;background:var(--card)}
-.cal-months button{background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:12px;cursor:pointer;padding:4px 8px;border-radius:4px;flex:1 0 auto;min-width:54px}
+.cal-nav .cal-year{background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:13px;font-weight:700;border-radius:4px;padding:4px 6px;color-scheme:dark}
+.cal-months{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;flex:1;min-width:0}
+.cal-months button{background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:12px;cursor:pointer;padding:4px 6px;border-radius:4px;flex:1 0 auto;min-width:44px}
 .cal-months button.active{background:var(--hover-bg);font-weight:700;border-color:var(--fg)}
 .cal-grid{display:table;border-collapse:collapse;width:100%;min-width:600px;font-size:13px}
 .cal-row{display:table-row}
@@ -458,13 +461,17 @@ input,select{font-family:inherit;font-size:16px}
       <div class="catalog-scroll" id="item-grid"></div>
       <div id="dash-view" class="dash-scroll" style="display:none"></div>
       <div id="cal-navbar" class="cal-nav" style="display:none">
-        <button id="cal-prev">‹</button>
-        <span id="cal-nav-label">May 2026</span>
-        <button id="cal-next">›</button>
-        <select id="cal-year" class="cal-year"></select>
-      </div>
-      <div id="cal-months" class="cal-months" style="display:none">
-        <button data-m="0">Jan</button><button data-m="1">Feb</button><button data-m="2">Mar</button><button data-m="3">Apr</button><button data-m="4">May</button><button data-m="5">Jun</button><button data-m="6">Jul</button><button data-m="7">Aug</button><button data-m="8">Sep</button><button data-m="9">Oct</button><button data-m="10">Nov</button><button data-m="11">Dec</button>
+        <div class="cal-nav-top">
+          <span id="cal-nav-label">May 2026</span>
+          <select id="cal-year" class="cal-year"></select>
+        </div>
+        <div class="cal-nav-between">
+          <button id="cal-prev">‹</button>
+          <div id="cal-months" class="cal-months">
+            <button data-m="0">Jan</button><button data-m="1">Feb</button><button data-m="2">Mar</button><button data-m="3">Apr</button><button data-m="4">May</button><button data-m="5">Jun</button><button data-m="6">Jul</button><button data-m="7">Aug</button><button data-m="8">Sep</button><button data-m="9">Oct</button><button data-m="10">Nov</button><button data-m="11">Dec</button>
+          </div>
+          <button id="cal-next">›</button>
+        </div>
       </div>
       <div id="cal-view" class="cal-scroll" style="display:none"></div>
       <div id="maint-view" class="maint-scroll" style="display:none"></div>
@@ -2294,9 +2301,9 @@ function updateCalNav(){
     document.getElementById('cal-nav-label').textContent=d.toLocaleString('en',{month:'long',year:'numeric'});
     var sel=document.getElementById('cal-year');
     if(sel&&sel.value!==String(y)) sel.value=String(y);
-    for(var i=0;i<12;i++){
-        var b=document.getElementById('cal-month-'+i);
-        if(b) b.className='cal-month-btn'+(i===m?' active':'');
+    var btns=document.querySelectorAll('#cal-months [data-m]');
+    for(var i=0;i<btns.length;i++){
+        btns[i].classList.toggle('active',i===m);
     }
 }
 
