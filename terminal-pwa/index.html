@@ -1177,18 +1177,17 @@ function exportTaxeSejourCsv(){
         var regNo=String(meta.registration_number||'');
         var header=[
             'Date d\u00e9but du s\u00e9jour','Date de la perception','Adresse de l\u2019h\u00e9bergement',
-            'Nombre de personnes','Nombre de nuit\u00e9es (mois)','Prix par nuit\u00e9e (\u20AC)',
+            'Adultes','Enfants','Nombre de nuit\u00e9es (mois)','Prix par nuit\u00e9e (\u20AC)',
             'Montant taxe de s\u00e9jour collect\u00e9e (\u20AC)','Taxes additionnelles (\u20AC)',
-            'Num\u00e9ro d\u2019enregistrement','Motifs d\u2019exon\u00e9ration','Chambre','Client','No r\u00e9servation'
+            'Num\u00e9ro d\u2019enregistrement','Motifs d\u2019exon\u00e9ration'
         ];
         var lines=[header];
         data.rows.forEach(function(r){
             lines.push([
-                r.check_in_date, r.perception_date, address, r.guest_count, r.nights_in_month,
-                Number(r.per_night_rate||0).toFixed(2), Number(r.tourist_tax_amount||0).toFixed(2),
-                '', regNo, '',
-                (String(r.room_code||'')+' '+String(r.room_name||'')).trim(),
-                r.guest_name, String(r.booking_id)
+                r.check_in_date, r.perception_date, address, r.adults,
+                Number(r.children||0)+Number(r.babies||0),
+                Number(r.nights_in_month||0).toFixed(0), Number(r.per_night_rate||0).toFixed(2),
+                Number(r.tourist_tax_amount||0).toFixed(2), '', regNo, ''
             ]);
         });
         var csv='\uFEFF'+lines.map(function(line){

@@ -1647,10 +1647,9 @@ function simple_hotel_crm_get_taxe_sejour_register( $year, $month ) {
             r.room_name,
             g.first_name,
             g.last_name,
-            COALESCE(SUM(brn.guest_count),0)     AS guest_count,
-            COALESCE(SUM(brn.adults),0)          AS adults,
-            COALESCE(SUM(brn.children),0)        AS children,
-            COALESCE(SUM(brn.babies),0)          AS babies,
+            COALESCE(MAX(brn.adults), br.adults, 0)      AS adults,
+            COALESCE(MAX(brn.children), br.children, 0)  AS children,
+            COALESCE(MAX(brn.babies), br.babies, 0)      AS babies,
             COUNT(*)                             AS nights_in_month,
             COALESCE(SUM(brn.room_rate_amount),0)  AS room_rate_total,
             COALESCE(SUM(brn.tourist_tax_amount),0) AS tourist_tax_amount
@@ -1663,7 +1662,7 @@ function simple_hotel_crm_get_taxe_sejour_register( $year, $month ) {
           AND b.status_code IN ('confirmed','checked_in','checked_out')
           AND brn.stay_date >= %s
           AND brn.stay_date < %s
-        GROUP BY br.id, br.booking_id, b.check_in_date, r.room_code, r.room_name, g.first_name, g.last_name
+        GROUP BY br.id, br.booking_id, b.check_in_date, r.room_code, r.room_name, g.first_name, g.last_name, br.adults, br.children, br.babies
         ORDER BY b.check_in_date ASC, r.sort_order ASC
     ", $month_start, $next_month ), ARRAY_A );
 
@@ -1684,10 +1683,10 @@ function simple_hotel_crm_get_taxe_sejour_register( $year, $month ) {
             'guest_name'        => trim( (string) ( $row['first_name'] . ' ' . $row['last_name'] ) ),
             'check_in_date'     => (string) $row['check_in_date'],
             'perception_date'   => (string) $row['check_in_date'],
-            'guest_count'       => (int) $row['guest_count'],
             'adults'            => (int) $row['adults'],
             'children'          => (int) $row['children'],
             'babies'            => (int) $row['babies'],
+            'guest_count'       => (int) $row['adults'] + (int) $row['children'] + (int) $row['babies'],
             'nights_in_month'   => $nights,
             'room_rate_total'   => round( (float) $row['room_rate_total'], 2 ),
             'per_night_rate'    => $rate,
@@ -1699,7 +1698,7 @@ function simple_hotel_crm_get_taxe_sejour_register( $year, $month ) {
         'year'  => $year,
         'month' => $month,
         'meta'  => [
-            'property_address'    => get_option( 'simple_hotel_crm_property_address', '' ),
+            'property_address'    => get_option( 'simple_hotel_crm_property_address', SIMPLE_HOTEL_CRM_PROPERTY_ADDRESS ),
             'registration_number' => get_option( 'simple_hotel_crm_registration_number', '' ),
         ],
         'rows'   => $entries,
@@ -1732,16 +1731,14 @@ function simple_hotel_crm_taxe_sejour_csv( $data ) {
         'Date début du séjour',
         'Date de la perception',
         'Adresse de l\'hébergement',
-        'Nombre de personnes',
+        'Adultes',
+        'Enfants',
         'Nombre de nuitées (mois)',
         'Prix par nuitée (€)',
         'Montant taxe de séjour collectée (€)',
         'Taxes additionnelles (€)',
         'Numéro d\'enregistrement',
         'Motifs d\'exonération',
-        'Chambre',
-        'Client',
-        'No réservation',
     ];
     $rows_lines[] = $header;
 
@@ -1750,16 +1747,14 @@ function simple_hotel_crm_taxe_sejour_csv( $data ) {
             $r['check_in_date'],
             $r['perception_date'],
             $address,
-            $r['guest_count'],
+            $r['adults'],
+            (int) $r['children'] + (int) $r['babies'],
             $r['nights_in_month'],
             number_format( (float) $r['per_night_rate'], 2, '.', '' ),
             number_format( (float) $r['tourist_tax_amount'], 2, '.', '' ),
             '',
             $reg_no,
             '',
-            trim( (string) ( $r['room_code'] . ' ' . $r['room_name'] ) ),
-            $r['guest_name'],
-            (string) $r['booking_id'],
         ];
     }
 

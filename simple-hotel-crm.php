@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 define( 'SIMPLE_HOTEL_CRM_VERSION', get_file_data( __FILE__, [ 'ver' => 'Version' ] )['ver'] );
 define( 'SIMPLE_HOTEL_CRM_DB_VERSION', '25' );
 define( 'SIMPLE_HOTEL_CRM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
+define( 'SIMPLE_HOTEL_CRM_PROPERTY_ADDRESS', '10 Route des Pierres Blanches, 71520 Tramayes, France' );
 
 register_activation_hook( __FILE__, 'simple_hotel_crm_activate' );
 register_deactivation_hook( __FILE__, 'simple_hotel_crm_deactivate' );

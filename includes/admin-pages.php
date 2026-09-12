@@ -4945,7 +4945,7 @@ function simple_hotel_crm_render_settings_page() {
         $api_token = isset( $_POST['simple_hotel_crm_invoice_ninja_token'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_invoice_ninja_token'] ) ) ) : get_option( 'simple_hotel_crm_invoice_ninja_token', '' );
         $booking_com_commission_percent = isset( $_POST['simple_hotel_crm_booking_com_commission_percent'] ) ? max( 0, min( 100, (float) str_replace( ',', '.', wp_unslash( $_POST['simple_hotel_crm_booking_com_commission_percent'] ) ) ) ) : get_option( 'simple_hotel_crm_booking_com_commission_percent', 15 );
         $taxe_sejour_rate = isset( $_POST['simple_hotel_crm_taxe_sejour_rate'] ) ? max( 0, (float) str_replace( ',', '.', wp_unslash( $_POST['simple_hotel_crm_taxe_sejour_rate'] ) ) ) : get_option( 'simple_hotel_crm_taxe_sejour_rate', 0.80 );
-        $property_address = isset( $_POST['simple_hotel_crm_property_address'] ) ? sanitize_textarea_field( trim( wp_unslash( $_POST['simple_hotel_crm_property_address'] ) ) ) : get_option( 'simple_hotel_crm_property_address', '' );
+        $property_address = isset( $_POST['simple_hotel_crm_property_address'] ) ? sanitize_textarea_field( trim( wp_unslash( $_POST['simple_hotel_crm_property_address'] ) ) ) : get_option( 'simple_hotel_crm_property_address', SIMPLE_HOTEL_CRM_PROPERTY_ADDRESS );
         $registration_number = isset( $_POST['simple_hotel_crm_registration_number'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_registration_number'] ) ) ) : get_option( 'simple_hotel_crm_registration_number', '' );
         $dashboard_api_key = isset( $_POST['simple_hotel_crm_dashboard_api_key'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['simple_hotel_crm_dashboard_api_key'] ) ) ) : get_option( 'simple_hotel_crm_dashboard_api_key', '' );
         $submitted_ics_urls = isset( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) && is_array( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) ? wp_unslash( $_POST['simple_hotel_crm_booking_com_ics_urls'] ) : get_option( 'simple_hotel_crm_booking_com_ics_room_urls', [] );
@@ -5087,7 +5087,7 @@ function simple_hotel_crm_render_settings_page() {
     $api_token = get_option( 'simple_hotel_crm_invoice_ninja_token', '' );
     $booking_com_commission_percent = get_option( 'simple_hotel_crm_booking_com_commission_percent', 15 );
     $taxe_sejour_rate = get_option( 'simple_hotel_crm_taxe_sejour_rate', 0.80 );
-    $property_address = get_option( 'simple_hotel_crm_property_address', '' );
+    $property_address = get_option( 'simple_hotel_crm_property_address', SIMPLE_HOTEL_CRM_PROPERTY_ADDRESS );
     $registration_number = get_option( 'simple_hotel_crm_registration_number', '' );
     $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
     $booking_nights_table = simple_hotel_crm_booking_room_nights_table();
