@@ -3399,6 +3399,7 @@ function openEditModal(){
         var existingNotes=data.notes||[];
         var noteMap={};
         existingNotes.forEach(function(n){noteMap[n.booking_room_id+'|'+n.stay_date]=n.note_text||'';});
+        var html='';
         var nights=state.roomNights||[];
         if(!nights.length){html+='<div style="color:var(--muted);font-size:13px">No room nights.</div>';}
         nights.forEach(function(n,i){
