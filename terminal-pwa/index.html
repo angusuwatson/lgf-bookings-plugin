@@ -3475,6 +3475,21 @@ function openEditModal(){
     document.getElementById('be-modal').classList.add('active');
 }
 
+function closeEditModal(){
+    var btn=document.getElementById('be-confirm');
+    btn.disabled=false;
+    btn.textContent='✓ Save Changes';
+    document.getElementById('be-modal').classList.remove('active');
+    _beBookingId=0;
+    _beTransferGuestId=0;
+}
+function toggleTransferSection(){
+    var sec=document.getElementById('be-transfer-section');
+    var toggle=document.getElementById('be-transfer-toggle');
+    if(sec.style.display==='none'){sec.style.display='';toggle.textContent='\u25BC Transfer booking';}
+    else{sec.style.display='none';toggle.textContent='\u25B8 Transfer booking';}
+}
+
 function searchTransferGuest(q){
     clearTimeout(_beTransferTimer);
     var res=document.getElementById('be-transfer-results');
