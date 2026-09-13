@@ -3388,38 +3388,51 @@ function openEditModal(){
     // uplift with the nights list when/if it arrives — a failure in one must
     // never blank the other.
     var notesContainer=document.getElementById('be-room-day-notes');
-    notesContainer.innerHTML='<div style="color:var(--muted);font-size:13px">Loading notes…</div>';
     state.roomNights=state.roomNights||[];
+    state.roomDayNotes=state.roomDayNotes||[];
+    var nightsLoaded=false;
+    notesContainer.innerHTML='<div style="color:var(--muted);font-size:13px">Loading notes…</div>';
 
-    function renderBeRoomDayNotes(nightList){
-        // nightList may be [] on first pass; notes still render from existing data
-        var textareas=document.querySelectorAll('#be-room-day-notes textarea[data-br-id]');
-        var savedByKey={};
-        textareas.forEach(function(ta){
+    // Single idempotent render combining saved notes with the nights ledger.
+    // Whichever fetch lands (or fails) calls it; the last writer always draws
+    // the full view, so a late empty notes call can never clobber an already
+    // rendered nights view or leave the panel stuck on a 'Loading nights…'
+    // placeholder. In-progress user edits are preserved across re-renders.
+    function renderRoomNotes(){
+        var taStyle='width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit';
+        var noteMap={};
+        document.querySelectorAll('#be-room-day-notes textarea[data-br-id]').forEach(function(ta){
             var brId=ta.getAttribute('data-br-id');
             var stayDate=ta.getAttribute('data-stay-date');
-            if(brId&&stayDate) savedByKey[brId+'|'+stayDate]=ta.value;
+            if(brId&&stayDate&&ta.value!=='') noteMap[brId+'|'+stayDate]=ta.value;
+        });
+        (state.roomDayNotes||[]).forEach(function(n){
+            var key=n.booking_room_id+'|'+n.stay_date;
+            if(!noteMap[key]) noteMap[key]=n.note_text||'';
         });
         var html='';
-        (nightList||[]).forEach(function(n){
+        var covered={};
+        (state.roomNights||[]).forEach(function(n){
             var key=n.booking_room_id+'|'+n.stay_date;
-            var val=savedByKey[key]||'';
+            if(covered[key]) return;
+            covered[key]=true;
+            var val=noteMap[key]||'';
             html+='<div style="margin-bottom:8px">';
             html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+(n.stay_date||'')+' — '+(n.room_code||'')+' '+(n.room_name||'')+'</div>';
-            html+='<textarea data-br-id="'+n.booking_room_id+'" data-stay-date="'+n.stay_date+'" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+val.replace(/</g,'&lt;')+'</textarea>';
+            html+='<textarea data-br-id="'+n.booking_room_id+'" data-stay-date="'+n.stay_date+'" rows="3" style="'+taStyle+'">'+val.replace(/</g,'&lt;')+'</textarea>';
             html+='</div>';
         });
-        // Any remaining saved notes whose night isn't covered by the nights feed
-        Object.keys(savedByKey).forEach(function(key){
-            var covered=(nightList||[]).some(function(n){return (n.booking_room_id+'|'+n.stay_date)===key;});
-            if(covered) return;
+        Object.keys(noteMap).forEach(function(key){
+            if(covered[key]) return;
             var parts=key.split('|');
             html+='<div style="margin-bottom:8px">';
             html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+(parts[1]||'')+' — note</div>';
-            html+='<textarea data-br-id="'+parts[0]+'" data-stay-date="'+parts[1]+'" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+savedByKey[key].replace(/</g,'&lt;')+'</textarea>';
+            html+='<textarea data-br-id="'+parts[0]+'" data-stay-date="'+parts[1]+'" rows="3" style="'+taStyle+'">'+noteMap[key].replace(/</g,'&lt;')+'</textarea>';
             html+='</div>';
         });
-        notesContainer.innerHTML=html||'<div style="color:var(--muted);font-size:13px">No room nights or notes yet.</div>';
+        if(html!=='') notesContainer.innerHTML=html;
+        else if(nightsLoaded) notesContainer.innerHTML='<div style="color:var(--muted);font-size:13px">No room nights or notes yet.</div>';
+        else notesContainer.innerHTML='<div style="color:var(--muted);font-size:13px">Loading nights…</div>';
     }
 
     function focusBeRoomDayNote(){
@@ -3451,53 +3464,35 @@ function openEditModal(){
 
     // 1) Always refetch room nights for THIS booking (stale value from a
     //    previously opened booking must never render/save the wrong room/date).
-    //    Fetched in the background via the lightweight endpoint; notes are NOT
-    //    gated on it.
-    var nightsPromise=apiGet('ticket-room-nights?booking_id='+_beBookingId+'&_='+Date.now()).then(function(d){
-        state.bookingRooms=d.booking_rooms||[];
-        state.roomNights=d.room_nights||[];
-    }).catch(function(){
-        state.roomNights=[];state.bookingRooms=[];
-    });
-
-    // 2) Load saved notes immediately and render them (decoupled from nights).
-    apiGet('ticket-room-day-notes?booking_id='+_beBookingId+'&_='+Date.now()).then(function(d){
-        state.roomDayNotes=(d.notes||[]);
-        var noteMap={};
-        state.roomDayNotes.forEach(function(n){noteMap[n.booking_room_id+'|'+n.stay_date]=n.note_text||'';});
-        // Render saved notes straight away (nights may still be loading/failed)
-        var html='';
-        Object.keys(noteMap).forEach(function(key){
-            if(!noteMap[key]) return;
-            var parts=key.split('|');
-            html+='<div style="margin-bottom:8px">';
-            html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+(parts[1]||'')+' — note</div>';
-            html+='<textarea data-br-id="'+parts[0]+'" data-stay-date="'+parts[1]+'" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+noteMap[key].replace(/</g,'&lt;')+'</textarea>';
-            html+='</div>';
+    function loadBeRoomNights(){
+        return apiGet('ticket-room-nights?booking_id='+_beBookingId+'&_='+Date.now()).then(function(d){
+            state.bookingRooms=d.booking_rooms||[];
+            state.roomNights=d.room_nights||[];
+            nightsLoaded=true;
+            renderRoomNotes();
+            setTimeout(focusBeRoomDayNote,50);
+        }).catch(function(){
+            state.roomNights=[];state.bookingRooms=[];nightsLoaded=true;
+            renderRoomNotes();
         });
-        notesContainer.innerHTML=html||'<div style="color:var(--muted);font-size:13px">Loading nights…</div>';
-    }).catch(function(err){
-        notesContainer.innerHTML='<div style="color:var(--red);font-size:13px">Failed to load notes.'+
-            (err&&err.status?(' HTTP '+err.status):'')+(err&&err.message?(' — '+err.message):'')+
-            '</div>';
-    });
+    }
 
-    // 3) When nights finish, uplift: full per-night boxes (with saved notes).
-    //    Independent of the notes fetch — a failure in one must never blank
-    //    the other or keep a booking's day notes uneditable.
-    nightsPromise.then(function(){
-        var existing={};
-        document.querySelectorAll('#be-room-day-notes textarea[data-br-id]').forEach(function(ta){
-            existing[ta.getAttribute('data-br-id')+'|'+ta.getAttribute('data-stay-date')]=ta.value;
+    // 2) Load saved notes independently of the nights feed.
+    function loadBeRoomDayNotes(){
+        return apiGet('ticket-room-day-notes?booking_id='+_beBookingId+'&_='+Date.now()).then(function(d){
+            state.roomDayNotes=d.notes||[];
+            renderRoomNotes();
+            setTimeout(focusBeRoomDayNote,50);
+        }).catch(function(err){
+            // Never wipe an already-rendered nights view with an error banner.
+            if(!nightsLoaded&&!notesContainer.querySelector('textarea'))
+                notesContainer.innerHTML='<div style="color:var(--red);font-size:13px">Failed to load notes.'+
+                    (err&&err.status?(' HTTP '+err.status):'')+(err&&err.message?(' — '+err.message):'')+
+                    '</div>';
         });
-        renderBeRoomDayNotes(state.roomNights);
-        // After the uplift, focus the day note the user clicked on the calendar.
-        setTimeout(focusBeRoomDayNote,50);
-    }).catch(function(){
-        // nights failed — render saved notes (or the empty-state), never the
-        // 'Loading nights…' placeholder
-        renderBeRoomDayNotes([]);
-    });
+    }
+    loadBeRoomNights();
+    loadBeRoomDayNotes();
 
 
     // Reset transfer section
