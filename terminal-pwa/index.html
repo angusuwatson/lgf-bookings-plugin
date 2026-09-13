@@ -633,7 +633,7 @@ input,select{font-family:inherit;font-size:16px}
       </div>
       <div class="be-3col" style="margin-top:4px">
         <div class="bedit-row"><label>Discount</label>
-          <select id="qb-discount-type"><option value="percentage" selected>%</option><option value="none">None</option><option value="fixed">€</option></select>
+          <select id="qb-discount-type"><option value="percent" selected>%</option><option value="none">None</option><option value="amount">€</option></select>
         </div>
         <div class="bedit-row"><label>Value</label><input type="number" id="qb-discount-value" step="0.01" min="0" value=""></div>
         <div class="bedit-row"><label>Contacted</label><input type="date" id="qb-contacted-date"></div>
@@ -704,7 +704,7 @@ input,select{font-family:inherit;font-size:16px}
 
 <div class="be-3col" style="margin-top:4px">
           <div class="bedit-row"><label>Discount</label>
-            <select id="be-discount-type"><option value="percentage" selected>%</option><option value="none">None</option><option value="fixed">€</option></select>
+            <select id="be-discount-type"><option value="percent" selected>%</option><option value="none">None</option><option value="amount">€</option></select>
           </div>
           <div class="bedit-row"><label>Value</label><input type="number" id="be-discount-value" step="0.01" min="0" value=""></div>
           <div class="bedit-row"><label>Contacted</label><input type="date" id="be-contacted-date"></div>
@@ -2506,6 +2506,7 @@ function renderCalendar(){
 window._calSelectBooking=function(bid,date,roomId){
     state._calFocusRoomId=parseInt(roomId,10)||0;
     state._calFocusDate=date||'';
+    state._beFromCalendar=true;
     state.activeBookingId=bid;
     state.activeBooking=null;
     for(var i=0;i<state.bookings.length;i++){
@@ -3121,7 +3122,7 @@ function openQuickBookingModal(roomId,date){
     document.getElementById('qb-status').value='confirmed';
     document.getElementById('qb-channel').value='';
     document.getElementById('qb-contacted-date').value='';
-    document.getElementById('qb-discount-type').value='percentage';
+    document.getElementById('qb-discount-type').value='percent';
     document.getElementById('qb-discount-value').value='';
     document.getElementById('qb-children').value='0';
     document.getElementById('qb-babies').value='0';
@@ -3306,6 +3307,7 @@ function submitQuickBooking(){
         state.savedItems=[];
         fetchData().then(function(){
             if(state.viewMode==='cal') loadCalendar();
+            if(state._qbFromCalendar){state._qbFromCalendar=false;return;}
             for(var i=0;i<state.bookings.length;i++){
                 if(parseInt(state.bookings[i].id,10)===data.booking_id){
                     selectBooking(data.booking_id);
@@ -3367,7 +3369,10 @@ function openEditModal(){
 
     // Discount (from first booking room)
     var br=state.bookingRooms[0]||{};
-    document.getElementById('be-discount-type').value=br.discount_type||'percentage';
+    var dt=(br.discount_type||'none');
+    if(dt==='percentage') dt='percent';
+    else if(dt==='fixed') dt='amount';
+    document.getElementById('be-discount-type').value=dt;
     document.getElementById('be-discount-value').value=br.discount_value||'';
 
     // Add room dropdown
@@ -3649,6 +3654,12 @@ function submitEditBooking(){
         }
     }).then(function(){
         closeEditModal();
+        if(state._beFromCalendar){
+            state.activeBookingId=0;state.activeRoomId=0;state.activeBooking=null;
+            state.ticketItems=[];state.savedItems=[];
+            state.bookingRooms=[];state.roomNights=[];
+        }
+        state._beFromCalendar=false;
         fetchData();
     }).catch(function(err){
         if(err.message!=='unauthorized'){
@@ -3734,7 +3745,7 @@ document.addEventListener('DOMContentLoaded',function(){
         e.stopPropagation();
         document.getElementById('account-menu').classList.toggle('active');
     });
-    document.getElementById('account-qb').addEventListener('click',function(){closeAccountMenu();openQuickBookingModal();});
+    document.getElementById('account-qb').addEventListener('click',function(){closeAccountMenu();state._qbFromCalendar=false;openQuickBookingModal();});
     document.getElementById('account-fs').addEventListener('click',function(){closeAccountMenu();toggleFullscreen();});
     document.getElementById('account-logout').addEventListener('click',function(){closeAccountMenu();doLogout();});
 
@@ -3752,7 +3763,7 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('hm-view-maint').addEventListener('click',function(){closeHm();setViewMode('maint');});
     document.getElementById('hm-view-fin').addEventListener('click',function(){closeHm();setViewMode('fin');});
     document.getElementById('hm-view-pricing').addEventListener('click',function(){closeHm();setViewMode('pricing');});
-    document.getElementById('hm-qb').addEventListener('click',function(){closeHm();openQuickBookingModal();});
+    document.getElementById('hm-qb').addEventListener('click',function(){closeHm();state._qbFromCalendar=false;openQuickBookingModal();});
     document.getElementById('hm-fs').addEventListener('click',function(){closeHm();toggleFullscreen();});
 
     // List date bar
@@ -3856,7 +3867,7 @@ document.addEventListener('DOMContentLoaded',function(){
     });
 
     // Booking edit
-    document.getElementById('ticket-edit-btn').addEventListener('click',function(){openEditModal();});
+    document.getElementById('ticket-edit-btn').addEventListener('click',function(){state._beFromCalendar=false;openEditModal();});
     document.getElementById('be-confirm').addEventListener('click',function(){submitEditBooking();});
     document.getElementById('be-cancel').addEventListener('click',function(){closeEditModal();});
     document.getElementById('be-modal-close').addEventListener('click',function(){closeEditModal();});
@@ -3932,6 +3943,7 @@ document.addEventListener('DOMContentLoaded',function(){
         }
         var free=e.target.closest('[data-room-id][data-date]');
         if(free&&free.classList.contains('cal-free')){
+            state._qbFromCalendar=true;
             openQuickBookingModal(parseInt(free.getAttribute('data-room-id'),10),free.getAttribute('data-date'));
         }
     });

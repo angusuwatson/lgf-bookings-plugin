@@ -2154,6 +2154,11 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
     $contacted_date = sanitize_text_field( (string) $request->get_param( 'contacted_date' ) );
     $discount_type = sanitize_text_field( (string) ( $request->get_param( 'discount_type' ) ?: 'none' ) );
     $discount_value = round( abs( (float) $request->get_param( 'discount_value' ) ), 2 );
+    if ( 'percentage' === $discount_type ) {
+        $discount_type = 'percent';
+    } elseif ( 'fixed' === $discount_type ) {
+        $discount_type = 'amount';
+    }
     $source_channel = sanitize_text_field( (string) ( $request->get_param( 'source_channel' ) ?: 'direct' ) );
     $internal_notes = sanitize_textarea_field( (string) $request->get_param( 'internal_notes' ) );
     $room_day_notes = $request->get_param( 'room_day_notes' );
@@ -2256,7 +2261,7 @@ function simple_hotel_crm_rest_ticket_create_booking( WP_REST_Request $request )
                 'adults'       => $adults,
                 'children'     => $children,
                 'babies'       => $babies,
-                'discount_type'  => in_array( $discount_type, [ 'none', 'percentage', 'fixed' ], true ) ? $discount_type : 'none',
+                'discount_type'  => in_array( $discount_type, [ 'none', 'percent', 'amount' ], true ) ? $discount_type : 'none',
                 'discount_value' => $discount_value,
             ],
             [ '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%f' ]
@@ -2676,7 +2681,13 @@ function simple_hotel_crm_rest_ticket_update_booking( WP_REST_Request $request )
             $br_update = [];
             $br_formats = [];
             if ( null !== $discount_type ) {
-                $dt = in_array( $discount_type, [ 'none', 'percentage', 'fixed' ], true ) ? $discount_type : 'none';
+                $dt = sanitize_text_field( (string) $discount_type );
+                if ( 'percentage' === $dt ) {
+                    $dt = 'percent';
+                } elseif ( 'fixed' === $dt ) {
+                    $dt = 'amount';
+                }
+                $dt = in_array( $dt, [ 'none', 'percent', 'amount' ], true ) ? $dt : 'none';
                 $br_update['discount_type'] = $dt;
                 $br_formats[] = '%s';
             }

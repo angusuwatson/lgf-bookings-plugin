@@ -133,6 +133,11 @@ function simple_hotel_crm_calculate_room_pricing( array $line, int $nights, int 
     $manual_room_rate_amount = max( 0, (float) simple_hotel_crm_normalize_decimal( $line['room_rate_amount'] ?? 0 ) );
     $extras_amount = max( 0, (float) simple_hotel_crm_normalize_decimal( $line['extras_amount'] ?? 0 ) );
     $discount_type = sanitize_key( (string) ( $line['discount_type'] ?? 'none' ) );
+    if ( 'percentage' === $discount_type ) {
+        $discount_type = 'percent';
+    } elseif ( 'fixed' === $discount_type ) {
+        $discount_type = 'amount';
+    }
     if ( ! in_array( $discount_type, [ 'none', 'percent', 'amount' ], true ) ) {
         $discount_type = 'none';
     }
