@@ -2433,7 +2433,7 @@ function renderCalendar(){
             if(occ && occ.room_note){
                 txt='<span class="cal-room-note">'+occ.room_note.slice(0,10)+'</span>';
             }
-            html+='<div class="'+cls+'"'+(isDarkLGF?' style="background:'+noteRowBg+'"':'')+'>'+txt+'</div>';
+            html+='<div class="'+cls+'" data-bid="'+(occ?occ.booking_id:'0')+'" data-room-id="'+room.id+'" data-date="'+date+'"'+(isDarkLGF?' style="background:'+noteRowBg+'"':'')+'>'+txt+'</div>';
         });
         html+='</div>';
 
@@ -2503,7 +2503,9 @@ function renderCalendar(){
     html+='</div>';
     document.getElementById('cal-view').innerHTML=html;
 }
-window._calSelectBooking=function(bid,date){
+window._calSelectBooking=function(bid,date,roomId){
+    state._calFocusRoomId=parseInt(roomId,10)||0;
+    state._calFocusDate=date||'';
     state.activeBookingId=bid;
     state.activeBooking=null;
     for(var i=0;i<state.bookings.length;i++){
@@ -3420,6 +3422,33 @@ function openEditModal(){
         notesContainer.innerHTML=html||'<div style="color:var(--muted);font-size:13px">No room nights or notes yet.</div>';
     }
 
+    function focusBeRoomDayNote(){
+        var roomId=state._calFocusRoomId||0;
+        var stayDate=state._calFocusDate||'';
+        if(!roomId||!stayDate) return;
+        // map clicked room_id -> booking_room_id
+        var brid=null;
+        (state.bookingRooms||[]).forEach(function(br){
+            if(brid!==null) return;
+            if(parseInt(br.room_id,10)===roomId&&br.booking_room_id) brid=br.booking_room_id;
+        });
+        if(brid===null) return;
+        var best=null;
+        var tas=document.querySelectorAll('#be-room-day-notes textarea[data-br-id]');
+        tas.forEach(function(ta){
+            if(parseInt(ta.getAttribute('data-br-id'),10)===brid&&ta.getAttribute('data-stay-date')===stayDate) best=ta;
+        });
+        if(!best) return;
+        best.scrollIntoView({block:'center',behavior:'smooth'});
+        best.focus({preventScroll:true});
+        best.style.borderColor='var(--accent, #4f8ef7)';
+        best.style.boxShadow='0 0 0 2px var(--accent, #4f8ef7)';
+        setTimeout(function(){
+            best.style.borderColor='';
+            best.style.boxShadow='';
+        },2000);
+    }
+
     // 1) Always refetch room nights for THIS booking (stale value from a
     //    previously opened booking must never render/save the wrong room/date).
     //    Fetched in the background via the lightweight endpoint; notes are NOT
@@ -3447,20 +3476,27 @@ function openEditModal(){
             html+='</div>';
         });
         notesContainer.innerHTML=html||'<div style="color:var(--muted);font-size:13px">Loading nights…</div>';
-        // 3) When nights finish, uplift: full per-night boxes (with saved notes).
-        nightsPromise.then(function(){
-            var existing={};
-            document.querySelectorAll('#be-room-day-notes textarea[data-br-id]').forEach(function(ta){
-                existing[ta.getAttribute('data-br-id')+'|'+ta.getAttribute('data-stay-date')]=ta.value;
-            });
-            renderBeRoomDayNotes(state.roomNights);
-        }).catch(function(){
-            // nights failed — the saved notes above remain fully editable
-        });
     }).catch(function(err){
         notesContainer.innerHTML='<div style="color:var(--red);font-size:13px">Failed to load notes.'+
             (err&&err.status?(' HTTP '+err.status):'')+(err&&err.message?(' — '+err.message):'')+
             '</div>';
+    });
+
+    // 3) When nights finish, uplift: full per-night boxes (with saved notes).
+    //    Independent of the notes fetch — a failure in one must never blank
+    //    the other or keep a booking's day notes uneditable.
+    nightsPromise.then(function(){
+        var existing={};
+        document.querySelectorAll('#be-room-day-notes textarea[data-br-id]').forEach(function(ta){
+            existing[ta.getAttribute('data-br-id')+'|'+ta.getAttribute('data-stay-date')]=ta.value;
+        });
+        renderBeRoomDayNotes(state.roomNights);
+        // After the uplift, focus the day note the user clicked on the calendar.
+        setTimeout(focusBeRoomDayNote,50);
+    }).catch(function(){
+        // nights failed — render saved notes (or the empty-state), never the
+        // 'Loading nights…' placeholder
+        renderBeRoomDayNotes([]);
     });
 
 
@@ -3482,6 +3518,7 @@ function closeEditModal(){
     document.getElementById('be-modal').classList.remove('active');
     _beBookingId=0;
     _beTransferGuestId=0;
+    if(state){state._calFocusRoomId=0;state._calFocusDate='';}
 }
 function toggleTransferSection(){
     var sec=document.getElementById('be-transfer-section');
@@ -3807,6 +3844,10 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('custom-item-cancel').addEventListener('click',function(){closeCustomItemModal();});
     document.getElementById('custom-item-close').addEventListener('click',function(){closeCustomItemModal();});
     document.getElementById('custom-item-modal').addEventListener('click',function(e){if(e.target===this) closeCustomItemModal();});
+    document.getElementById('pay-modal').addEventListener('click',function(e){if(e.target===this) closePayModal();});
+    document.getElementById('ci-modal').addEventListener('click',function(e){if(e.target===this) closeCiModal();});
+    document.getElementById('qb-modal').addEventListener('click',function(e){if(e.target===this) closeQbModal();});
+    document.getElementById('be-modal').addEventListener('click',function(e){if(e.target===this) closeEditModal();});
 
     document.getElementById('save-ticket').addEventListener('click',function(){saveTicket().catch(function(){});});
     document.getElementById('ticket-close').addEventListener('click',function(){
@@ -3858,7 +3899,11 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('cal-view').addEventListener('click',function(e){
         var cell=e.target.closest('[data-bid]');
         if(cell&&parseInt(cell.getAttribute('data-bid'),10)){
-            window._calSelectBooking(parseInt(cell.getAttribute('data-bid'),10),cell.getAttribute('data-date'));
+            window._calSelectBooking(
+                parseInt(cell.getAttribute('data-bid'),10),
+                cell.getAttribute('data-date'),
+                parseInt(cell.getAttribute('data-room-id'),10)
+            );
             return;
         }
         var free=e.target.closest('[data-room-id][data-date]');
