@@ -3329,10 +3329,12 @@ function submitQuickBooking(){
 var _beBookingId=0;
 var _beTransferGuestId=0;
 var _beTransferTimer=null;
+var _beDiscountDirty=false;
 function openEditModal(){
     if(!state.activeBookingId||!state.activeBooking) return;
     _beBookingId=state.activeBookingId;
     _beTransferGuestId=0;
+    _beDiscountDirty=false;
     document.getElementById('be-error').style.display='none';
     setText('be-heading','Edit Booking #'+state.activeBookingId);
     var b=state.activeBooking;
@@ -3367,13 +3369,19 @@ function openEditModal(){
     // Internal notes
     document.getElementById('be-internal-notes').value=b.internal_notes||'';
 
-    // Discount (from first booking room)
-    var br=state.bookingRooms[0]||{};
-    var dt=(br.discount_type||'none');
-    if(dt==='percentage') dt='percent';
-    else if(dt==='fixed') dt='amount';
-    document.getElementById('be-discount-type').value=dt;
-    document.getElementById('be-discount-value').value=br.discount_value||'';
+    // Discount (from first booking room). Re-filled once the current
+    // booking's rooms arrive via the nights feed, so it never shows a stale
+    // booking's discount (or empty after a calendar save clears the cache).
+    function fillBeDiscount(){
+        if(_beDiscountDirty) return;
+        var r=state.bookingRooms[0]||{};
+        var type=(r.discount_type||'none');
+        if(type==='percentage') type='percent';
+        else if(type==='fixed') type='amount';
+        document.getElementById('be-discount-type').value=type;
+        document.getElementById('be-discount-value').value=r.discount_value||'';
+    }
+    fillBeDiscount();
 
     // Add room dropdown
     var sel=document.getElementById('be-add-room');
@@ -3503,6 +3511,7 @@ function openEditModal(){
             state.bookingRooms=d.booking_rooms||[];
             state.roomNights=d.room_nights||[];
             nightsLoaded=true;
+            fillBeDiscount();
             renderRoomNotes();
             setTimeout(focusBeRoomDayNote,50);
         }).catch(function(){
@@ -3869,6 +3878,8 @@ document.addEventListener('DOMContentLoaded',function(){
     // Booking edit
     document.getElementById('ticket-edit-btn').addEventListener('click',function(){state._beFromCalendar=false;openEditModal();});
     document.getElementById('be-confirm').addEventListener('click',function(){submitEditBooking();});
+    document.getElementById('be-discount-type').addEventListener('change',function(){_beDiscountDirty=true;});
+    document.getElementById('be-discount-value').addEventListener('input',function(){_beDiscountDirty=true;});
     document.getElementById('be-cancel').addEventListener('click',function(){closeEditModal();});
     document.getElementById('be-modal-close').addEventListener('click',function(){closeEditModal();});
     document.getElementById('be-transfer-toggle').addEventListener('click',function(){toggleTransferSection();});

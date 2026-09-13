@@ -678,6 +678,7 @@ function simple_hotel_crm_rest_ticket_room_nights( WP_REST_Request $request ) {
 
     $booking_rooms = $wpdb->get_results( $wpdb->prepare(
         "SELECT br.id AS booking_room_id, br.room_id, br.booking_id,
+                br.discount_type, br.discount_value,
                 r.room_code, r.room_name
          FROM {$booking_rooms_table} br
          LEFT JOIN {$rooms_table} r ON r.id = br.room_id
