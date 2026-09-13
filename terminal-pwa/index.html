@@ -284,7 +284,7 @@ input,select{font-family:inherit;font-size:16px}
 /* Pay modal */
 .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1000;justify-content:center;align-items:center}
 .modal-overlay.active{display:flex}
-.modal-box{background:var(--card);border-radius:16px;padding:24px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;overflow-x:hidden;position:relative}
+.modal-box{background:var(--card);border-radius:16px;padding:18px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;overflow-x:hidden;position:relative}
 .modal-box h2{font-size:20px;margin-bottom:16px}
 .modal-close{background:none;border:none;font-size:28px;color:var(--muted);cursor:pointer;position:absolute;top:12px;right:16px;line-height:1;padding:4px 8px}
 .modal-close:active{color:var(--text)}
@@ -319,12 +319,12 @@ input,select{font-family:inherit;font-size:16px}
 .list-date-bar button:active{background:var(--hover-bg)}
 .list-date-input{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text);cursor:pointer}
 .list-date-today{font-size:12px!important;padding:4px 10px!important}
-.be-section{margin-bottom:16px}
+.be-section{margin-bottom:10px}
 .be-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 8px}
 @media(max-width:640px){.be-3col{grid-template-columns:1fr}}
-.bedit-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.bedit-row{display:flex;gap:8px;margin-bottom:4px;align-items:center}
 .bedit-row label{font-size:13px;color:var(--muted);min-width:60px}
-.bedit-row input,.bedit-row select{flex:1;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:15px;outline:none;min-height:44px;background:var(--bg);color:var(--text)}
+.bedit-row input,.bedit-row select{flex:1;padding:7px;border:2px solid var(--border);border-radius:8px;font-size:14px;outline:none;min-height:36px;background:var(--bg);color:var(--text)}
 .bedit-row input:focus,.bedit-row select:focus{border-color:var(--accent)}
 /* Room selector */
 .room-selector{padding:6px 10px;display:flex;align-items:center;gap:6px;font-size:13px;border-bottom:1px solid var(--border);background:var(--card)}
@@ -657,11 +657,11 @@ input,select{font-family:inherit;font-size:16px}
     <div class="be-section" style="margin-top:8px;display:flex;gap:12px;align-items:flex-start">
       <div style="flex:1;min-width:0">
         <div class="ci-label">Internal Notes</div>
-        <textarea id="qb-internal-notes" rows="6" style="width:100%;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit"></textarea>
+        <textarea id="qb-internal-notes" rows="4" style="width:100%;padding:6px;border:2px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit;min-height:66px"></textarea>
       </div>
       <div style="flex:1;min-width:0">
         <div class="ci-label">Room Day Notes</div>
-        <div id="qb-room-day-notes" style="max-height:200px;overflow-y:auto"></div>
+        <div id="qb-room-day-notes" style="max-height:130px;overflow-y:auto"></div>
       </div>
     </div>
     <div class="pay-actions" style="margin-top:16px">
@@ -735,11 +735,11 @@ input,select{font-family:inherit;font-size:16px}
     <div class="be-section" style="margin-top:8px;display:flex;gap:12px;align-items:flex-start">
       <div style="flex:1;min-width:0">
         <div class="ci-label">Internal Notes</div>
-        <textarea id="be-internal-notes" rows="6" style="width:100%;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit"></textarea>
+        <textarea id="be-internal-notes" rows="4" style="width:100%;padding:6px;border:2px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit;min-height:66px"></textarea>
       </div>
       <div style="flex:1;min-width:0">
         <div class="ci-label">Room Day Notes</div>
-        <div id="be-room-day-notes" style="max-height:200px;overflow-y:auto"></div>
+        <div id="be-room-day-notes" style="max-height:130px;overflow-y:auto"></div>
       </div>
     </div>
     <div class="pay-actions" style="margin-top:16px">
@@ -3432,7 +3432,7 @@ function openEditModal(){
             var val=noteMap[key]||'';
             html+='<div style="margin-bottom:8px">';
             html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+(n.stay_date||'')+' — '+(n.room_code||'')+' '+(n.room_name||'')+'</div>';
-            html+='<textarea data-br-id="'+n.booking_room_id+'" data-stay-date="'+n.stay_date+'" rows="3" style="'+taStyle+'">'+val.replace(/</g,'&lt;')+'</textarea>';
+            html+='<textarea data-br-id="'+n.booking_room_id+'" data-stay-date="'+n.stay_date+'" rows="2" style="'+taStyle+'">'+val.replace(/</g,'&lt;')+'</textarea>';
             html+='</div>';
         });
         Object.keys(noteMap).forEach(function(key){
@@ -3440,7 +3440,7 @@ function openEditModal(){
             var parts=key.split('|');
             html+='<div style="margin-bottom:8px">';
             html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+(parts[1]||'')+' — note</div>';
-            html+='<textarea data-br-id="'+parts[0]+'" data-stay-date="'+parts[1]+'" rows="3" style="'+taStyle+'">'+noteMap[key].replace(/</g,'&lt;')+'</textarea>';
+            html+='<textarea data-br-id="'+parts[0]+'" data-stay-date="'+parts[1]+'" rows="2" style="'+taStyle+'">'+noteMap[key].replace(/</g,'&lt;')+'</textarea>';
             html+='</div>';
         });
         if(html!=='') notesContainer.innerHTML=html;
@@ -3472,7 +3472,7 @@ function openEditModal(){
         var taStyle='width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit';
         notesContainer.innerHTML='<div style="margin-bottom:8px">'+
             '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+stayDate+' — '+(roomLabel||'room note')+'</div>'+
-            '<textarea data-br-id="'+brid+'" data-stay-date="'+stayDate+'" rows="3" style="'+taStyle+'">'+val.replace(/</g,'&lt;')+'</textarea>'+
+            '<textarea data-br-id="'+brid+'" data-stay-date="'+stayDate+'" rows="2" style="'+taStyle+'">'+val.replace(/</g,'&lt;')+'</textarea>'+
             '</div>';
         return true;
     }
