@@ -632,10 +632,10 @@ input,select{font-family:inherit;font-size:16px}
         </div>
       </div>
       <div class="be-3col" style="margin-top:4px">
-        <div class="bedit-row"><label>Discount</label>
-          <select id="qb-discount-type"><option value="percent" selected>%</option><option value="none">None</option><option value="amount">€</option></select>
+        <div class="bedit-row" style="grid-column:1/3"><label>Discount</label>
+          <select id="qb-discount-type" style="flex:0 0 70px"><option value="percent" selected>%</option><option value="none">None</option><option value="amount">€</option></select>
+          <input type="number" id="qb-discount-value" step="0.01" min="0" value="" placeholder="Value">
         </div>
-        <div class="bedit-row"><label>Value</label><input type="number" id="qb-discount-value" step="0.01" min="0" value=""></div>
         <div class="bedit-row"><label>Contacted</label><input type="date" id="qb-contacted-date"></div>
       </div>
       <div class="be-3col" style="margin-top:4px">
@@ -703,10 +703,10 @@ input,select{font-family:inherit;font-size:16px}
 </div>
 
 <div class="be-3col" style="margin-top:4px">
-          <div class="bedit-row"><label>Discount</label>
-            <select id="be-discount-type"><option value="percent" selected>%</option><option value="none">None</option><option value="amount">€</option></select>
+          <div class="bedit-row" style="grid-column:1/3"><label>Discount</label>
+            <select id="be-discount-type" style="flex:0 0 70px"><option value="percent" selected>%</option><option value="none">None</option><option value="amount">€</option></select>
+            <input type="number" id="be-discount-value" step="0.01" min="0" value="" placeholder="Value">
           </div>
-          <div class="bedit-row"><label>Value</label><input type="number" id="be-discount-value" step="0.01" min="0" value=""></div>
           <div class="bedit-row"><label>Contacted</label><input type="date" id="be-contacted-date"></div>
         </div>
         <div class="be-3col" style="margin-top:4px">
