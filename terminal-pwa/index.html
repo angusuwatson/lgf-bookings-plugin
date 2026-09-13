@@ -3431,8 +3431,37 @@ function openEditModal(){
             html+='</div>';
         });
         if(html!=='') notesContainer.innerHTML=html;
-        else if(nightsLoaded) notesContainer.innerHTML='<div style="color:var(--muted);font-size:13px">No room nights or notes yet.</div>';
+        else if(nightsLoaded){
+            if(!ensureFocusTextarea()) notesContainer.innerHTML='<div style="color:var(--muted);font-size:13px">No room nights or notes yet.</div>';
+        }
         else notesContainer.innerHTML='<div style="color:var(--muted);font-size:13px">Loading nights…</div>';
+    }
+
+    // Empty nights ledger: still give the user an editable box for the exact
+    // room+date they clicked on the calendar, so a first note can be typed
+    // and saved. Only when we can map the clicked room to a booking_room_id
+    // (the server needs it to store the note).
+    function ensureFocusTextarea(){
+        var roomId=parseInt(state._calFocusRoomId||0,10);
+        var stayDate=state._calFocusDate||'';
+        if(!roomId||!stayDate) return false;
+        var brid=null;
+        var roomLabel='';
+        (state.bookingRooms||[]).forEach(function(br){
+            if(brid!==null) return;
+            if(parseInt(br.room_id,10)===roomId&&br.booking_room_id){brid=br.booking_room_id;roomLabel=((br.room_code||'')+' '+(br.room_name||'')).trim();}
+        });
+        if(brid===null) return false;
+        var val='';
+        document.querySelectorAll('#be-room-day-notes textarea[data-br-id]').forEach(function(ta){
+            if(parseInt(ta.getAttribute('data-br-id'),10)===brid&&ta.getAttribute('data-stay-date')===stayDate) val=ta.value;
+        });
+        var taStyle='width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit';
+        notesContainer.innerHTML='<div style="margin-bottom:8px">'+
+            '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+stayDate+' — '+(roomLabel||'room note')+'</div>'+
+            '<textarea data-br-id="'+brid+'" data-stay-date="'+stayDate+'" rows="3" style="'+taStyle+'">'+val.replace(/</g,'&lt;')+'</textarea>'+
+            '</div>';
+        return true;
     }
 
     function focusBeRoomDayNote(){
