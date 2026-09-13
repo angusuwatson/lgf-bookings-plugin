@@ -3379,54 +3379,90 @@ function openEditModal(){
         });
     }).catch(function(){});
 
-    // Room Day Notes — build from the current booking's room nights + existing notes
+    // Room Day Notes — the notes layer is INDEPENDENT of the room-nights feed.
+    // The notes endpoint returns the saved note per (booking_room, night) even
+    // when the heavier ticket-data feed (used for the per-night boxes + booking
+    // profile) is failing. We render saved notes on their own first, then
+    // uplift with the nights list when/if it arrives — a failure in one must
+    // never blank the other.
     var notesContainer=document.getElementById('be-room-day-notes');
     notesContainer.innerHTML='<div style="color:var(--muted);font-size:13px">Loading notes…</div>';
-    state._beRoomDayNights=[];
-    // Always refetch room nights for THIS booking so a stale value from a
-    // previously opened booking can never render/save the wrong room or date
-    var nightsPromise=apiGet('ticket-data?booking_id='+_beBookingId+'&_='+Date.now()).then(function(d){
+    state.roomNights=state.roomNights||[];
+
+    function renderBeRoomDayNotes(nightList){
+        // nightList may be [] on first pass; notes still render from existing data
+        var textareas=document.querySelectorAll('#be-room-day-notes textarea[data-br-id]');
+        var savedByKey={};
+        textareas.forEach(function(ta){
+            var brId=ta.getAttribute('data-br-id');
+            var stayDate=ta.getAttribute('data-stay-date');
+            if(brId&&stayDate) savedByKey[brId+'|'+stayDate]=ta.value;
+        });
+        var html='';
+        (nightList||[]).forEach(function(n){
+            var key=n.booking_room_id+'|'+n.stay_date;
+            var val=savedByKey[key]||'';
+            html+='<div style="margin-bottom:8px">';
+            html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+(n.stay_date||'')+' — '+(n.room_code||'')+' '+(n.room_name||'')+'</div>';
+            html+='<textarea data-br-id="'+n.booking_room_id+'" data-stay-date="'+n.stay_date+'" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+val.replace(/</g,'&lt;')+'</textarea>';
+            html+='</div>';
+        });
+        // Any remaining saved notes whose night isn't covered by the nights feed
+        Object.keys(savedByKey).forEach(function(key){
+            var covered=(nightList||[]).some(function(n){return (n.booking_room_id+'|'+n.stay_date)===key;});
+            if(covered) return;
+            var parts=key.split('|');
+            html+='<div style="margin-bottom:8px">';
+            html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+(parts[1]||'')+' — note</div>';
+            html+='<textarea data-br-id="'+parts[0]+'" data-stay-date="'+parts[1]+'" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+savedByKey[key].replace(/</g,'&lt;')+'</textarea>';
+            html+='</div>';
+        });
+        notesContainer.innerHTML=html||'<div style="color:var(--muted);font-size:13px">No room nights or notes yet.</div>';
+    }
+
+    // 1) Always refetch room nights for THIS booking (stale value from a
+    //    previously opened booking must never render/save the wrong room/date).
+    //    Fetched in the background via the lightweight endpoint; notes are NOT
+    //    gated on it.
+    var nightsPromise=apiGet('ticket-room-nights?booking_id='+_beBookingId+'&_='+Date.now()).then(function(d){
         state.bookingRooms=d.booking_rooms||[];
         state.roomNights=d.room_nights||[];
     }).catch(function(){
         state.roomNights=[];state.bookingRooms=[];
     });
-    Promise.all([
-        apiGet('ticket-room-day-notes?booking_id='+_beBookingId+'&_='+Date.now()),
-        nightsPromise
-    ]).then(function(res){
-        var data=res[0];
-        var existingNotes=data.notes||[];
+
+    // 2) Load saved notes immediately and render them (decoupled from nights).
+    apiGet('ticket-room-day-notes?booking_id='+_beBookingId+'&_='+Date.now()).then(function(d){
+        state.roomDayNotes=(d.notes||[]);
         var noteMap={};
-        existingNotes.forEach(function(n){noteMap[n.booking_room_id+'|'+n.stay_date]=n.note_text||'';});
+        state.roomDayNotes.forEach(function(n){noteMap[n.booking_room_id+'|'+n.stay_date]=n.note_text||'';});
+        // Render saved notes straight away (nights may still be loading/failed)
         var html='';
-        var nights=state.roomNights||[];
-        if(!nights.length){html+='<div style="color:var(--muted);font-size:13px">No room nights.</div>';}
-        nights.forEach(function(n,i){
-            var key=n.booking_room_id+'|'+n.stay_date;
-            var noteText=noteMap[key]||'';
-            html+='<div style="margin-bottom:6px;padding:6px 8px;background:var(--hover-bg);border-radius:6px">';
-            html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+(n.stay_date||'')+' — '+(n.room_code||'')+' '+(n.room_name||'')+'</div>';
-            html+='<textarea data-br-id="'+n.booking_room_id+'" data-stay-date="'+n.stay_date+'" rows="2" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+noteText.replace(/</g,'&lt;')+'</textarea>';
-            html+='</div>';
-            delete noteMap[key];
-        });
-        // Render any remaining saved notes whose night wasn't covered above
         Object.keys(noteMap).forEach(function(key){
             if(!noteMap[key]) return;
             var parts=key.split('|');
-            html+='<div style="margin-bottom:6px;padding:6px 8px;background:var(--hover-bg);border-radius:6px">';
+            html+='<div style="margin-bottom:8px">';
             html+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+(parts[1]||'')+' — note</div>';
-            html+='<textarea data-br-id="'+parts[0]+'" data-stay-date="'+parts[1]+'" rows="2" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+noteMap[key].replace(/</g,'&lt;')+'</textarea>';
+            html+='<textarea data-br-id="'+parts[0]+'" data-stay-date="'+parts[1]+'" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical;font-family:inherit">'+noteMap[key].replace(/</g,'&lt;')+'</textarea>';
             html+='</div>';
         });
-        notesContainer.innerHTML=html;
-        state._beRoomDayNights=nights;
+        notesContainer.innerHTML=html||'<div style="color:var(--muted);font-size:13px">Loading nights…</div>';
+        // 3) When nights finish, uplift: full per-night boxes (with saved notes).
+        nightsPromise.then(function(){
+            var existing={};
+            document.querySelectorAll('#be-room-day-notes textarea[data-br-id]').forEach(function(ta){
+                existing[ta.getAttribute('data-br-id')+'|'+ta.getAttribute('data-stay-date')]=ta.value;
+            });
+            renderBeRoomDayNotes(state.roomNights);
+        }).catch(function(){
+            // nights failed — the saved notes above remain fully editable
+        });
+    }).catch(function(err){
+        notesContainer.innerHTML='<div style="color:var(--red);font-size:13px">Failed to load notes.'+
+            (err&&err.status?(' HTTP '+err.status):'')+(err&&err.message?(' — '+err.message):'')+
+            '</div>';
+    });
 
-        // Populate room/date dropdowns from booking rooms + full stay range.
-        // Room list = all rooms on the booking (even without night rows), so a
-        // room+date note can be chosen for any room/night of the stay.
-    }).catch(function(){notesContainer.innerHTML='<div style="color:var(--red);font-size:13px">Failed to load notes.</div>';});
 
     // Reset transfer section
     document.getElementById('be-transfer-section').style.display='none';
@@ -3521,12 +3557,11 @@ function submitEditBooking(){
         // Save room day notes
         var updatedNotes=[];
         var textareas=document.querySelectorAll('#be-room-day-notes textarea[data-br-id]');
-        var validRoomIds=(state._beRoomDayNights||[]).map(function(n){return String(n.booking_room_id);});
         textareas.forEach(function(ta){
             var brid=ta.getAttribute('data-br-id');
             var noteText=ta.value.trim();
             if(!noteText) return;
-            if(validRoomIds.indexOf(brid)<0) return;
+            if(!brid) return;
             updatedNotes.push({
                 booking_room_id:parseInt(brid,10),
                 stay_date:ta.getAttribute('data-stay-date'),

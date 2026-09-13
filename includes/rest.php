@@ -261,6 +261,15 @@ add_action( 'rest_api_init', function() {
         ],
     ] );
 
+    register_rest_route( 'simple-hotel-crm/v1', '/ticket-room-nights', [
+        'methods'  => 'GET',
+        'callback' => 'simple_hotel_crm_rest_ticket_room_nights',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+        'args'     => [
+            'booking_id' => [ 'required' => true, 'type' => 'integer' ],
+        ],
+    ] );
+
     register_rest_route( 'simple-hotel-crm/v1', '/ticket-room-day-notes', [
         'methods'  => 'POST',
         'callback' => 'simple_hotel_crm_rest_ticket_save_room_day_notes',
@@ -653,6 +662,46 @@ function simple_hotel_crm_rest_ticket_room_day_notes( WP_REST_Request $request )
     ", $booking_id ), ARRAY_A );
 
     return rest_ensure_response( [ 'notes' => $notes ] );
+}
+
+function simple_hotel_crm_rest_ticket_room_nights( WP_REST_Request $request ) {
+    global $wpdb;
+
+    $booking_id = absint( $request->get_param( 'booking_id' ) );
+    if ( $booking_id <= 0 ) {
+        return new WP_Error( 'invalid_booking', __( 'Invalid booking ID.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+
+    $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
+    $room_nights_table   = simple_hotel_crm_booking_room_nights_table();
+    $rooms_table         = simple_hotel_crm_rooms_table();
+
+    $booking_rooms = $wpdb->get_results( $wpdb->prepare(
+        "SELECT br.id AS booking_room_id, br.room_id, br.booking_id,
+                r.room_code, r.room_name
+         FROM {$booking_rooms_table} br
+         LEFT JOIN {$rooms_table} r ON r.id = br.room_id
+         WHERE br.booking_id = %d
+         ORDER BY br.id ASC",
+        $booking_id
+    ), ARRAY_A );
+
+    $room_nights = $wpdb->get_results( $wpdb->prepare(
+        "SELECT brn.id, brn.booking_room_id, brn.stay_date,
+                r.room_code, r.room_name
+         FROM {$room_nights_table} brn
+         JOIN {$booking_rooms_table} br ON br.id = brn.booking_room_id
+         LEFT JOIN {$rooms_table} r ON r.id = br.room_id
+         WHERE brn.booking_id = %d
+         ORDER BY brn.stay_date ASC, br.booking_room_id ASC",
+        $booking_id
+    ), ARRAY_A );
+
+    return rest_ensure_response( [
+        'booking_id'    => $booking_id,
+        'booking_rooms' => $booking_rooms,
+        'room_nights'   => $room_nights,
+    ] );
 }
 
 function simple_hotel_crm_rest_ticket_save_room_day_notes( WP_REST_Request $request ) {
