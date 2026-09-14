@@ -3846,7 +3846,7 @@ document.addEventListener('DOMContentLoaded',function(){
         clearTimeout(_qbSearchTimer);
         if(q.length<2){document.getElementById('qb-guest-results').style.display='none';return;}
         _qbSearchTimer=setTimeout(function(){
-            apiGet('ticket-guest-search',{q:q}).then(function(data){
+            apiGet('ticket-guest-search?q='+encodeURIComponent(q)).then(function(data){
                 var el=document.getElementById('qb-guest-results');
                 var guests=data.guests||[];
                 if(!guests.length){el.innerHTML='<div style="padding:8px;color:var(--muted)">No guests found</div>';el.style.display='block';return;}
