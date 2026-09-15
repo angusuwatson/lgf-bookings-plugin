@@ -234,6 +234,25 @@ add_action( 'rest_api_init', function() {
         ],
     ] );
 
+    register_rest_route( 'simple-hotel-crm/v1', '/public-availability', [
+        'methods'  => 'GET',
+        'callback' => 'simple_hotel_crm_rest_public_availability',
+        'permission_callback' => '__return_true',
+        'args' => [
+            'check_in' => [
+                'required' => true,
+                'validate_callback' => function($v) { return (bool) preg_match( '/^\d{4}-\d{2}-\d{2}$/', $v ); },
+            ],
+            'check_out' => [
+                'required' => true,
+                'validate_callback' => function($v) { return (bool) preg_match( '/^\d{4}-\d{2}-\d{2}$/', $v ); },
+            ],
+            'adults' => [
+                'validate_callback' => function($v) { return is_numeric( $v ) && (int) $v >= 1 && (int) $v <= 6; },
+            ],
+        ],
+    ] );
+
     register_rest_route( 'simple-hotel-crm/v1', '/ticket-room-status', [
         'methods'  => 'GET',
         'callback' => 'simple_hotel_crm_rest_ticket_get_room_statuses',
@@ -2404,6 +2423,109 @@ function simple_hotel_crm_rest_available_rooms( WP_REST_Request $request ) {
         $ids[] = (int) $room['id'];
     }
     return rest_ensure_response( [ 'available' => $ids ] );
+}
+
+function simple_hotel_crm_public_availability_rate_limited() {
+    $forwarded = isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? (string) $_SERVER['HTTP_X_FORWARDED_FOR'] : '';
+    $ip = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
+    if ( '' !== $forwarded ) {
+        $ip .= '|' . $forwarded;
+    }
+    $transient_key = 'shc_pub_avail_' . md5( $ip );
+    $count = (int) get_transient( $transient_key );
+    if ( $count >= 120 ) {
+        return false;
+    }
+    set_transient( $transient_key, $count + 1, 600 );
+    return true;
+}
+
+function simple_hotel_crm_rest_public_availability( WP_REST_Request $request ) {
+    $check_in  = (string) $request->get_param( 'check_in' );
+    $check_out = (string) $request->get_param( 'check_out' );
+    $adults    = max( 1, min( 6, (int) ( $request->get_param( 'adults' ) ?: 2 ) ) );
+
+    if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $check_in ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $check_out ) || $check_out <= $check_in ) {
+        return new WP_Error( 'invalid_dates', __( 'Check-out must be after check-in.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+
+    $nights = (int) round( ( strtotime( $check_out . ' 00:00:00' ) - strtotime( $check_in . ' 00:00:00' ) ) / DAY_IN_SECONDS );
+    if ( $nights > 30 ) {
+        return new WP_Error( 'stay_too_long', __( 'Maximum stay is 30 nights.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+    if ( $check_in < current_time( 'Y-m-d' ) ) {
+        return new WP_Error( 'past_dates', __( 'Check-in cannot be in the past.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+
+    if ( ! simple_hotel_crm_public_availability_rate_limited() ) {
+        return new WP_Error( 'rate_limited', __( 'Too many requests. Try again shortly.', 'simple-hotel-crm' ), [ 'status' => 429 ] );
+    }
+
+    $cache_key = 'shc_pub_avail_data_' . md5( $check_in . '_' . $check_out . '_' . $adults );
+    $cached = get_transient( $cache_key );
+    if ( false !== $cached ) {
+        header( 'Cache-Control: public, max-age=300' );
+        return rest_ensure_response( $cached );
+    }
+
+    $rooms = simple_hotel_crm_get_room_options( $check_in, $check_out );
+    if ( is_wp_error( $rooms ) ) {
+        $rooms = [];
+    }
+
+    $currency = 'EUR';
+    $room_output = [];
+    foreach ( $rooms as $room ) {
+        $room_id = (int) $room['id'];
+        $pricing = simple_hotel_crm_get_room_pricing_for_occupancy( $room_id, $adults );
+        $price_per_night = $pricing ? (float) $pricing['price_amount'] : 0.0;
+
+        $url = home_url( '/hebergements/' );
+        $external_id = (int) ( $room['external_room_id'] ?? 0 );
+        if ( $external_id > 0 ) {
+            $permalink = get_permalink( $external_id );
+            if ( is_string( $permalink ) && '' !== $permalink ) {
+                $url = $permalink;
+            }
+        }
+
+        $room_output[] = [
+            'id'              => $room_id,
+            'room_code'       => (string) $room['room_code'],
+            'room_name'       => (string) $room['room_name'],
+            'url'             => $url,
+            'adults'          => $adults,
+            'price_per_night' => round( $price_per_night, 2 ),
+            'price_total'     => round( $price_per_night * $nights, 2 ),
+            'currency'        => $currency,
+        ];
+    }
+
+    $response = [
+        'property' => [
+            'name'    => 'La Grange Fleurie',
+            'url'     => home_url( '/' ),
+            'address' => SIMPLE_HOTEL_CRM_PROPERTY_ADDRESS,
+            'currency' => $currency,
+        ],
+        'stay' => [
+            'check_in'  => $check_in,
+            'check_out' => $check_out,
+            'nights'    => $nights,
+            'adults'    => $adults,
+        ],
+        'rooms'       => $room_output,
+        'booking'     => [
+            'url'          => home_url( '/hebergements/' ),
+            'instructions' => 'Availability and prices are indicative. Confirm and reserve directly on the website.',
+        ],
+        'generated_at' => current_time( 'c' ),
+    ];
+
+    set_transient( $cache_key, $response, 300 );
+    header( 'Cache-Control: public, max-age=300' );
+
+    return rest_ensure_response( $response );
 }
 
 function simple_hotel_crm_rest_ticket_guest_search( WP_REST_Request $request ) {
