@@ -2465,6 +2465,28 @@ function simple_hotel_crm_render_booking_detail_page() {
         }
     }
 
+    if ( isset( $_POST['simple_hotel_crm_clear_invoice_id'] ) && $booking ) {
+        check_admin_referer( 'simple_hotel_crm_clear_invoice_id_' . $booking_id );
+        $current_invoice_id = (string) ( $booking['invoice_ninja_invoice_id'] ?? '' );
+        if ( '__creating__' === $current_invoice_id ) {
+            echo '<div class="notice notice-error"><p>' . esc_html__( 'Invoice creation is still in progress for this booking. Wait for it to finish before clearing the Invoice Ninja ID.', 'simple-hotel-crm' ) . '</p></div>';
+        } else {
+            $update_data = [ 'invoice_ninja_invoice_id' => null ];
+            $update_format = [ '%s' ];
+            if ( simple_hotel_crm_table_has_column( $bookings_table, 'invoice_status' ) ) {
+                $update_data['invoice_status'] = null;
+                $update_format[] = '%s';
+            }
+            if ( simple_hotel_crm_table_has_column( $bookings_table, 'invoiced_at' ) ) {
+                $update_data['invoiced_at'] = null;
+                $update_format[] = '%s';
+            }
+            $wpdb->update( $bookings_table, $update_data, [ 'id' => $booking_id ], $update_format, [ '%d' ] );
+            echo '<div class="notice notice-success"><p>' . esc_html__( 'Invoice Ninja ID cleared. You can now create a new invoice from the bookings list.', 'simple-hotel-crm' ) . '</p></div>';
+            $booking = $wpdb->get_row( $wpdb->prepare( "SELECT b.*, g.first_name, g.last_name, g.phone, g.email, g.id AS guest_id FROM {$bookings_table} b JOIN {$guests_table} g ON g.id = b.guest_id WHERE b.id = %d AND b.is_deleted = 0 LIMIT 1", $booking_id ), ARRAY_A );
+        }
+    }
+
     if ( isset( $_POST['simple_hotel_crm_save_booking'] ) && $booking ) {
         check_admin_referer( 'simple_hotel_crm_save_booking' );
         $posted_room_lines = array_values( array_filter( $posted_room_lines, function( $line ) {
@@ -2869,10 +2891,18 @@ function simple_hotel_crm_render_booking_detail_page() {
 
     $current_invoice_id = (string) ( $booking['invoice_ninja_invoice_id'] ?? '' );
     echo '<h2>' . esc_html__( 'Invoice Ninja', 'simple-hotel-crm' ) . '</h2>';
-    echo '<div style="margin:12px 0;padding:12px;background:#fff;border:1px solid #ccd0d4;">';
+    echo '<form method="post" style="margin:12px 0;padding:12px;background:#fff;border:1px solid #ccd0d4;">';
+    wp_nonce_field( 'simple_hotel_crm_clear_invoice_id_' . $booking_id );
     echo '<p>' . esc_html__( 'Current Invoice Ninja Invoice ID:', 'simple-hotel-crm' ) . ' <strong>' . ( $current_invoice_id !== '' ? esc_html( $current_invoice_id ) : esc_html__( '(none)', 'simple-hotel-crm' ) ) . '</strong></p>';
-    echo '<p class="description">' . esc_html__( 'Create an invoice from the bookings list.', 'simple-hotel-crm' ) . '</p>';
-    echo '</div>';
+    if ( '__creating__' === $current_invoice_id ) {
+        echo '<p class="description">' . esc_html__( 'Invoice creation is in progress. The ID will appear here once it finishes.', 'simple-hotel-crm' ) . '</p>';
+    } elseif ( $current_invoice_id !== '' ) {
+        echo '<p class="description">' . esc_html__( 'Clearing the ID only removes the local link. The invoice itself stays in Invoice Ninja, so re-creating one may produce a duplicate.', 'simple-hotel-crm' ) . '</p>';
+        echo '<button type="submit" name="simple_hotel_crm_clear_invoice_id" class="button button-secondary" onclick="return confirm(' . wp_json_encode( __( 'Are you sure? This will allow re-creating an invoice.', 'simple-hotel-crm' ) ) . ');">' . esc_html__( 'Clear Invoice Ninja ID', 'simple-hotel-crm' ) . '</button>';
+    } else {
+        echo '<p class="description">' . esc_html__( 'No Invoice Ninja ID set. Create an invoice from the bookings list.', 'simple-hotel-crm' ) . '</p>';
+    }
+    echo '</form>';
 
     $room_pricing_json = wp_json_encode( $room_pricing_map );
     $booking_com_commission_percent_json = wp_json_encode( (float) get_option( 'simple_hotel_crm_booking_com_commission_percent', 15 ) );
