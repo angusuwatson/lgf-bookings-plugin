@@ -11,7 +11,7 @@ function simple_hotel_crm_ics_export_generate( $room_id ) {
          FROM {$booking_rooms_table} br
          INNER JOIN {$bookings_table} b ON b.id = br.booking_id
          WHERE br.room_id = %d
-           AND b.source_channel = 'direct'
+           AND b.source_channel IN ('direct', 'phone', 'email', 'walk_in', 'other')
            AND b.status_code = 'confirmed'
            AND b.is_deleted = 0
          ORDER BY b.check_in_date ASC",
@@ -124,15 +124,29 @@ function simple_hotel_crm_ics_export_on_booking_change( $booking_id ) {
     $bookings_table = simple_hotel_crm_bookings_table();
 
     $booking = $wpdb->get_row( $wpdb->prepare( "SELECT source_channel FROM {$bookings_table} WHERE id = %d", $booking_id ), ARRAY_A );
-    if ( ! $booking || 'direct' !== (string) $booking['source_channel'] ) {
+    if ( ! $booking ) {
         return;
     }
 
-    $room_ids = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT room_id FROM {$booking_rooms_table} WHERE booking_id = %d AND room_id IS NOT NULL AND room_id > 0", $booking_id ) );
-    foreach ( $room_ids as $room_id ) {
-        $token = simple_hotel_crm_ics_export_get_token( (int) $room_id );
-        if ( $token ) {
-            simple_hotel_crm_ics_export_refresh_file( (int) $room_id, $token );
+    $included_channels = [ 'direct', 'phone', 'email', 'walk_in', 'other' ];
+    $include_booking = in_array( (string) $booking['source_channel'], $included_channels, true );
+    $rooms_table = simple_hotel_crm_rooms_table();
+    $rooms = $wpdb->get_results( $wpdb->prepare(
+        "SELECT DISTINCT r.id, r.ics_export_token
+         FROM {$booking_rooms_table} br
+         INNER JOIN {$rooms_table} r ON r.id = br.room_id
+         WHERE br.booking_id = %d AND br.room_id IS NOT NULL AND br.room_id > 0",
+        $booking_id
+    ), ARRAY_A );
+    foreach ( $rooms as $room ) {
+        $room_id = (int) $room['id'];
+        $token = (string) ( $room['ics_export_token'] ?? '' );
+        if ( $include_booking && '' === $token ) {
+            $token = simple_hotel_crm_ics_export_get_token( $room_id );
+        }
+        // Refresh existing feeds for excluded channels too, so changing a booking's channel removes stale events.
+        if ( '' !== $token ) {
+            simple_hotel_crm_ics_export_refresh_file( $room_id, $token );
         }
     }
 }

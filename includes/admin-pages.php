@@ -5536,7 +5536,7 @@ function simple_hotel_crm_render_ics_export_panel() {
     $rooms = $wpdb->get_results( "SELECT id, room_name, room_code, active FROM {$rooms_table} WHERE active = 1 ORDER BY sort_order ASC, room_name ASC", ARRAY_A );
 
     echo '<h2>' . esc_html__( 'ICS Export Feeds', 'simple-hotel-crm' ) . '</h2>';
-    echo '<p>' . esc_html__( 'Each room has a unique ICS feed URL. Paste this URL into Booking.com extranet to block the room on Booking.com for all direct bookings.', 'simple-hotel-crm' ) . '</p>';
+    echo '<p>' . esc_html__( 'Each room has a unique ICS feed URL. Paste this URL into Booking.com extranet to block the room for direct, phone, email, walk-in, and other bookings.', 'simple-hotel-crm' ) . '</p>';
     echo '<table class="widefat striped" style="max-width:900px;">';
     echo '<thead><tr><th>' . esc_html__( 'Room', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Code', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'ICS Feed URL', 'simple-hotel-crm' ) . '</th><th>' . esc_html__( 'Booking.com Status', 'simple-hotel-crm' ) . '</th></tr></thead>';
     echo '<tbody>';
@@ -5553,24 +5553,24 @@ function simple_hotel_crm_render_ics_export_panel() {
         echo '<td>';
         $bookings_table = simple_hotel_crm_bookings_table();
         $booking_rooms_table = simple_hotel_crm_booking_rooms_table();
-        $direct_count = (int) $wpdb->get_var( $wpdb->prepare(
-            "SELECT COUNT(*) FROM {$booking_rooms_table} br INNER JOIN {$bookings_table} b ON b.id = br.booking_id WHERE br.room_id = %d AND b.source_channel = 'direct' AND b.status_code = 'confirmed' AND b.is_deleted = 0 AND b.check_out_date >= CURDATE()",
+        $included_count = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$booking_rooms_table} br INNER JOIN {$bookings_table} b ON b.id = br.booking_id WHERE br.room_id = %d AND b.source_channel IN ('direct', 'phone', 'email', 'walk_in', 'other') AND b.status_code = 'confirmed' AND b.is_deleted = 0 AND b.check_out_date >= CURDATE()",
             (int) $room['id']
         ) );
         echo '<span class="description">' . esc_html( sprintf(
-            _n( '%d active direct booking', '%d active direct bookings', $direct_count, 'simple-hotel-crm' ),
-            $direct_count
+            _n( '%d active included booking', '%d active included bookings', $included_count, 'simple-hotel-crm' ),
+            $included_count
         ) ) . '</span>';
         echo '</td>';
         echo '</tr>';
     }
     echo '</tbody>';
     echo '</table>';
-    echo '<p class="description" style="margin-top:12px;">' . esc_html__( 'Exports only confirmed direct bookings. Airbnb and MotoPress bookings are excluded — they sync to Booking.com via their own ICS feeds.', 'simple-hotel-crm' ) . '</p>';
+    echo '<p class="description" style="margin-top:12px;">' . esc_html__( 'Exports confirmed Direct, Phone, Email, Walk-in, and Other bookings. Other source channels are excluded.', 'simple-hotel-crm' ) . '</p>';
     echo '<form method="post" style="margin-top:16px;">';
     wp_nonce_field( 'simple_hotel_crm_ics_export_refresh', 'simple_hotel_crm_ics_export_refresh_nonce' );
     submit_button( __( 'Regenerate All ICS Feeds', 'simple-hotel-crm' ), 'secondary', 'simple_hotel_crm_ics_export_refresh', false );
-    echo ' <span class="description">' . esc_html__( 'Refresh all .ics files in /wp-content/uploads/lgf-ics/. Run this after creating or updating direct bookings.', 'simple-hotel-crm' ) . '</span>';
+    echo ' <span class="description">' . esc_html__( 'Refresh all .ics files in /wp-content/uploads/lgf-ics/. Run this after creating or updating included bookings.', 'simple-hotel-crm' ) . '</span>';
     echo '</form>';
 }
 
@@ -6493,4 +6493,3 @@ function simple_hotel_crm_render_tickets_page() {
     </script>
     <?php
 }
-

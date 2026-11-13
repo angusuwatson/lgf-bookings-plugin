@@ -313,6 +313,12 @@ add_action( 'rest_api_init', function() {
         'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
     ] );
 
+    register_rest_route( 'simple-hotel-crm/v1', '/room-closure', [
+        'methods'  => 'POST',
+        'callback' => 'simple_hotel_crm_rest_ticket_create_closure',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
     register_rest_route( 'simple-hotel-crm/v1', '/ticket-auth', [
         'methods'  => 'POST',
         'callback' => 'simple_hotel_crm_rest_ticket_auth',
@@ -1211,9 +1217,11 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
 
     $week_start = date( 'Y-m-d', strtotime( $date . ' -1 day' ) );
     $week_end = date( 'Y-m-d', strtotime( $date . ' +7 days' ) );
+    $upcoming_end = date( 'Y-m-d', strtotime( $date . ' +7 days' ) );
 
+    $has_room_status = simple_hotel_crm_table_has_column( $rooms_table, 'room_status' );
     $rooms = $wpdb->get_results( "
-        SELECT id, room_name, room_code
+        SELECT id, room_name, room_code" . ( $has_room_status ? ', room_status' : ", 'clean' AS room_status" ) . "
         FROM {$rooms_table}
         WHERE active = 1
         ORDER BY sort_order ASC
@@ -1238,6 +1246,28 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
         ORDER BY brn.stay_date ASC, r.sort_order ASC
     ", $week_start, $week_end ), ARRAY_A );
 
+    $upcoming_bookings = $wpdb->get_results( $wpdb->prepare( "
+        SELECT b.id AS booking_id, b.status_code, b.check_in_date, b.check_out_date,
+               b.source_channel,
+               COALESCE(br.adults, b.adults, 0) AS adults,
+               COALESCE(br.children, b.children, 0) AS children,
+               COALESCE(br.babies, b.babies, 0) AS babies,
+               r.id AS room_id, r.room_code,
+               g.first_name, g.last_name
+        FROM {$bookings_table} b
+        JOIN {$booking_rooms_table} br ON br.booking_id = b.id
+        JOIN {$rooms_table} r ON r.id = br.room_id
+        JOIN {$guests_table} g ON g.id = b.guest_id
+        WHERE b.is_deleted = 0
+          AND (b.internal_notes IS NULL OR b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%')
+          AND b.status_code IN ('confirmed', 'checked_in')
+          AND (
+              (b.check_in_date >= %s AND b.check_in_date < %s)
+              OR (b.check_out_date >= %s AND b.check_out_date < %s)
+          )
+        ORDER BY LEAST(b.check_in_date, b.check_out_date) ASC, r.sort_order ASC
+    ", $date, $upcoming_end, $date, $upcoming_end ), ARRAY_A );
+
     $booking_types_table = simple_hotel_crm_booking_types_table();
     $booking_types = $wpdb->get_results( "SELECT id, type_key, type_label FROM {$booking_types_table} ORDER BY sort_order ASC", ARRAY_A );
 
@@ -1250,6 +1280,7 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
         'room_nights'      => $room_nights,
         'daily_notes'      => $daily_notes,
         'occupancy'        => $occupancy,
+        'upcoming_bookings' => $upcoming_bookings,
         'rooms'            => $rooms,
         'booking_types'    => $booking_types,
     ] );
@@ -2143,6 +2174,27 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
         ORDER BY note_date ASC
     ", $start_date, $end_date ), ARRAY_A );
 
+    $room_closures_table = simple_hotel_crm_room_closures_table();
+    $last_day = gmdate( 'Y-m-d', strtotime( $end_date . ' -1 day' ) );
+    $closure_rows = $wpdb->get_results( $wpdb->prepare( "
+        SELECT room_id, date_from, date_to, reason FROM {$room_closures_table}
+        WHERE date_from <= %s AND date_to >= %s
+        ORDER BY date_from ASC
+    ", $last_day, $start_date ), ARRAY_A );
+
+    $closures = [];
+    foreach ( $closure_rows as $cr ) {
+        $from = max( (string) $cr['date_from'], $start_date );
+        $to   = min( (string) $cr['date_to'], $last_day );
+        $d    = new DateTime( $from );
+        $end  = new DateTime( $to );
+        $end->modify( '+1 day' );
+        while ( $d < $end ) {
+            $closures[ $d->format( 'Y-m-d' ) . '-' . (int) $cr['room_id'] ] = (string) $cr['reason'];
+            $d->modify( '+1 day' );
+        }
+    }
+
     return rest_ensure_response( [
         'date'       => $start_date,
         'days'       => $days,
@@ -2151,6 +2203,7 @@ function simple_hotel_crm_rest_ticket_calendar( WP_REST_Request $request ) {
         'daily_notes' => $daily_notes,
         'dinner_counts' => $dinner_counts,
         'extras_map' => $extras_map,
+        'closures' => $closures,
     ] );
 }
 
@@ -3083,6 +3136,73 @@ function simple_hotel_crm_rest_ticket_set_maintenance_notes( WP_REST_Request $re
     return rest_ensure_response( [ 'success' => true, 'notes' => $clean ] );
 }
 
+function simple_hotel_crm_rest_ticket_create_closure( WP_REST_Request $request ) {
+    global $wpdb;
+
+    $room_id = absint( $request->get_param( 'room_id' ) );
+    $date_from = sanitize_text_field( (string) $request->get_param( 'date_from' ) );
+    $date_to = sanitize_text_field( (string) $request->get_param( 'date_to' ) );
+    $reason = sanitize_text_field( (string) $request->get_param( 'reason' ) );
+
+    if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_from ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_to ) || $date_to < $date_from ) {
+        return new WP_Error( 'invalid_dates', __( 'Valid date range required.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+
+    $room_closures_table = simple_hotel_crm_room_closures_table();
+
+    if ( $room_id > 0 ) {
+        $rooms_table = simple_hotel_crm_rooms_table();
+        $room = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$rooms_table} WHERE id = %d AND active = 1 LIMIT 1", $room_id ) );
+        if ( ! $room ) {
+            return new WP_Error( 'room_not_found', __( 'Room not found or inactive.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+        }
+        $conflict = $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM {$room_closures_table} WHERE room_id = %d AND date_from <= %s AND date_to >= %s LIMIT 1",
+            $room_id, $date_to, $date_from
+        ) );
+        if ( $conflict ) {
+            return new WP_Error( 'closure_conflict', __( 'This room already has a closure overlapping these dates.', 'simple-hotel-crm' ), [ 'status' => 409 ] );
+        }
+        $wpdb->insert( $room_closures_table, [
+            'room_id' => $room_id,
+            'date_from' => $date_from,
+            'date_to' => $date_to,
+            'reason' => $reason,
+        ], [ '%d', '%s', '%s', '%s' ] );
+        if ( $wpdb->last_error ) {
+            return new WP_Error( 'db_error', $wpdb->last_error, [ 'status' => 500 ] );
+        }
+        $closure_id = (int) $wpdb->insert_id;
+        simple_hotel_crm_ics_export_refresh_file( $room_id );
+        return rest_ensure_response( [ 'success' => true, 'closure_id' => $closure_id, 'room_id' => $room_id ] );
+    }
+
+    $rooms_table = simple_hotel_crm_rooms_table();
+    $room_ids = $wpdb->get_col( "SELECT id FROM {$rooms_table} WHERE active = 1 ORDER BY sort_order ASC" );
+    $inserted = [];
+    foreach ( $room_ids as $rid ) {
+        $rid = (int) $rid;
+        $conflict = $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM {$room_closures_table} WHERE room_id = %d AND date_from <= %s AND date_to >= %s LIMIT 1",
+            $rid, $date_to, $date_from
+        ) );
+        if ( $conflict ) {
+            continue;
+        }
+        $wpdb->insert( $room_closures_table, [
+            'room_id' => $rid,
+            'date_from' => $date_from,
+            'date_to' => $date_to,
+            'reason' => $reason,
+        ], [ '%d', '%s', '%s', '%s' ] );
+        if ( ! $wpdb->last_error ) {
+            $inserted[] = $rid;
+        }
+    }
+    simple_hotel_crm_ics_export_refresh_all_files();
+    return rest_ensure_response( [ 'success' => true, 'rooms_closed' => $inserted ] );
+}
+
 function simple_hotel_crm_rest_ticket_auth( WP_REST_Request $request ) {
     $username = $request->get_param( 'username' );
     $password = $request->get_param( 'password' );
@@ -3707,4 +3827,3 @@ function simple_hotel_crm_rest_pricing_banner( WP_REST_Request $request ) {
 
     return rest_ensure_response( $banners );
 }
-

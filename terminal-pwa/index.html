@@ -80,6 +80,7 @@ input,select{font-family:inherit;font-size:16px}
 .cal-nav button{background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:18px;cursor:pointer;padding:4px 12px;border-radius:4px}
 .cal-nav span{font-weight:700;font-size:14px}
 .cal-nav .cal-year{background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:13px;font-weight:700;border-radius:4px;padding:4px 6px;margin-left:10px;color-scheme:dark}
+.cal-nav #cal-closure-btn{font-size:13px;font-weight:700;color:var(--red);white-space:nowrap}
 .cal-months{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;flex:1;min-width:0}
 .cal-months button{background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:12px;cursor:pointer;padding:4px 6px;border-radius:4px;flex:1 0 auto;min-width:44px}
 .cal-months button.active{background:var(--hover-bg);font-weight:700;border-color:var(--fg)}
@@ -92,8 +93,10 @@ input,select{font-family:inherit;font-size:16px}
 .cal-free{background:transparent;color:var(--cal-text-light)}
 .cal-occ-confirmed{background:transparent;color:var(--cal-text-dark)}
 .cal-occ-checked_in{background:transparent;color:var(--cal-text-dark)}
+.cal-closed{background:repeating-linear-gradient(45deg,rgba(239,68,68,.28),rgba(239,68,68,.28) 6px,transparent 6px,transparent 12px);color:var(--cal-text-light);cursor:default}
+.cal-rownote .cal-cell.cal-closed{background:repeating-linear-gradient(45deg,rgba(239,68,68,.28),rgba(239,68,68,.28) 6px,transparent 6px,transparent 12px)}
 .cal-date-col.cal-today{background:var(--accent);color:var(--cal-text-light);font-weight:700;border-color:var(--accent)}
-.cal-guest-name{font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--cal-text-dark)}
+.cal-guest-name{font-size:12px;display:block;font-weight:600;color:var(--cal-text-dark);white-space:normal;overflow-wrap:break-word;line-height:1.25}
 .cal-occ-line{font-size:10px;display:block;color:var(--cal-text-dark);text-align:left}
 .cal-bottom-line{display:flex;justify-content:flex-end;font-size:10px;color:var(--cal-text-dark);align-items:flex-end}
 .cal-price{text-align:right;font-weight:700;color:var(--cal-text-dark)}
@@ -141,8 +144,26 @@ input,select{font-family:inherit;font-size:16px}
 .dash-occ-cell{display:table-cell;padding:2px 2px;border:1px solid var(--border);text-align:center;font-size:9px;vertical-align:middle;transition:background .15s}
 .dash-occ-free{background:transparent;color:var(--muted)}
 .dash-occ-confirmed{background:rgba(59,130,246,.2);color:#60a5fa}
-.dash-occ-checked_in{background:rgba(34,197,94,.2);color:#4ade80}
 .dash-occ-today{border-color:var(--accent)!important}
+.dash-movement-list,.dash-turnover-list{max-height:300px;overflow-y:auto}
+.dash-movement-date{padding:7px 2px 4px;font-size:12px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border)}
+.dash-movement{display:flex;align-items:center;gap:7px;padding:7px 2px;border-bottom:1px solid var(--border);cursor:pointer;min-width:0}
+.dash-movement:active{background:var(--hover-bg)}
+.dash-movement-type{flex:0 0 38px;text-align:center;border-radius:5px;padding:3px 4px;font-size:10px;font-weight:800}
+.dash-movement-in{background:rgba(34,197,94,.2);color:#4ade80}
+.dash-movement-out{background:rgba(249,115,22,.2);color:#fb923c}
+.dash-movement-name{flex:1;min-width:0;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-movement-room,.dash-movement-guests{font-size:10px;color:var(--muted);white-space:nowrap}
+.dash-movement-channel{font-size:9px;color:var(--muted);white-space:nowrap;text-transform:capitalize}
+.dash-turnover-summary{font-size:11px;color:var(--muted);margin-bottom:8px}
+.dash-turnover-row{display:grid;grid-template-columns:minmax(42px,auto) auto 1fr;align-items:start;gap:8px;padding:8px 2px;border-bottom:1px solid var(--border)}
+.dash-turnover-room{font-size:12px;font-weight:800}
+.dash-room-status{display:inline-block;border-radius:5px;padding:3px 6px;font-size:10px;font-weight:700;white-space:nowrap}
+.dash-room-status-clean{background:rgba(34,197,94,.2);color:#4ade80}
+.dash-room-status-dirty{background:rgba(249,115,22,.2);color:#fb923c}
+.dash-room-status-maintenance{background:rgba(239,68,68,.2);color:#f87171}
+.dash-turnover-events{font-size:11px;color:var(--muted);min-width:0}
+.dash-turnover-event{overflow-wrap:anywhere}
 /* Bread Order table */
 .dash-bread-table{display:table;width:100%;border-collapse:collapse;font-size:12px}
 .dash-bread-row{display:table-row}
@@ -150,11 +171,6 @@ input,select{font-family:inherit;font-size:16px}
 .dash-bread-cell{display:table-cell;padding:4px 8px;border:1px solid var(--border);text-align:center}
 .dash-bread-header{display:table-cell;padding:4px 8px;border:1px solid var(--border);font-weight:700;font-size:11px;text-align:center;background:var(--card);color:var(--muted)}
 /* Notes */
-.dash-notes-table{display:table;width:100%;border-collapse:collapse;font-size:12px}
-.dash-notes-row{display:table-row}
-.dash-notes-date{display:table-cell;padding:4px 8px;border:1px solid var(--border);white-space:nowrap;font-weight:600;color:var(--muted)}
-.dash-notes-text{display:table-cell;padding:4px 8px;border:1px solid var(--border);color:var(--text)}
-.dash-notes-empty{padding:16px 0;text-align:center;color:var(--muted);font-size:13px}
 .dash-card-footer{padding:10px 14px;border-top:1px solid var(--border)}
 /* Bread scroll (matching standalone dashboard) */
 .bread-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
@@ -321,6 +337,7 @@ input,select{font-family:inherit;font-size:16px}
 .list-date-today{font-size:12px!important;padding:4px 10px!important}
 .be-section{margin-bottom:10px}
 .be-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 8px}
+.cl-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
 @media(max-width:640px){.be-3col{grid-template-columns:1fr}}
 .bedit-row{display:flex;gap:8px;margin-bottom:4px;align-items:center}
 .bedit-row label{font-size:13px;color:var(--muted);min-width:60px}
@@ -431,6 +448,7 @@ input,select{font-family:inherit;font-size:16px}
     <div class="account-menu" id="account-menu">
     <span class="account-user" id="account-user"></span>
     <button class="account-item" id="account-qb">＋ Quick booking</button>
+    <button class="account-item" id="account-cl">⛔ Close rooms</button>
     <button class="account-item" id="account-fs">⛶ Fullscreen</button>
     <button class="account-item account-logout" id="account-logout">Sign Out</button>
     </div>
@@ -442,6 +460,7 @@ input,select{font-family:inherit;font-size:16px}
       <button class="view-btn" data-view="pricing" id="hm-view-pricing">💲 Pricing</button>
       <button class="view-btn" data-view="maint" id="hm-view-maint">🔧 Maintenance</button>
       <button class="view-btn" id="hm-qb">＋ Quick booking</button>
+      <button class="view-btn" id="hm-cl">⛔ Close rooms</button>
       <button class="view-btn" id="hm-fs">⛶ Fullscreen</button>
       <span class="hm-user" id="hm-user"></span>
       <button class="hm-logout" id="hm-logout">Sign Out</button>
@@ -467,6 +486,7 @@ input,select{font-family:inherit;font-size:16px}
           </div>
           <button id="cal-next">›</button>
           <select id="cal-year" class="cal-year"></select>
+          <button id="cal-closure-btn" title="Close room">+ Close</button>
         </div>
       </div>
       <div id="cal-view" class="cal-scroll" style="display:none"></div>
@@ -671,6 +691,31 @@ input,select{font-family:inherit;font-size:16px}
   </div>
 </div>
 
+<!-- Room closure modal -->
+<div class="modal-overlay" id="cl-modal">
+  <div class="modal-box" style="max-width:560px">
+    <button class="modal-close" id="cl-modal-close">×</button>
+    <h2>Close Room</h2>
+    <div id="cl-error" style="display:none;background:var(--error-bg);color:var(--red);padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:14px"></div>
+    <div class="be-section">
+      <div class="ci-label">Room & Dates</div>
+      <div class="bedit-row" style="margin-bottom:6px"><label style="min-width:52px">Room</label><select id="cl-room"><option value="0">All rooms</option></select></div>
+      <div class="cl-grid">
+        <div class="bedit-row"><label>From</label><input type="date" id="cl-date-from"></div>
+        <div class="bedit-row"><label>To</label><input type="date" id="cl-date-to"></div>
+      </div>
+    </div>
+    <div class="be-section" style="margin-top:8px">
+      <div class="ci-label">Reason</div>
+      <input type="text" id="cl-reason" placeholder="e.g. Holiday closing" maxlength="255" style="width:100%;padding:6px;border:2px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text)">
+    </div>
+    <div class="pay-actions" style="margin-top:16px">
+      <button class="btn-pay-confirm" id="cl-confirm">✓ Close Room</button>
+      <button class="btn-pay-cancel" id="cl-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Booking edit modal -->
 <div class="modal-overlay" id="be-modal">
   <div class="modal-box" style="max-width:1100px">
@@ -801,8 +846,8 @@ var state = {
     pricingData: null,
     pricingTab: 'calendar',
     maintNotes: [],
-    dailyNotes: [],
     occupancy: [],
+    upcomingBookings: [],
     rooms: [],
     bookingTypes: [],
 };
@@ -886,7 +931,8 @@ function doLogin(){
         document.getElementById('login-user').value='';
         hideLogin();
         applyTheme('darklgf');
-        fetchData();
+        setViewMode(state.viewMode);
+        if(state.viewMode==='dash'||state.viewMode==='list') fetchData();
     }).catch(function(err){
         clearTimeout(safetyTimer);
         clearTimeout(timeoutTimer);
@@ -969,7 +1015,11 @@ function apiGet(path){
     }).then(function(r){
         if(r.status===401){removeAuth();showLogin('Session expired. Please sign in again.');throw new Error('unauthorized');}
         return r.text().then(function(text){
-            if(!r.ok) throw new Error((r.status||'')+' '+(r.statusText||'')+'\n'+(text||'').slice(0,500));
+            if(!r.ok){
+                var msg=(r.status||'')+' '+(r.statusText||'');
+                try{var t=JSON.parse(text);if(t&&t.message) msg=t.message;}catch(e){}
+                throw new Error(msg);
+            }
             try{return JSON.parse(text)}catch(e){throw new Error('Invalid JSON response: '+(text||'').slice(0,200));}
         });
     });
@@ -986,7 +1036,11 @@ function apiPost(path,body,method){
     }).then(function(r){
         if(r.status===401){removeAuth();showLogin('Session expired. Please sign in again.');throw new Error('unauthorized');}
         return r.text().then(function(text){
-            if(!r.ok) throw new Error((r.status||'')+' '+(r.statusText||'')+'\n'+(text||'').slice(0,500));
+            if(!r.ok){
+                var msg=(r.status||'')+' '+(r.statusText||'');
+                try{var t=JSON.parse(text);if(t&&t.message) msg=t.message;}catch(e){}
+                throw new Error(msg);
+            }
             try{return JSON.parse(text)}catch(e){throw new Error('Invalid JSON response: '+(text||'').slice(0,200));}
         });
     });
@@ -1000,8 +1054,8 @@ function fetchData(){
         state.bookings=data.bookings||[];
         if(data.catalog) state.catalog=data.catalog;
         state.roomsByBooking=data.rooms_by_booking||{};
-        state.dailyNotes=data.daily_notes||[];
         state.occupancy=data.occupancy||[];
+        state.upcomingBookings=data.upcoming_bookings||[];
         state.rooms=data.rooms||[];
         state.bookingTypes=data.booking_types||[];
         if(state.activeBookingId>0){
@@ -1254,7 +1308,7 @@ function renderDashboard(){
         return rooms.map(function(r){return r.room_code;}).join(', ');
     }
     function guestName(b){
-        return ((b.first_name||'')+' '+(b.last_name||'')).trim()||'#'+b.id;
+        return ((b.first_name||'')+' '+(b.last_name||'')).trim()||'#'+(b.id||b.booking_id);
     }
     function statusLabel(b){
         if(b.check_out_date===todayStr) return {text:'Out',cls:'label-out'};
@@ -1321,22 +1375,17 @@ function renderDashboard(){
     arrDepCard.appendChild(arrDepBody);
     grid.appendChild(arrDepCard);
 
-    // Card 2: Next 7 Days
+    // Card 2: Next 7 Days occupancy
     var occCard=el('div',{className:'dash-card'});
     occCard.appendChild(el('div',{className:'dash-card-header'},['Next 7 Days']));
     var occBody=el('div',{className:'dash-card-body'});
-    occCard.appendChild(occBody);
-    grid.appendChild(occCard);
-
-    var rooms=state.rooms;
     var weekDates=[];
     for(var i=0;i<7;i++){
-        var d=new Date(todayStr);
+        var d=new Date(todayStr+'T12:00:00');
         d.setDate(d.getDate()+i);
-        var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-        weekDates.push(ds);
+        weekDates.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
     }
-    if(rooms.length===0){
+    if(!state.rooms.length){
         occBody.appendChild(el('div',{className:'dash-empty'},['No room data.']));
     }else{
         var occByDate={};
@@ -1344,31 +1393,23 @@ function renderDashboard(){
             if(!occByDate[o.stay_date]) occByDate[o.stay_date]={};
             occByDate[o.stay_date][o.room_code]=o;
         });
-
         var occTable=el('div',{className:'dash-occ-table'});
         var hdrRow=el('div',{className:'dash-occ-row'});
         hdrRow.appendChild(el('div',{className:'dash-occ-room',style:'background:var(--bg)'},['']));
         weekDates.forEach(function(ds){
             var dt=new Date(ds+'T12:00:00');
-            var isToday=ds===todayStr;
-            var cell=el('div',{className:'dash-occ-date'+(isToday?' dash-occ-today':'')},[
-                String(dt.getDate())
-            ]);
-            hdrRow.appendChild(cell);
+            hdrRow.appendChild(el('div',{className:'dash-occ-date'+(ds===todayStr?' dash-occ-today':'')},[String(dt.getDate())]));
         });
         occTable.appendChild(hdrRow);
-
-        rooms.forEach(function(rm){
+        state.rooms.forEach(function(room){
             var row=el('div',{className:'dash-occ-row'});
-            row.appendChild(el('div',{className:'dash-occ-room'},[rm.room_code]));
+            row.appendChild(el('div',{className:'dash-occ-room'},[room.room_code]));
             weekDates.forEach(function(ds){
-                var occ=occByDate[ds]&&occByDate[ds][rm.room_code];
-                var isToday=ds===todayStr;
-                var cls='dash-occ-cell'+(isToday?' dash-occ-today':'');
+                var occ=occByDate[ds]&&occByDate[ds][room.room_code];
+                var cls='dash-occ-cell'+(ds===todayStr?' dash-occ-today':'');
                 if(occ){
-                    var guests=occ.guest_count||'';
-                    cls+=' dash-occ-checked_in';
-                    row.appendChild(el('div',{className:cls},[String(guests)]));
+                    cls+=' dash-occ-confirmed';
+                    row.appendChild(el('div',{className:cls,title:(occ.first_name||'')+' '+(occ.last_name||'')},[String(occ.guest_count||'')]));
                 }else{
                     cls+=' dash-occ-free';
                     row.appendChild(el('div',{className:cls},['']));
@@ -1378,6 +1419,72 @@ function renderDashboard(){
         });
         occBody.appendChild(occTable);
     }
+    occCard.appendChild(occBody);
+    grid.appendChild(occCard);
+
+    // Card 2: Upcoming arrivals and departures
+    var upcomingCard=el('div',{className:'dash-card'});
+    upcomingCard.appendChild(el('div',{className:'dash-card-header'},['Upcoming Arrivals & Departures']));
+    var upcomingBody=el('div',{className:'dash-card-body'});
+    var upcomingEvents=[];
+    var upcomingEnd=new Date(todayStr+'T12:00:00');
+    upcomingEnd.setDate(upcomingEnd.getDate()+7);
+    var upcomingEndStr=upcomingEnd.getFullYear()+'-'+String(upcomingEnd.getMonth()+1).padStart(2,'0')+'-'+String(upcomingEnd.getDate()).padStart(2,'0');
+    (state.upcomingBookings||[]).forEach(function(b){
+        var name=guestName(b);
+        var guestCount=(parseInt(b.adults,10)||0)+(parseInt(b.children,10)||0)+(parseInt(b.babies,10)||0);
+        var guestLabel=guestCount?guestCount+' guests':'';
+        if(b.check_in_date>=todayStr&&b.check_in_date<upcomingEndStr){
+            upcomingEvents.push({date:b.check_in_date,type:'In',bookingId:parseInt(b.booking_id,10),name:name,room:b.room_code||'',guests:guestLabel,channel:(b.source_channel||'').replace(/_/g,' ')});
+        }
+        if(b.check_out_date>=todayStr&&b.check_out_date<upcomingEndStr){
+            upcomingEvents.push({date:b.check_out_date,type:'Out',bookingId:parseInt(b.booking_id,10),name:name,room:b.room_code||'',guests:guestLabel,channel:(b.source_channel||'').replace(/_/g,' ')});
+        }
+    });
+    upcomingEvents.sort(function(a,b){
+        if(a.date!==b.date) return a.date<b.date?-1:1;
+        if(a.type!==b.type) return a.type==='Out'?-1:1;
+        return a.name.localeCompare(b.name);
+    });
+    function upcomingDateLabel(ds){
+        if(ds===todayStr) return 'Today';
+        var tomorrow=new Date(todayStr+'T12:00:00');
+        tomorrow.setDate(tomorrow.getDate()+1);
+        var tomorrowStr=tomorrow.getFullYear()+'-'+String(tomorrow.getMonth()+1).padStart(2,'0')+'-'+String(tomorrow.getDate()).padStart(2,'0');
+        if(ds===tomorrowStr) return 'Tomorrow';
+        return fmtDate(ds);
+    }
+    if(!upcomingEvents.length){
+        upcomingBody.appendChild(el('div',{className:'dash-empty'},['No arrivals or departures in the next 7 days.']));
+    }else{
+        var movementList=el('div',{className:'dash-movement-list'});
+        var movementDate='';
+        upcomingEvents.forEach(function(event){
+            if(event.date!==movementDate){
+                movementDate=event.date;
+                movementList.appendChild(el('div',{className:'dash-movement-date'},[upcomingDateLabel(event.date)]));
+            }
+            movementList.appendChild(el('div',{
+                className:'dash-movement',
+                onClick:function(){
+                    state.date=event.date;
+                    state.activeBookingId=0;
+                    state.activeBooking=null;
+                    document.getElementById('ticket-date').value=event.date;
+                    setViewMode('list');
+                    fetchData().then(function(){selectBooking(event.bookingId);});
+                }
+            },[
+                el('span',{className:'dash-movement-type '+(event.type==='In'?'dash-movement-in':'dash-movement-out')},[event.type]),
+                el('span',{className:'dash-movement-name'},[event.name]),
+                el('span',{className:'dash-movement-room'},[event.room]),
+                el('span',{className:'dash-movement-guests'},[event.guests]),
+                event.channel&&event.channel!=='direct'?el('span',{className:'dash-movement-channel'},[event.channel]):null,
+            ]));
+        });
+        upcomingBody.appendChild(movementList);
+    }
+    upcomingCard.appendChild(upcomingBody);
 
     // Card 3: Bread Order (matching standalone dashboard)
     var breadCard=el('div',{className:'dash-card'});
@@ -1385,6 +1492,7 @@ function renderDashboard(){
     var breadBody=el('div',{className:'dash-card-body'});
     breadCard.appendChild(breadBody);
     grid.appendChild(breadCard);
+    grid.appendChild(upcomingCard);
 
     // Aggregate guest counts per day from occupancy
     var guestByDate={};
@@ -1452,27 +1560,56 @@ function renderDashboard(){
     breadBody.appendChild(breadScroll);
     breadBody.appendChild(el('div',{className:'bd-scroll-hint'},['\u2190 Scroll for more days \u2192']));
 
-    // Card 4: Notes
+    // Card 4: Room turnover and readiness
     root.appendChild(grid);
 
-    var notesCard=el('div',{className:'dash-card',style:'margin-top:0'});
-    notesCard.appendChild(el('div',{className:'dash-card-header'},['Notes']));
-    var notesBody=el('div',{className:'dash-card-body'});
-
-    if(state.dailyNotes.length===0){
-        notesBody.appendChild(el('div',{className:'dash-notes-empty'},['No notes this month.']));
-    }else{
-        var notesTable=el('div',{className:'dash-notes-table'});
-        state.dailyNotes.forEach(function(n){
-            var row=el('div',{className:'dash-notes-row'});
-            row.appendChild(el('div',{className:'dash-notes-date'},[n.note_date]));
-            row.appendChild(el('div',{className:'dash-notes-text',style:n.note_text?'':'color:var(--muted)'},[n.note_text||'(empty)']));
-            notesTable.appendChild(row);
+    var turnoverCard=el('div',{className:'dash-card'});
+    turnoverCard.appendChild(el('div',{className:'dash-card-header'},['Room Turnover']));
+    var turnoverBody=el('div',{className:'dash-card-body'});
+    var arrivalsByRoom={},departuresByRoom={};
+    state.bookings.forEach(function(b){
+        var roomsForBooking=state.roomsByBooking[b.id]||[];
+        roomsForBooking.forEach(function(r){
+            var rid=String(r.room_id);
+            if(b.check_in_date===todayStr){if(!arrivalsByRoom[rid]) arrivalsByRoom[rid]=[];arrivalsByRoom[rid].push(guestName(b));}
+            if(b.check_out_date===todayStr){if(!departuresByRoom[rid]) departuresByRoom[rid]=[];departuresByRoom[rid].push(guestName(b));}
         });
-        notesBody.appendChild(notesTable);
+    });
+    var turnRooms=(state.rooms||[]).filter(function(room){
+        var status=room.room_status||'clean';
+        return arrivalsByRoom[String(room.id)]||departuresByRoom[String(room.id)]||status!=='clean';
+    });
+    var arrivalCount=Object.keys(arrivalsByRoom).length;
+    var departureCount=Object.keys(departuresByRoom).length;
+    var turnCount=turnRooms.filter(function(room){return arrivalsByRoom[String(room.id)]&&departuresByRoom[String(room.id)];}).length;
+    function countLabel(count,singular,plural){return count+' '+(count===1?singular:plural);}
+    turnoverBody.appendChild(el('div',{className:'dash-turnover-summary'},[
+        countLabel(departureCount,'check-out room','check-out rooms')+' · '+
+        countLabel(arrivalCount,'arrival room','arrival rooms')+' · '+
+        countLabel(turnCount,'same-day turn','same-day turns')
+    ]));
+    if(!turnRooms.length){
+        turnoverBody.appendChild(el('div',{className:'dash-empty'},['No room changes today. All rooms marked clean.']));
+    }else{
+        var turnoverList=el('div',{className:'dash-turnover-list'});
+        turnRooms.forEach(function(room){
+            var rid=String(room.id);
+            var status=room.room_status||'clean';
+            var statusLabels={clean:'Clean',dirty:'Needs cleaning',maintenance:'Maintenance'};
+            var turnoverRow=el('div',{className:'dash-turnover-row'},[
+                el('div',{className:'dash-turnover-room'},[room.room_code||room.room_name||'Room']),
+                el('span',{className:'dash-room-status dash-room-status-'+status},[statusLabels[status]||status]),
+                el('div',{className:'dash-turnover-events'},[
+                    departuresByRoom[rid]?el('div',{className:'dash-turnover-event'},['Out: '+departuresByRoom[rid].join(', ')]):null,
+                    arrivalsByRoom[rid]?el('div',{className:'dash-turnover-event'},['In: '+arrivalsByRoom[rid].join(', ')]):null,
+                ]),
+            ]);
+            turnoverList.appendChild(turnoverRow);
+        });
+        turnoverBody.appendChild(turnoverList);
     }
-    notesCard.appendChild(notesBody);
-    root.appendChild(notesCard);
+    turnoverCard.appendChild(turnoverBody);
+    grid.appendChild(turnoverCard);
 }
 
 function render(){
@@ -2340,6 +2477,7 @@ function fetchCalendarData(){
         state.calDailyNotes=data.daily_notes||[];
         state.calDinnerCounts=data.dinner_counts||{};
         state.calExtrasMap=data.extras_map||{};
+        state.calClosures=data.closures||{};
         renderCalendar();
     }).catch(function(err){
         if(err.message!=='unauthorized') showError('Calendar load failed.');
@@ -2375,6 +2513,7 @@ function renderCalendar(){
     var noteMap={};
     state.calDailyNotes.forEach(function(n){noteMap[n.note_date]=n.note_text;});
     var dinnerMap=state.calDinnerCounts||{};
+    var closureMap=state.calClosures||{};
     var isDarkLGF=state.theme==='darklgf';
 
     var d=new Date(state.calDate+'T12:00:00');
@@ -2406,8 +2545,9 @@ function renderCalendar(){
     dates.forEach(function(date){
         var note=noteMap[date];
         var cls='cal-cell cal-free';
-        html+='<div class="'+cls+'" style="overflow:hidden;text-overflow:ellipsis">'+
-            (note?note.slice(0,10):'')+'</div>';
+        html+='<div class="'+cls+'" style="overflow:hidden;text-overflow:ellipsis"'+
+            (note?' title="'+note.replace(/"/g,'&quot;')+'"':'')+'>'+
+            (note?escapeHtml(note):'')+'</div>';
     });
     html+='</div>';
 
@@ -2423,17 +2563,24 @@ function renderCalendar(){
         html+='<div class="cal-room-col cal-subrow-col"'+(isDarkLGF?' style="background:'+noteRowBg+'"':'')+'>Note</div>';
         dates.forEach(function(date){
             var occ=occMap[date+'-'+room.id];
+            var clKey=date+'-'+room.id;
+            var clReason=closureMap[clKey];
             var cls='cal-cell cal-left cal-top';
             if(occ){
                 cls+=' cal-occ-'+(occ.status_code==='checked_in'?'checked_in':'confirmed');
+            }else if(clReason){
+                cls+=' cal-closed';
             }else{
                 cls+=' cal-free';
             }
             var txt='';
             if(occ && occ.room_note){
-                txt='<span class="cal-room-note">'+occ.room_note.slice(0,10)+'</span>';
+                txt='<span class="cal-room-note" title="'+occ.room_note.replace(/"/g,'&quot;')+'">'+escapeHtml(occ.room_note)+'</span>';
+            }else if(clReason){
+                txt='<span class="cal-room-note" title="'+clReason.replace(/"/g,'&quot;')+'">'+escapeHtml(clReason)+'</span>';
             }
-            html+='<div class="'+cls+'" data-bid="'+(occ?occ.booking_id:'0')+'" data-room-id="'+room.id+'" data-date="'+date+'"'+(isDarkLGF?' style="background:'+noteRowBg+'"':'')+'>'+txt+'</div>';
+            var cellStyle=isDarkLGF&&!clReason?' style="background:'+noteRowBg+'"':'';
+            html+='<div class="'+cls+'" data-bid="'+(occ?occ.booking_id:'0')+'" data-room-id="'+room.id+'" data-date="'+date+'"'+cellStyle+'>'+txt+'</div>';
         });
         html+='</div>';
 
@@ -2443,17 +2590,21 @@ function renderCalendar(){
             (room.room_code||'')+'</div>';
         dates.forEach(function(date){
             var occ=occMap[date+'-'+room.id];
+            var clReason=closureMap[date+'-'+room.id];
             var cls='cal-cell';
             var bookingId=0;
             if(occ){
                 cls+=' cal-occ-'+(occ.status_code==='checked_in'?'checked_in':'confirmed');
                 bookingId=parseInt(occ.booking_id,10);
+            }else if(clReason){
+                cls+=' cal-closed';
             }else{
                 cls+=' cal-free';
             }
             var extra='';
             if(occ){
                 var name=(occ.first_name||'')+' '+(occ.last_name||'');
+                var nameHtml=name.trim().replace(/</g,'&lt;');
                 var channelAbbr={direct:'D',booking_com:'B',airbnb:'A',expedia:'EX',phone:'T',email:'E',walk_in:'WI',website:'W',other:'O'}[occ.source_channel]||'';
                 var occLine=(parseInt(occ.adults)||0)+'A';
                 if(parseInt(occ.children)) occLine+=' '+parseInt(occ.children)+'C';
@@ -2467,7 +2618,7 @@ function renderCalendar(){
                         (occ.contacted_date?'<span class="cal-contact-date">'+occ.contacted_date.replace(/-/g,'/')+'</span>':'')+
                     '</div>';
                 }
-                extra='<span class="cal-guest-name">'+name.slice(0,18)+'</span>'+
+                extra='<span class="cal-guest-name" title="'+nameHtml.replace(/"/g,'&quot;')+'">'+nameHtml+'</span>'+
                     contactLine+
                     '<span class="cal-occ-line">'+occLine+'</span>'+
                     '<div class="cal-bottom-line">'+
@@ -2476,6 +2627,9 @@ function renderCalendar(){
                             (extrasAmt>0?'<div class="cal-extras-price">+'+(extrasAmt).toFixed(2)+'\u20AC</div>':'')+
                         '</div>'+
                     '</div>';
+            }else if(clReason){
+                extra='<span class="cal-guest-name">closed</span>'+
+                    '<span class="cal-occ-line" title="'+clReason.replace(/"/g,'&quot;')+'">'+(escapeHtml(clReason)+'')+'</span>';
             }
             html+='<div class="'+cls+' cal-left cal-top" data-bid="'+bookingId+'" data-room-id="'+room.id+'" data-date="'+date+'">'+extra+'</div>';
         });
@@ -3260,6 +3414,62 @@ function closeQbModal(){
     document.getElementById('qb-modal').classList.remove('active');
 }
 
+/* ---- Room Closure ---- */
+function renderClosureRooms(selRoomId){
+    var sel=document.getElementById('cl-room');
+    var roomsList=(state.rooms&&state.rooms.length)?state.rooms:(state.calRooms||[]);
+    var html='<option value="0">All rooms</option>';
+    roomsList.forEach(function(r){
+        var label=(r.room_code||r.code||'')?((r.room_code||r.code||'')+(r.room_name||r.title?' \u2014 '+(r.room_name||r.title):'')):(r.room_name||r.title||('#'+r.id));
+        html+='<option value="'+r.id+'"'+(selRoomId&&parseInt(selRoomId,10)===parseInt(r.id,10)?' selected':'')+'>'+label.replace(/</g,'&lt;')+'</option>';
+    });
+    sel.innerHTML=html;
+}
+function openClosureModal(){
+    document.getElementById('cl-error').style.display='none';
+    var todayStr=state.date||today();
+    var defaultDate=(state.calDate&&state.calDate.length>=10)?state.calDate:todayStr.slice(0,7)+'-01';
+    renderClosureRooms();
+    document.getElementById('cl-date-from').value=defaultDate;
+    document.getElementById('cl-date-from').min=todayStr;
+    document.getElementById('cl-date-to').value=defaultDate;
+    document.getElementById('cl-date-to').min=todayStr;
+    document.getElementById('cl-reason').value='';
+    document.getElementById('cl-confirm').disabled=false;
+    document.getElementById('cl-confirm').textContent='✓ Close Room';
+    document.getElementById('cl-modal').classList.add('active');
+}
+function closeClosureModal(){
+    document.getElementById('cl-modal').classList.remove('active');
+}
+function submitClosure(){
+    var errEl=document.getElementById('cl-error');
+    errEl.style.display='none';
+    var roomId=parseInt(document.getElementById('cl-room').value,10)||0;
+    var dateFrom=document.getElementById('cl-date-from').value;
+    var dateTo=document.getElementById('cl-date-to').value;
+    var reason=document.getElementById('cl-reason').value.trim();
+    if(!dateFrom||!dateTo||dateTo<dateFrom){errEl.textContent='Check the from/to dates.';errEl.style.display='block';return;}
+    var btn=document.getElementById('cl-confirm');
+    btn.disabled=true;
+    btn.textContent='Closing…';
+    apiPost('room-closure',{
+        room_id:roomId,
+        date_from:dateFrom,
+        date_to:dateTo,
+        reason:reason,
+    }).then(function(data){
+        closeClosureModal();
+        showToast(roomId?'Room closed.':'Rooms closed.');
+        loadCalendar();
+    }).catch(function(err){
+        btn.disabled=false;
+        btn.textContent='✓ Close Room';
+        errEl.textContent=err.message||'Failed to close room.';
+        errEl.style.display='block';
+    });
+}
+
 function submitQuickBooking(){
     var errEl=document.getElementById('qb-error');
     errEl.style.display='none';
@@ -3305,9 +3515,10 @@ function submitQuickBooking(){
         state.activeBooking=null;
         state.ticketItems=[];
         state.savedItems=[];
-        fetchData().then(function(){
-            if(state.viewMode==='cal') loadCalendar();
-            if(state._qbFromCalendar){state._qbFromCalendar=false;return;}
+        if(state._qbFromCalendar){
+            state._qbFromCalendar=false;
+            loadCalendar();
+        }else fetchData().then(function(){
             for(var i=0;i<state.bookings.length;i++){
                 if(parseInt(state.bookings[i].id,10)===data.booking_id){
                     selectBooking(data.booking_id);
@@ -3719,7 +3930,9 @@ function applyTheme(name){
 /* ---- Init ---- */
 document.addEventListener('DOMContentLoaded',function(){
     if('serviceWorker' in navigator){
-        navigator.serviceWorker.register('sw.js?_v='+Date.now());
+        var registerWorker=function(){navigator.serviceWorker.register('sw.js').catch(function(){});};
+        if(window.requestIdleCallback) window.requestIdleCallback(registerWorker,{timeout:2000});
+        else setTimeout(registerWorker,1000);
     }
     fixViewport();
     window.addEventListener('resize',fixViewport);
@@ -3746,7 +3959,7 @@ document.addEventListener('DOMContentLoaded',function(){
         setUserLabel(storedName);
         hideLogin();
         setViewMode(state.viewMode);
-        fetchData();
+        if(state.viewMode==='dash'||state.viewMode==='list') fetchData();
     }
 
     // Account dropdown
@@ -3755,6 +3968,7 @@ document.addEventListener('DOMContentLoaded',function(){
         document.getElementById('account-menu').classList.toggle('active');
     });
     document.getElementById('account-qb').addEventListener('click',function(){closeAccountMenu();state._qbFromCalendar=false;openQuickBookingModal();});
+    document.getElementById('account-cl').addEventListener('click',function(){closeAccountMenu();openClosureModal();});
     document.getElementById('account-fs').addEventListener('click',function(){closeAccountMenu();toggleFullscreen();});
     document.getElementById('account-logout').addEventListener('click',function(){closeAccountMenu();doLogout();});
 
@@ -3773,6 +3987,7 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('hm-view-fin').addEventListener('click',function(){closeHm();setViewMode('fin');});
     document.getElementById('hm-view-pricing').addEventListener('click',function(){closeHm();setViewMode('pricing');});
     document.getElementById('hm-qb').addEventListener('click',function(){closeHm();state._qbFromCalendar=false;openQuickBookingModal();});
+    document.getElementById('hm-cl').addEventListener('click',function(){closeHm();openClosureModal();});
     document.getElementById('hm-fs').addEventListener('click',function(){closeHm();toggleFullscreen();});
 
     // List date bar
@@ -3841,6 +4056,19 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('qb-confirm').addEventListener('click',function(){submitQuickBooking();});
     document.getElementById('qb-cancel').addEventListener('click',function(){closeQbModal();});
     document.getElementById('qb-modal-close').addEventListener('click',function(){closeQbModal();});
+
+    // Room closure
+    document.getElementById('cal-closure-btn').addEventListener('click',function(){openClosureModal();});
+    document.getElementById('cl-date-from').addEventListener('change',function(){
+        var v=this.value;
+        document.getElementById('cl-date-to').min=v;
+        var to=document.getElementById('cl-date-to').value;
+        if(to&&to<v) document.getElementById('cl-date-to').value=v;
+    });
+    document.getElementById('cl-confirm').addEventListener('click',function(){submitClosure();});
+    document.getElementById('cl-cancel').addEventListener('click',function(){closeClosureModal();});
+    document.getElementById('cl-modal-close').addEventListener('click',function(){closeClosureModal();});
+    document.getElementById('cl-modal').addEventListener('click',function(e){if(e.target===this) closeClosureModal();});
     document.getElementById('qb-guest-search').addEventListener('input',function(){
         var q=this.value.trim();
         clearTimeout(_qbSearchTimer);
