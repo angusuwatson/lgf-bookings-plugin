@@ -281,6 +281,8 @@ function simple_hotel_crm_create_invoice_ninja_invoice( $booking_id ) {
         'line_items' => $line_items,
         'amount' => round( $total_amount, 2 ),
         'date' => (string) $booking['check_in_date'],
+        'custom_value1' => $check_in ? wp_date( 'd/m/Y', $check_in ) : '',
+        'custom_value2' => $check_out ? wp_date( 'd/m/Y', $check_out ) : '',
         'is_amount_discount' => false,
         'discount' => 0,
         'tax_name1' => 'TVA',
