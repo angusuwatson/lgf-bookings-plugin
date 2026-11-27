@@ -1,4 +1,4 @@
-var CACHE = 'lgf-terminal-v6';
+var CACHE = 'lgf-terminal-v8';
 var APP_PATH = new URL(self.registration.scope).pathname;
 var APP_INDEX_PATH = APP_PATH + 'index.html';
 var SHELL = ['manifest.json', 'icon-152.png', 'icon-167.png', 'icon-180.png', 'icon-512.png'].map(function(path) {

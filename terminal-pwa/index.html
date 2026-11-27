@@ -213,6 +213,14 @@ input,select{font-family:inherit;font-size:16px}
 .crm-toolbar{display:flex;gap:8px;align-items:center;position:sticky;top:0;padding:4px 0 10px;background:var(--card);z-index:2}
 .crm-search{flex:1;min-width:120px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:15px}
 .crm-filter{padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;max-width:150px}
+.crm-bulkbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 0 10px;font-size:12px;color:var(--muted)}
+.crm-bulkbar label{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.crm-bulkbar input[type=checkbox],.crm-row-select{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0}
+.crm-bulkbar select{padding:7px 8px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:13px;min-height:34px}
+.crm-bulkbar button{padding:7px 12px;border:0;border-radius:7px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;min-height:34px}
+.crm-bulkbar button:disabled{opacity:.4;cursor:default}
+.crm-select-cell{display:flex;align-items:center;gap:8px;min-width:0}
+.crm-select-cell>div{min-width:0;flex:1}
 .crm-list{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg)}
 .crm-row{display:grid;grid-template-columns:minmax(150px,1.5fr) minmax(150px,1fr) minmax(110px,.8fr) minmax(90px,.7fr);gap:8px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--border);cursor:pointer;min-width:0}
 .crm-row:last-child{border-bottom:none}
@@ -240,6 +248,7 @@ input,select{font-family:inherit;font-size:16px}
   .crm-toolbar{flex-wrap:wrap}
   .crm-search{flex-basis:100%}
   .crm-filter{max-width:none;flex:1}
+  .crm-bulkbar select{flex:1;min-width:100px}
   .crm-row{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px}
   .crm-row-head{display:none}
   .crm-row .crm-cell:nth-child(2){grid-column:1;grid-row:2}
@@ -524,8 +533,19 @@ input,select{font-family:inherit;font-size:16px}
         <div class="crm-toolbar">
           <input type="search" id="crm-booking-search" class="crm-search" placeholder="Search guest, booking, room…" autocomplete="off">
           <select id="crm-booking-scope" class="crm-filter" aria-label="Booking filter">
-            <option value="upcoming">Upcoming</option><option value="in_house">In house</option><option value="past">Past</option><option value="cancelled">Cancelled</option><option value="all">All bookings</option>
+            <option value="upcoming">Upcoming</option><option value="in_house">In house</option><option value="past">Past</option><option value="cancelled">Cancelled / no-show</option><option value="all">All active</option><option value="trash">Trash</option>
           </select>
+          <select id="crm-booking-sort" class="crm-filter" aria-label="Sort bookings">
+            <option value="date">Check-in date</option><option value="guest">Guest name</option><option value="status">Status</option><option value="total">Total</option><option value="rooms">Room count</option><option value="channel">Channel</option>
+          </select>
+          <select id="crm-booking-order" class="crm-filter" aria-label="Sort direction"><option value="asc">Ascending</option><option value="desc">Descending</option></select>
+          <select id="crm-booking-per-page" class="crm-filter" aria-label="Results per page"><option value="10">10 / page</option><option value="20">20 / page</option><option value="50">50 / page</option><option value="100">100 / page</option></select>
+        </div>
+        <div class="crm-bulkbar" id="crm-booking-bulkbar">
+          <label><input type="checkbox" id="crm-booking-select-page"> Select page</label>
+          <span id="crm-booking-selected-count">0 selected</span>
+          <select id="crm-booking-action" aria-label="Bulk booking action"><option value="">Choose action…</option></select>
+          <button type="button" id="crm-booking-apply" disabled>Apply</button>
         </div>
         <div id="crm-booking-results" class="crm-list"></div>
         <div id="crm-booking-pagination" class="crm-pagination"></div>
@@ -533,6 +553,16 @@ input,select{font-family:inherit;font-size:16px}
       <div id="crm-guests-view" class="crm-scroll" style="display:none">
         <div class="crm-toolbar">
           <input type="search" id="crm-guest-search" class="crm-search" placeholder="Search name, email, phone…" autocomplete="off">
+          <select id="crm-guest-scope" class="crm-filter" aria-label="Guest filter"><option value="active">Active guests</option><option value="trash">Trash</option></select>
+          <select id="crm-guest-sort" class="crm-filter" aria-label="Sort guests"><option value="name">Name</option><option value="bookings">Booking count</option><option value="last_visit">Last visit</option><option value="next_visit">Next visit</option><option value="email">Email</option></select>
+          <select id="crm-guest-order" class="crm-filter" aria-label="Sort direction"><option value="asc">Ascending</option><option value="desc">Descending</option></select>
+          <select id="crm-guest-per-page" class="crm-filter" aria-label="Results per page"><option value="10">10 / page</option><option value="20">20 / page</option><option value="50">50 / page</option><option value="100">100 / page</option></select>
+        </div>
+        <div class="crm-bulkbar" id="crm-guest-bulkbar">
+          <label><input type="checkbox" id="crm-guest-select-page"> Select page</label>
+          <span id="crm-guest-selected-count">0 selected</span>
+          <select id="crm-guest-action" aria-label="Bulk guest action"><option value="">Choose action…</option></select>
+          <button type="button" id="crm-guest-apply" disabled>Apply</button>
         </div>
         <div id="crm-guest-results" class="crm-list"></div>
         <div id="crm-guest-pagination" class="crm-pagination"></div>
@@ -911,6 +941,10 @@ var state = {
     crmBookingPage: 1,
     crmBookingScope: 'upcoming',
     crmBookingSearch: '',
+    crmBookingSort: 'date',
+    crmBookingOrder: 'asc',
+    crmBookingPerPage: (function(){var n=parseInt(localStorage.getItem('lgf_crm_booking_per_page')||'20',10);return [10,20,50,100].indexOf(n)>=0?n:20;})(),
+    crmBookingSelected: {},
     crmBookingLoading: false,
     crmBookingLoaded: false,
     crmBookingRequestKey: '',
@@ -918,6 +952,11 @@ var state = {
     crmGuestTotal: 0,
     crmGuestPage: 1,
     crmGuestSearch: '',
+    crmGuestScope: 'active',
+    crmGuestSort: 'name',
+    crmGuestOrder: 'asc',
+    crmGuestPerPage: (function(){var n=parseInt(localStorage.getItem('lgf_crm_guest_per_page')||'20',10);return [10,20,50,100].indexOf(n)>=0?n:20;})(),
+    crmGuestSelected: {},
     crmGuestLoading: false,
     crmGuestLoaded: false,
     crmGuestRequestKey: '',
@@ -1400,14 +1439,15 @@ function crmLoadBookings(){
     state.crmBookingLoading=true;
     var root=document.getElementById('crm-booking-results');
     if(root) root.innerHTML='<div class="crm-empty">Loading bookings…</div>';
-    var requestKey=state.crmBookingScope+'|'+state.crmBookingSearch+'|'+state.crmBookingPage;
+    var requestKey=[state.crmBookingScope,state.crmBookingSearch,state.crmBookingPage,state.crmBookingSort,state.crmBookingOrder,state.crmBookingPerPage].join('|');
     state.crmBookingRequestKey=requestKey;
     var query='ticket-bookings?scope='+encodeURIComponent(state.crmBookingScope)+
         '&q='+encodeURIComponent(state.crmBookingSearch)+
-        '&page='+state.crmBookingPage+'&per_page=20';
+        '&page='+state.crmBookingPage+'&per_page='+state.crmBookingPerPage+
+        '&sort='+encodeURIComponent(state.crmBookingSort)+'&order='+encodeURIComponent(state.crmBookingOrder);
     apiGet(query).then(function(data){
         state.crmBookingLoading=false;
-        var latestKey=state.crmBookingScope+'|'+state.crmBookingSearch+'|'+state.crmBookingPage;
+        var latestKey=[state.crmBookingScope,state.crmBookingSearch,state.crmBookingPage,state.crmBookingSort,state.crmBookingOrder,state.crmBookingPerPage].join('|');
         if(requestKey!==latestKey){crmLoadBookings();return;}
         state.crmBookings=data.bookings||[];
         state.crmBookingTotal=parseInt(data.total,10)||0;
@@ -1415,7 +1455,7 @@ function crmLoadBookings(){
         renderCrmBookings();
     }).catch(function(err){
         state.crmBookingLoading=false;
-        var latestKey=state.crmBookingScope+'|'+state.crmBookingSearch+'|'+state.crmBookingPage;
+        var latestKey=[state.crmBookingScope,state.crmBookingSearch,state.crmBookingPage,state.crmBookingSort,state.crmBookingOrder,state.crmBookingPerPage].join('|');
         if(requestKey!==latestKey){crmLoadBookings();return;}
         if(err.message!=='unauthorized'&&root) root.innerHTML='<div class="crm-empty">'+escapeHtml(err.message||'Could not load bookings.')+'</div>';
     });
@@ -1428,17 +1468,31 @@ function renderCrmBookings(){
         root.innerHTML='<div class="crm-empty">No bookings found.</div>';
     }else{
         root.appendChild(el('div',{className:'crm-row crm-row-head'},[
-            el('div',{},['Guest / booking']),el('div',{},['Dates']),el('div',{},['Rooms / guests']),el('div',{},['Status / total'])
+            el('div',{className:'crm-select-cell'},[
+                el('input',{type:'checkbox',id:'crm-booking-select-page-row','aria-label':'Select all bookings on this page'}),
+                el('div',{},['Guest / booking'])
+            ]),el('div',{},['Dates']),el('div',{},['Rooms / guests']),el('div',{},['Status / total'])
         ]));
         state.crmBookings.forEach(function(b){
             var guest=((b.first_name||'')+' '+(b.last_name||'')).trim()||'Guest';
             var roomText=b.room_codes||((parseInt(b.room_count,10)||0)+' rooms');
             var guests=(parseInt(b.adults,10)||0)+' adults · '+(parseInt(b.children,10)||0)+' children'+((parseInt(b.babies,10)||0)?' · '+b.babies+' babies':'');
             var total=(parseFloat(b.total_amount)||0).toFixed(2)+' €';
-            var row=el('div',{className:'crm-row',onClick:function(){openCrmBookingDetail(parseInt(b.id,10));}},[
-                el('div',{className:'crm-cell'},[
-                    el('div',{className:'crm-primary'},[guest]),
-                    el('div',{className:'crm-secondary'},['#'+b.id+(b.email?' · '+b.email:'')]),
+            var select=el('input',{type:'checkbox',className:'crm-row-select',value:String(b.id),'aria-label':'Select booking '+b.id});
+            select.checked=!!state.crmBookingSelected[String(b.id)];
+            select.addEventListener('click',function(e){e.stopPropagation();});
+            select.addEventListener('change',function(){
+                if(this.checked) state.crmBookingSelected[String(b.id)]=true;
+                else delete state.crmBookingSelected[String(b.id)];
+                crmRenderBulkBar('booking');
+            });
+            var row=el('div',{className:'crm-row',onClick:function(){openCrmBookingDetail(parseInt(b.id,10),parseInt(b.is_deleted,10)===1);}},[
+                el('div',{className:'crm-cell crm-select-cell'},[
+                    select,
+                    el('div',{},[
+                        el('div',{className:'crm-primary'},[guest]),
+                        el('div',{className:'crm-secondary'},['#'+b.id+(b.email?' · '+b.email:'')]),
+                    ])
                 ]),
                 el('div',{className:'crm-cell'},[(b.check_in_date||'')+' → '+(b.check_out_date||'')]),
                 el('div',{className:'crm-cell'},[
@@ -1453,21 +1507,24 @@ function renderCrmBookings(){
             root.appendChild(row);
         });
     }
-    crmPagination('crm-booking-pagination',state.crmBookingPage,state.crmBookingTotal,20,function(page){
-        state.crmBookingPage=page;crmLoadBookings();
+    crmPagination('crm-booking-pagination',state.crmBookingPage,state.crmBookingTotal,state.crmBookingPerPage,function(page){
+        state.crmBookingSelected={};state.crmBookingPage=page;crmLoadBookings();
     });
+    crmRenderBulkBar('booking');
 }
 function crmLoadGuests(){
     if(state.crmGuestLoading) return;
     state.crmGuestLoading=true;
     var root=document.getElementById('crm-guest-results');
     if(root) root.innerHTML='<div class="crm-empty">Loading guests…</div>';
-    var requestKey=state.crmGuestSearch+'|'+state.crmGuestPage;
+    var requestKey=[state.crmGuestSearch,state.crmGuestPage,state.crmGuestScope,state.crmGuestSort,state.crmGuestOrder,state.crmGuestPerPage].join('|');
     state.crmGuestRequestKey=requestKey;
-    var query='ticket-guests?q='+encodeURIComponent(state.crmGuestSearch)+'&page='+state.crmGuestPage+'&per_page=20';
+    var query='ticket-guests?q='+encodeURIComponent(state.crmGuestSearch)+'&page='+state.crmGuestPage+
+        '&per_page='+state.crmGuestPerPage+'&scope='+encodeURIComponent(state.crmGuestScope)+
+        '&sort='+encodeURIComponent(state.crmGuestSort)+'&order='+encodeURIComponent(state.crmGuestOrder);
     apiGet(query).then(function(data){
         state.crmGuestLoading=false;
-        var latestKey=state.crmGuestSearch+'|'+state.crmGuestPage;
+        var latestKey=[state.crmGuestSearch,state.crmGuestPage,state.crmGuestScope,state.crmGuestSort,state.crmGuestOrder,state.crmGuestPerPage].join('|');
         if(requestKey!==latestKey){crmLoadGuests();return;}
         state.crmGuests=data.guests||[];
         state.crmGuestTotal=parseInt(data.total,10)||0;
@@ -1475,7 +1532,7 @@ function crmLoadGuests(){
         renderCrmGuests();
     }).catch(function(err){
         state.crmGuestLoading=false;
-        var latestKey=state.crmGuestSearch+'|'+state.crmGuestPage;
+        var latestKey=[state.crmGuestSearch,state.crmGuestPage,state.crmGuestScope,state.crmGuestSort,state.crmGuestOrder,state.crmGuestPerPage].join('|');
         if(requestKey!==latestKey){crmLoadGuests();return;}
         if(err.message!=='unauthorized'&&root) root.innerHTML='<div class="crm-empty">'+escapeHtml(err.message||'Could not load guests.')+'</div>';
     });
@@ -1488,7 +1545,10 @@ function renderCrmGuests(){
         root.innerHTML='<div class="crm-empty">No guests found.</div>';
     }else{
         root.appendChild(el('div',{className:'crm-row crm-row-head'},[
-            el('div',{},['Guest']),el('div',{},['Contact']),el('div',{},['Bookings / visits']),el('div',{},[''])
+            el('div',{className:'crm-select-cell'},[
+                el('input',{type:'checkbox',id:'crm-guest-select-page-row','aria-label':'Select all guests on this page'}),
+                el('div',{},['Guest'])
+            ]),el('div',{},['Contact']),el('div',{},['Bookings / visits']),el('div',{},[''])
         ]));
         state.crmGuests.forEach(function(g){
             var name=((g.first_name||'')+' '+(g.last_name||'')).trim()||('Guest #'+g.id);
@@ -1496,10 +1556,21 @@ function renderCrmGuests(){
             var visits=(parseInt(g.booking_count,10)||0)+' bookings';
             if(g.next_visit) visits+=' · Next '+g.next_visit;
             else if(g.last_visit) visits+=' · Last '+g.last_visit;
-            root.appendChild(el('div',{className:'crm-row',onClick:function(){openCrmGuestDetail(parseInt(g.id,10));}},[
-                el('div',{className:'crm-cell'},[
-                    el('div',{className:'crm-primary'},[name]),
-                    el('div',{className:'crm-secondary'},['Guest #'+g.id+(g.city?' · '+g.city:'')]),
+            var select=el('input',{type:'checkbox',className:'crm-row-select',value:String(g.id),'aria-label':'Select guest '+g.id});
+            select.checked=!!state.crmGuestSelected[String(g.id)];
+            select.addEventListener('click',function(e){e.stopPropagation();});
+            select.addEventListener('change',function(){
+                if(this.checked) state.crmGuestSelected[String(g.id)]=true;
+                else delete state.crmGuestSelected[String(g.id)];
+                crmRenderBulkBar('guest');
+            });
+            root.appendChild(el('div',{className:'crm-row',onClick:function(){openCrmGuestDetail(parseInt(g.id,10),parseInt(g.is_deleted,10)===1);}},[
+                el('div',{className:'crm-cell crm-select-cell'},[
+                    select,
+                    el('div',{},[
+                        el('div',{className:'crm-primary'},[name]),
+                        el('div',{className:'crm-secondary'},['Guest #'+g.id+(g.city?' · '+g.city:'')]),
+                    ])
                 ]),
                 el('div',{className:'crm-cell'},[contact]),
                 el('div',{className:'crm-cell'},[visits]),
@@ -1507,8 +1578,80 @@ function renderCrmGuests(){
             ]));
         });
     }
-    crmPagination('crm-guest-pagination',state.crmGuestPage,state.crmGuestTotal,20,function(page){
-        state.crmGuestPage=page;crmLoadGuests();
+    crmPagination('crm-guest-pagination',state.crmGuestPage,state.crmGuestTotal,state.crmGuestPerPage,function(page){
+        state.crmGuestSelected={};state.crmGuestPage=page;crmLoadGuests();
+    });
+    crmRenderBulkBar('guest');
+}
+function crmCurrentPageIds(type){
+    return type==='booking'
+        ? (state.crmBookings||[]).map(function(item){return String(item.id);})
+        : (state.crmGuests||[]).map(function(item){return String(item.id);});
+}
+function crmTogglePageSelection(type,checked){
+    var selected=type==='booking'?state.crmBookingSelected:state.crmGuestSelected;
+    crmCurrentPageIds(type).forEach(function(id){
+        if(checked) selected[id]=true;
+        else delete selected[id];
+    });
+    if(type==='booking') renderCrmBookings();
+    else renderCrmGuests();
+}
+function crmRenderBulkBar(type){
+    var booking=type==='booking';
+    var selected=booking?state.crmBookingSelected:state.crmGuestSelected;
+    var selectedCount=Object.keys(selected).length;
+    var scope=booking?state.crmBookingScope:state.crmGuestScope;
+    var options=booking
+        ? (scope==='trash'?[['restore','Restore from trash']]:(scope==='cancelled'?[['confirm','Mark confirmed'],['trash','Move to trash']]:[['cancel','Mark cancelled'],['confirm','Mark confirmed'],['trash','Move to trash']]))
+        : (scope==='trash'?[['restore','Restore from trash']]:[['trash','Move to trash']]);
+    var prefix=booking?'crm-booking':'crm-guest';
+    var countEl=document.getElementById(prefix+'-selected-count');
+    var actionEl=document.getElementById(prefix+'-action');
+    var applyBtn=document.getElementById(prefix+'-apply');
+    if(countEl) countEl.textContent=selectedCount+' selected';
+    if(actionEl){
+        var previous=actionEl.value;
+        actionEl.innerHTML='<option value="">Choose action…</option>';
+        options.forEach(function(option){actionEl.add(new Option(option[1],option[0]));});
+        if(options.some(function(option){return option[0]===previous;})) actionEl.value=previous;
+    }
+    if(applyBtn) applyBtn.disabled=selectedCount===0||!actionEl||!actionEl.value;
+    var pageIds=crmCurrentPageIds(type);
+    var pageSelected=pageIds.filter(function(id){return !!selected[id];}).length;
+    var boxes=[document.getElementById(prefix+'-select-page'),document.getElementById(prefix+'-select-page-row')];
+    boxes.forEach(function(box){
+        if(!box) return;
+        box.checked=pageIds.length>0&&pageSelected===pageIds.length;
+        box.indeterminate=pageSelected>0&&pageSelected<pageIds.length;
+        if(box.id===prefix+'-select-page-row'){
+            box.addEventListener('change',function(){crmTogglePageSelection(type,this.checked);});
+        }
+    });
+}
+function crmApplyBulk(type){
+    var booking=type==='booking';
+    var selected=booking?state.crmBookingSelected:state.crmGuestSelected;
+    var ids=Object.keys(selected).map(function(id){return parseInt(id,10)||0;}).filter(Boolean);
+    var prefix=booking?'crm-booking':'crm-guest';
+    var action=document.getElementById(prefix+'-action').value;
+    if(!ids.length||!action) return;
+    var labels={cancel:'mark selected bookings cancelled',confirm:'mark selected bookings confirmed',trash:'move selected items to trash',restore:'restore selected items'};
+    if(!confirm('Are you sure you want to '+(labels[action]||'apply this action to selected items')+' ('+ids.length+')?')) return;
+    var endpoint=booking?'ticket-bookings/bulk':'ticket-guests/bulk';
+    var payload=booking?{action:action,booking_ids:ids}:{action:action,guest_ids:ids};
+    apiPost(endpoint,payload).then(function(data){
+        if(booking){
+            state.crmBookingSelected={};state.crmBookingLoaded=false;crmLoadBookings();
+        }else{
+            state.crmGuestSelected={};state.crmGuestLoaded=false;crmLoadGuests();
+        }
+        var message=(data.updated||0)+' item(s) updated.';
+        if(data.blocked&&data.blocked.length) message+=' '+data.blocked.length+' guest(s) kept because bookings are linked.';
+        if(data.skipped&&data.skipped.length) message+=' '+data.skipped.length+' skipped.';
+        showToast(message);
+    }).catch(function(err){
+        if(err.message!=='unauthorized') showError(err.message||'Bulk action failed.');
     });
 }
 function crmDetailSection(title,lines){
@@ -1535,13 +1678,14 @@ function closeCrmDetail(){
     state.crmDetailRequestId++;
     state.crmDetailType='';state.crmDetailData=null;
 }
-function openCrmBookingDetail(bookingId){
-    var requestId=openCrmDetail('booking','Booking #'+bookingId,'Edit booking');
-    apiGet('ticket-booking/'+bookingId).then(function(data){
+function openCrmBookingDetail(bookingId,includeTrash){
+    var requestId=openCrmDetail('booking','Booking #'+bookingId,includeTrash?'':'Edit booking');
+    apiGet('ticket-booking/'+bookingId+(includeTrash?'?include_trash=1':'')).then(function(data){
         if(requestId!==state.crmDetailRequestId) return;
         var b=data.booking;
         if(!b) throw new Error('Booking not found.');
         state.crmDetailData=b;
+        if(parseInt(b.is_deleted,10)===1) document.getElementById('crm-detail-primary').style.display='none';
         var guest=((b.first_name||'')+' '+(b.last_name||'')).trim()||'Guest';
         var content=document.getElementById('crm-detail-content');
         content.innerHTML='';
@@ -1576,13 +1720,14 @@ function openCrmBookingDetail(bookingId){
         }
     });
 }
-function openCrmGuestDetail(guestId){
-    var requestId=openCrmDetail('guest','Guest #'+guestId,'New booking');
-    apiGet('ticket-guest/'+guestId).then(function(data){
+function openCrmGuestDetail(guestId,includeTrash){
+    var requestId=openCrmDetail('guest','Guest #'+guestId,includeTrash?'':'New booking');
+    apiGet('ticket-guest/'+guestId+(includeTrash?'?include_trash=1':'')).then(function(data){
         if(requestId!==state.crmDetailRequestId) return;
         var g=data.guest;
         if(!g) throw new Error('Guest not found.');
         state.crmDetailData=g;
+        if(parseInt(g.is_deleted,10)===1) document.getElementById('crm-detail-primary').style.display='none';
         document.getElementById('crm-detail-heading').textContent=((g.first_name||'')+' '+(g.last_name||'')).trim()||('Guest #'+guestId);
         var content=document.getElementById('crm-detail-content');
         content.innerHTML='';
@@ -1627,7 +1772,7 @@ function editCrmBooking(){
 }
 function quickBookCrmGuest(){
     var g=state.crmDetailData;
-    if(state.crmDetailType!=='guest'||!g) return;
+    if(state.crmDetailType!=='guest'||!g||parseInt(g.is_deleted,10)===1) return;
     closeCrmDetail();
     state._qbFromCalendar=false;
     openQuickBookingModal(0,state.date||today());
@@ -1960,6 +2105,9 @@ function render(){
         document.getElementById('crm-bookings-view').style.display='block';
         document.getElementById('crm-booking-search').value=state.crmBookingSearch;
         document.getElementById('crm-booking-scope').value=state.crmBookingScope;
+        document.getElementById('crm-booking-sort').value=state.crmBookingSort;
+        document.getElementById('crm-booking-order').value=state.crmBookingOrder;
+        document.getElementById('crm-booking-per-page').value=String(state.crmBookingPerPage);
         if(state.crmBookingLoaded) renderCrmBookings();
         else if(!state.crmBookingLoading) crmLoadBookings();
     }else if(state.viewMode==='guests'){
@@ -1974,6 +2122,10 @@ function render(){
         document.getElementById('dash-view').style.display='none';
         document.getElementById('crm-guests-view').style.display='block';
         document.getElementById('crm-guest-search').value=state.crmGuestSearch;
+        document.getElementById('crm-guest-scope').value=state.crmGuestScope;
+        document.getElementById('crm-guest-sort').value=state.crmGuestSort;
+        document.getElementById('crm-guest-order').value=state.crmGuestOrder;
+        document.getElementById('crm-guest-per-page').value=String(state.crmGuestPerPage);
         if(state.crmGuestLoaded) renderCrmGuests();
         else if(!state.crmGuestLoading) crmLoadGuests();
     }else if(state.viewMode==='maint'){
@@ -4598,18 +4750,31 @@ document.addEventListener('DOMContentLoaded',function(){
 
     // CRM lists and detail views
     document.getElementById('crm-booking-search').addEventListener('input',function(){
-        state.crmBookingSearch=this.value.trim();state.crmBookingPage=1;state.crmBookingLoaded=false;
+        state.crmBookingSearch=this.value.trim();state.crmBookingPage=1;state.crmBookingLoaded=false;state.crmBookingSelected={};
         clearTimeout(state.crmSearchTimer);
         state.crmSearchTimer=setTimeout(crmLoadBookings,250);
     });
     document.getElementById('crm-booking-scope').addEventListener('change',function(){
-        state.crmBookingScope=this.value;state.crmBookingPage=1;state.crmBookingLoaded=false;crmLoadBookings();
+        state.crmBookingScope=this.value;state.crmBookingPage=1;state.crmBookingLoaded=false;state.crmBookingSelected={};crmLoadBookings();
     });
+    document.getElementById('crm-booking-sort').addEventListener('change',function(){state.crmBookingSort=this.value;state.crmBookingPage=1;state.crmBookingLoaded=false;state.crmBookingSelected={};crmLoadBookings();});
+    document.getElementById('crm-booking-order').addEventListener('change',function(){state.crmBookingOrder=this.value;state.crmBookingPage=1;state.crmBookingLoaded=false;state.crmBookingSelected={};crmLoadBookings();});
+    document.getElementById('crm-booking-per-page').addEventListener('change',function(){state.crmBookingPerPage=parseInt(this.value,10)||20;state.crmBookingPage=1;state.crmBookingLoaded=false;state.crmBookingSelected={};try{localStorage.setItem('lgf_crm_booking_per_page',String(state.crmBookingPerPage));}catch(e){}crmLoadBookings();});
     document.getElementById('crm-guest-search').addEventListener('input',function(){
-        state.crmGuestSearch=this.value.trim();state.crmGuestPage=1;state.crmGuestLoaded=false;
+        state.crmGuestSearch=this.value.trim();state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};
         clearTimeout(state.crmSearchTimer);
         state.crmSearchTimer=setTimeout(crmLoadGuests,250);
     });
+    document.getElementById('crm-guest-scope').addEventListener('change',function(){state.crmGuestScope=this.value;state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};crmLoadGuests();});
+    document.getElementById('crm-guest-sort').addEventListener('change',function(){state.crmGuestSort=this.value;state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};crmLoadGuests();});
+    document.getElementById('crm-guest-order').addEventListener('change',function(){state.crmGuestOrder=this.value;state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};crmLoadGuests();});
+    document.getElementById('crm-guest-per-page').addEventListener('change',function(){state.crmGuestPerPage=parseInt(this.value,10)||20;state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};try{localStorage.setItem('lgf_crm_guest_per_page',String(state.crmGuestPerPage));}catch(e){}crmLoadGuests();});
+    document.getElementById('crm-booking-select-page').addEventListener('change',function(){crmTogglePageSelection('booking',this.checked);});
+    document.getElementById('crm-guest-select-page').addEventListener('change',function(){crmTogglePageSelection('guest',this.checked);});
+    document.getElementById('crm-booking-action').addEventListener('change',function(){document.getElementById('crm-booking-apply').disabled=!Object.keys(state.crmBookingSelected).length||!this.value;});
+    document.getElementById('crm-guest-action').addEventListener('change',function(){document.getElementById('crm-guest-apply').disabled=!Object.keys(state.crmGuestSelected).length||!this.value;});
+    document.getElementById('crm-booking-apply').addEventListener('click',function(){crmApplyBulk('booking');});
+    document.getElementById('crm-guest-apply').addEventListener('click',function(){crmApplyBulk('guest');});
     document.getElementById('crm-detail-close').addEventListener('click',closeCrmDetail);
     document.getElementById('crm-detail-secondary').addEventListener('click',closeCrmDetail);
     document.getElementById('crm-detail-primary').addEventListener('click',function(){

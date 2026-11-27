@@ -224,6 +224,12 @@ add_action( 'rest_api_init', function() {
         'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
     ] );
 
+    register_rest_route( 'simple-hotel-crm/v1', '/ticket-bookings/bulk', [
+        'methods'  => 'POST',
+        'callback' => 'simple_hotel_crm_rest_ticket_bookings_bulk',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
     register_rest_route( 'simple-hotel-crm/v1', '/ticket-booking/(?P<booking_id>\d+)', [
         'methods'  => 'GET',
         'callback' => 'simple_hotel_crm_rest_ticket_booking_detail',
@@ -233,6 +239,12 @@ add_action( 'rest_api_init', function() {
     register_rest_route( 'simple-hotel-crm/v1', '/ticket-guests', [
         'methods'  => 'GET',
         'callback' => 'simple_hotel_crm_rest_ticket_guests',
+        'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
+    ] );
+
+    register_rest_route( 'simple-hotel-crm/v1', '/ticket-guests/bulk', [
+        'methods'  => 'POST',
+        'callback' => 'simple_hotel_crm_rest_ticket_guests_bulk',
         'permission_callback' => function($r) { return simple_hotel_crm_user_can_access($r); },
     ] );
 
@@ -2751,20 +2763,35 @@ function simple_hotel_crm_rest_ticket_bookings( WP_REST_Request $request ) {
     $rooms_table    = simple_hotel_crm_rooms_table();
     $today          = current_time( 'Y-m-d' );
     $scope          = sanitize_key( (string) ( $request->get_param( 'scope' ) ?: 'upcoming' ) );
-    $allowed_scopes = [ 'upcoming', 'in_house', 'past', 'cancelled', 'all' ];
+    $allowed_scopes = [ 'upcoming', 'in_house', 'past', 'cancelled', 'all', 'trash' ];
     if ( ! in_array( $scope, $allowed_scopes, true ) ) {
         $scope = 'upcoming';
     }
     $search   = trim( sanitize_text_field( (string) $request->get_param( 'q' ) ) );
     $page     = max( 1, absint( $request->get_param( 'page' ) ?: 1 ) );
     $per_page = absint( $request->get_param( 'per_page' ) ?: 20 );
-    $per_page = min( 50, max( 10, $per_page ) );
+    $per_page = min( 100, max( 10, $per_page ) );
     $offset   = ( $page - 1 ) * $per_page;
-
-    $where  = [
-        'b.is_deleted = 0',
-        "(b.internal_notes IS NULL OR b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%')",
+    $sort_by = sanitize_key( (string) ( $request->get_param( 'sort' ) ?: 'date' ) );
+    $sort_order = strtoupper( sanitize_key( (string) ( $request->get_param( 'order' ) ?: '' ) ) );
+    $sortable = [
+        'date' => 'b.check_in_date',
+        'guest' => 'g.last_name',
+        'status' => 'b.status_code',
+        'total' => 'b.total_amount',
+        'rooms' => 'room_count',
+        'channel' => 'b.source_channel',
     ];
+    if ( ! isset( $sortable[ $sort_by ] ) ) {
+        $sort_by = 'date';
+    }
+    if ( ! in_array( $sort_order, [ 'ASC', 'DESC' ], true ) ) {
+        $sort_order = in_array( $scope, [ 'past', 'cancelled', 'trash', 'all' ], true ) ? 'DESC' : 'ASC';
+    }
+
+    $where = 'trash' === $scope
+        ? [ 'b.is_deleted = 1', "(b.internal_notes IS NULL OR b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%')" ]
+        : [ 'b.is_deleted = 0', "(b.internal_notes IS NULL OR b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%')" ];
     $params = [];
     if ( 'upcoming' === $scope ) {
         $where[] = "b.status_code IN ('pending','confirmed') AND b.check_in_date > %s";
@@ -2797,12 +2824,20 @@ function simple_hotel_crm_rest_ticket_bookings( WP_REST_Request $request ) {
         }
     }
     $where_sql = implode( ' AND ', $where );
-    $sort = in_array( $scope, [ 'past', 'cancelled' ], true ) ? 'DESC' : 'ASC';
+    $order_by = $sortable[ $sort_by ];
+    if ( 'guest' === $sort_by ) {
+        $order_by = 'g.last_name ' . $sort_order . ', g.first_name ' . $sort_order;
+    } else {
+        $order_by .= ' ' . $sort_order;
+    }
 
     $count_sql = "SELECT COUNT(*) FROM {$bookings_table} b LEFT JOIN {$guests_table} g ON g.id = b.guest_id WHERE {$where_sql}";
     $total = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) );
+    $pages = max( 1, (int) ceil( $total / $per_page ) );
+    $page = min( $page, $pages );
+    $offset = ( $page - 1 ) * $per_page;
 
-    $sql = "SELECT b.id, b.guest_id, b.status_code, b.check_in_date, b.check_out_date,
+    $sql = "SELECT b.id, b.guest_id, b.is_deleted, b.status_code, b.check_in_date, b.check_out_date,
                    b.source_channel, b.booking_type, b.total_amount, b.payment_status,
                    b.adults, b.children, b.babies,
                    g.first_name, g.last_name, g.email, g.phone,
@@ -2814,7 +2849,7 @@ function simple_hotel_crm_rest_ticket_bookings( WP_REST_Request $request ) {
             FROM {$bookings_table} b
             LEFT JOIN {$guests_table} g ON g.id = b.guest_id
             WHERE {$where_sql}
-            ORDER BY b.check_in_date {$sort}, b.id DESC
+            ORDER BY {$order_by}, b.id DESC
             LIMIT %d OFFSET %d";
     $rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $params, [ $per_page, $offset ] ) ), ARRAY_A );
 
@@ -2824,8 +2859,74 @@ function simple_hotel_crm_rest_ticket_bookings( WP_REST_Request $request ) {
         'search'   => $search,
         'page'     => $page,
         'per_page' => $per_page,
+        'sort'     => $sort_by,
+        'order'    => strtolower( $sort_order ),
         'total'    => $total,
-        'pages'    => (int) ceil( $total / $per_page ),
+        'pages'    => $pages,
+    ] );
+}
+
+function simple_hotel_crm_rest_ticket_bookings_bulk( WP_REST_Request $request ) {
+    global $wpdb;
+
+    $action = sanitize_key( (string) $request->get_param( 'action' ) );
+    if ( ! in_array( $action, [ 'cancel', 'confirm', 'trash', 'restore' ], true ) ) {
+        return new WP_Error( 'invalid_action', __( 'Choose a valid bulk action.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+    $raw_ids = $request->get_param( 'booking_ids' );
+    if ( ! is_array( $raw_ids ) ) {
+        return new WP_Error( 'invalid_bookings', __( 'Select one or more bookings.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+    $ids = array_values( array_unique( array_filter( array_map( 'absint', $raw_ids ) ) ) );
+    if ( empty( $ids ) || count( $ids ) > 100 ) {
+        return new WP_Error( 'invalid_bookings', __( 'Select between 1 and 100 bookings.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+
+    $bookings_table = simple_hotel_crm_bookings_table();
+    $updated = 0;
+    $skipped = [];
+    foreach ( $ids as $booking_id ) {
+        $booking = $wpdb->get_row( $wpdb->prepare(
+            "SELECT id, status_code, is_deleted, internal_notes FROM {$bookings_table} WHERE id = %d LIMIT 1",
+            $booking_id
+        ), ARRAY_A );
+        if ( ! $booking || false !== strpos( (string) $booking['internal_notes'], '[MERGED_ARCHIVE]' ) ) {
+            $skipped[] = $booking_id;
+            continue;
+        }
+
+        $changes = null;
+        if ( 'cancel' === $action && empty( $booking['is_deleted'] ) && ! in_array( $booking['status_code'], [ 'cancelled', 'no_show' ], true ) ) {
+            $changes = [ 'status_code' => 'cancelled' ];
+        } elseif ( 'confirm' === $action && empty( $booking['is_deleted'] ) && 'confirmed' !== $booking['status_code'] ) {
+            $changes = [ 'status_code' => 'confirmed' ];
+        } elseif ( 'trash' === $action && empty( $booking['is_deleted'] ) ) {
+            $changes = [ 'is_deleted' => 1, 'deleted_at' => current_time( 'mysql' ) ];
+        } elseif ( 'restore' === $action && ! empty( $booking['is_deleted'] ) ) {
+            $changes = [ 'is_deleted' => 0, 'deleted_at' => null ];
+        }
+        if ( null === $changes ) {
+            $skipped[] = $booking_id;
+            continue;
+        }
+        $changes['updated_at'] = current_time( 'mysql' );
+        $result = $wpdb->update( $bookings_table, $changes, [ 'id' => $booking_id ] );
+        if ( false === $result ) {
+            $skipped[] = $booking_id;
+            continue;
+        }
+        $updated++;
+        simple_hotel_crm_ics_export_on_booking_change( $booking_id );
+    }
+
+    if ( $updated > 0 ) {
+        simple_hotel_crm_clear_calendar_cache();
+    }
+    return rest_ensure_response( [
+        'success' => true,
+        'action'  => $action,
+        'updated' => $updated,
+        'skipped' => $skipped,
     ] );
 }
 
@@ -2839,8 +2940,9 @@ function simple_hotel_crm_rest_ticket_booking_detail( WP_REST_Request $request )
     }
     $bookings_table = simple_hotel_crm_bookings_table();
     $guests_table = simple_hotel_crm_guests_table();
+    $is_deleted = empty( $request->get_param( 'include_trash' ) ) ? 0 : 1;
     $booking = $wpdb->get_row( $wpdb->prepare(
-        "SELECT b.id, b.guest_id, b.status_code, b.check_in_date, b.check_out_date,
+        "SELECT b.id, b.guest_id, b.is_deleted, b.status_code, b.check_in_date, b.check_out_date,
                 b.source_channel, b.booking_type, b.total_amount, b.payment_status,
                 b.adults, b.children, b.babies, b.contacted_date, b.booking_note,
                 b.internal_notes,
@@ -2848,10 +2950,11 @@ function simple_hotel_crm_rest_ticket_booking_detail( WP_REST_Request $request )
                 g.address_line_2, g.city, g.postcode, g.country, g.notes AS guest_notes
          FROM {$bookings_table} b
          LEFT JOIN {$guests_table} g ON g.id = b.guest_id
-         WHERE b.id = %d AND b.is_deleted = 0
+         WHERE b.id = %d AND b.is_deleted = %d
            AND (b.internal_notes IS NULL OR b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%')
          LIMIT 1",
-        $booking_id
+        $booking_id,
+        $is_deleted
     ), ARRAY_A );
     if ( ! $booking ) {
         return new WP_Error( 'booking_not_found', __( 'Booking not found.', 'simple-hotel-crm' ), [ 'status' => 404 ] );
@@ -2885,12 +2988,32 @@ function simple_hotel_crm_rest_ticket_guests( WP_REST_Request $request ) {
     $guests_table = simple_hotel_crm_guests_table();
     $bookings_table = simple_hotel_crm_bookings_table();
     $today = current_time( 'Y-m-d' );
+    $scope = sanitize_key( (string) ( $request->get_param( 'scope' ) ?: 'active' ) );
+    if ( ! in_array( $scope, [ 'active', 'trash' ], true ) ) {
+        $scope = 'active';
+    }
     $search = trim( sanitize_text_field( (string) $request->get_param( 'q' ) ) );
     $page = max( 1, absint( $request->get_param( 'page' ) ?: 1 ) );
-    $per_page = min( 50, max( 10, absint( $request->get_param( 'per_page' ) ?: 20 ) ) );
+    $per_page = min( 100, max( 10, absint( $request->get_param( 'per_page' ) ?: 20 ) ) );
     $offset = ( $page - 1 ) * $per_page;
-    $where = [ 'g.is_deleted = 0' ];
-    $params = [];
+    $sort_by = sanitize_key( (string) ( $request->get_param( 'sort' ) ?: 'name' ) );
+    $sort_order = strtoupper( sanitize_key( (string) ( $request->get_param( 'order' ) ?: 'asc' ) ) );
+    if ( ! in_array( $sort_order, [ 'ASC', 'DESC' ], true ) ) {
+        $sort_order = 'ASC';
+    }
+    $sortable = [
+        'name' => 'g.last_name',
+        'email' => 'g.email',
+        'bookings' => 'booking_count',
+        'last_visit' => 'last_visit',
+        'next_visit' => 'next_visit',
+    ];
+    if ( ! isset( $sortable[ $sort_by ] ) ) {
+        $sort_by = 'name';
+    }
+    $order_by = $sortable[ $sort_by ];
+    $where = [ 'g.is_deleted = %d' ];
+    $params = [ 'trash' === $scope ? 1 : 0 ];
     if ( '' !== $search ) {
         $like = '%' . $wpdb->esc_like( $search ) . '%';
         $where[] = "(CAST(g.id AS CHAR) LIKE %s OR g.first_name LIKE %s OR g.last_name LIKE %s OR CONCAT(g.first_name, ' ', g.last_name) LIKE %s OR g.email LIKE %s OR g.phone LIKE %s OR g.city LIKE %s OR g.country LIKE %s)";
@@ -2903,7 +3026,10 @@ function simple_hotel_crm_rest_ticket_guests( WP_REST_Request $request ) {
         "SELECT COUNT(*) FROM {$guests_table} g WHERE {$where_sql}",
         $params
     ) );
-    $sql = "SELECT g.id, g.first_name, g.last_name, g.email, g.phone, g.city, g.country,
+    $pages = max( 1, (int) ceil( $total / $per_page ) );
+    $page = min( $page, $pages );
+    $offset = ( $page - 1 ) * $per_page;
+    $sql = "SELECT g.id, g.is_deleted, g.first_name, g.last_name, g.email, g.phone, g.city, g.country,
                    (SELECT COUNT(*) FROM {$bookings_table} b
                     WHERE b.guest_id = g.id AND b.is_deleted = 0
                       AND b.status_code NOT IN ('cancelled','no_show')
@@ -2918,7 +3044,7 @@ function simple_hotel_crm_rest_ticket_guests( WP_REST_Request $request ) {
                       AND (b.internal_notes IS NULL OR b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%')) AS next_visit
             FROM {$guests_table} g
             WHERE {$where_sql}
-            ORDER BY g.last_name ASC, g.first_name ASC
+            ORDER BY {$order_by} {$sort_order}, g.last_name ASC, g.first_name ASC
             LIMIT %d OFFSET %d";
     $query_params = array_merge( [ $today, $today ], $params, [ $per_page, $offset ] );
     $rows = $wpdb->get_results( $wpdb->prepare( $sql, $query_params ), ARRAY_A );
@@ -2926,10 +3052,92 @@ function simple_hotel_crm_rest_ticket_guests( WP_REST_Request $request ) {
     return rest_ensure_response( [
         'guests'   => $rows ?: [],
         'search'   => $search,
+        'scope'    => $scope,
         'page'     => $page,
         'per_page' => $per_page,
+        'sort'     => $sort_by,
+        'order'    => strtolower( $sort_order ),
         'total'    => $total,
-        'pages'    => (int) ceil( $total / $per_page ),
+        'pages'    => $pages,
+    ] );
+}
+
+function simple_hotel_crm_rest_ticket_guests_bulk( WP_REST_Request $request ) {
+    global $wpdb;
+
+    $action = sanitize_key( (string) $request->get_param( 'action' ) );
+    if ( ! in_array( $action, [ 'trash', 'restore' ], true ) ) {
+        return new WP_Error( 'invalid_action', __( 'Choose a valid guest bulk action.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+    $raw_ids = $request->get_param( 'guest_ids' );
+    if ( ! is_array( $raw_ids ) ) {
+        return new WP_Error( 'invalid_guests', __( 'Select one or more guests.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+    $ids = array_values( array_unique( array_filter( array_map( 'absint', $raw_ids ) ) ) );
+    if ( empty( $ids ) || count( $ids ) > 100 ) {
+        return new WP_Error( 'invalid_guests', __( 'Select between 1 and 100 guests.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
+    }
+
+    $guests_table = simple_hotel_crm_guests_table();
+    $bookings_table = simple_hotel_crm_bookings_table();
+    $updated = 0;
+    $blocked = [];
+    $skipped = [];
+    foreach ( $ids as $guest_id ) {
+        $guest = $wpdb->get_row( $wpdb->prepare(
+            "SELECT id, is_deleted FROM {$guests_table} WHERE id = %d LIMIT 1",
+            $guest_id
+        ), ARRAY_A );
+        if ( ! $guest ) {
+            $skipped[] = $guest_id;
+            continue;
+        }
+        if ( 'trash' === $action ) {
+            if ( ! empty( $guest['is_deleted'] ) ) {
+                $skipped[] = $guest_id;
+                continue;
+            }
+            $linked_bookings = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$bookings_table} WHERE guest_id = %d AND is_deleted = 0",
+                $guest_id
+            ) );
+            if ( $linked_bookings > 0 ) {
+                $blocked[] = $guest_id;
+                continue;
+            }
+            $result = $wpdb->update(
+                $guests_table,
+                [ 'is_deleted' => 1, 'deleted_at' => current_time( 'mysql' ) ],
+                [ 'id' => $guest_id ],
+                [ '%d', '%s' ],
+                [ '%d' ]
+            );
+        } else {
+            if ( empty( $guest['is_deleted'] ) ) {
+                $skipped[] = $guest_id;
+                continue;
+            }
+            $result = $wpdb->update(
+                $guests_table,
+                [ 'is_deleted' => 0, 'deleted_at' => null ],
+                [ 'id' => $guest_id ],
+                [ '%d', '%s' ],
+                [ '%d' ]
+            );
+        }
+        if ( false === $result ) {
+            $skipped[] = $guest_id;
+        } else {
+            $updated++;
+        }
+    }
+
+    return rest_ensure_response( [
+        'success' => true,
+        'action'  => $action,
+        'updated' => $updated,
+        'blocked' => $blocked,
+        'skipped' => $skipped,
     ] );
 }
 
@@ -2942,11 +3150,13 @@ function simple_hotel_crm_rest_ticket_guest_detail( WP_REST_Request $request ) {
         return new WP_Error( 'invalid_guest', __( 'Invalid guest ID.', 'simple-hotel-crm' ), [ 'status' => 400 ] );
     }
     $guests_table = simple_hotel_crm_guests_table();
+    $is_deleted = empty( $request->get_param( 'include_trash' ) ) ? 0 : 1;
     $guest = $wpdb->get_row( $wpdb->prepare(
-        "SELECT id, first_name, last_name, email, phone, address_line_1, address_line_2,
+        "SELECT id, is_deleted, first_name, last_name, email, phone, address_line_1, address_line_2,
                 city, postcode, country, notes, created_at
-         FROM {$guests_table} WHERE id = %d AND is_deleted = 0 LIMIT 1",
-        $guest_id
+         FROM {$guests_table} WHERE id = %d AND is_deleted = %d LIMIT 1",
+        $guest_id,
+        $is_deleted
     ), ARRAY_A );
     if ( ! $guest ) {
         return new WP_Error( 'guest_not_found', __( 'Guest not found.', 'simple-hotel-crm' ), [ 'status' => 404 ] );
