@@ -209,6 +209,43 @@ input,select{font-family:inherit;font-size:16px}
 .fin-nav button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:18px;font-weight:700;min-height:40px;min-width:44px}
 .fin-nav button:active{background:#2563eb}
 .fin-nav span{font-size:16px;font-weight:700;color:var(--text);flex:1;text-align:center}
+.crm-scroll{flex:1;overflow-y:auto;padding:12px;background:var(--card);-webkit-overflow-scrolling:touch}
+.crm-toolbar{display:flex;gap:8px;align-items:center;position:sticky;top:0;padding:4px 0 10px;background:var(--card);z-index:2}
+.crm-search{flex:1;min-width:120px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:15px}
+.crm-filter{padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;max-width:150px}
+.crm-list{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg)}
+.crm-row{display:grid;grid-template-columns:minmax(150px,1.5fr) minmax(150px,1fr) minmax(110px,.8fr) minmax(90px,.7fr);gap:8px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--border);cursor:pointer;min-width:0}
+.crm-row:last-child{border-bottom:none}
+.crm-row:hover,.crm-row:active{background:var(--hover-bg)}
+.crm-primary{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crm-secondary{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.crm-cell{font-size:12px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crm-row-head{background:var(--hover-bg);cursor:default;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.crm-row-head:hover{background:var(--hover-bg)}
+.crm-status{display:inline-block;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:700;text-transform:capitalize;background:rgba(59,130,246,.18);color:#93c5fd;white-space:nowrap}
+.crm-status.checked_in{background:rgba(34,197,94,.2);color:#4ade80}
+.crm-status.cancelled,.crm-status.no_show{background:rgba(239,68,68,.18);color:#f87171}
+.crm-pagination{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 2px;color:var(--muted);font-size:12px}
+.crm-pagination button{background:var(--border);border:0;border-radius:6px;color:var(--text);padding:7px 12px;min-height:34px}
+.crm-pagination button:disabled{opacity:.4;cursor:default}
+.crm-empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:14px}
+.crm-detail-section{border-bottom:1px solid var(--border);padding:10px 0}
+.crm-detail-section:last-child{border-bottom:none}
+.crm-detail-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
+.crm-detail-line{font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.crm-history-row{padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.crm-history-row:last-child{border-bottom:none}
+@media(max-width:640px){
+  .crm-scroll{padding:9px}
+  .crm-toolbar{flex-wrap:wrap}
+  .crm-search{flex-basis:100%}
+  .crm-filter{max-width:none;flex:1}
+  .crm-row{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px}
+  .crm-row-head{display:none}
+  .crm-row .crm-cell:nth-child(2){grid-column:1;grid-row:2}
+  .crm-row .crm-cell:nth-child(3){grid-column:1;grid-row:3}
+  .crm-row .crm-cell:nth-child(4){grid-column:2;grid-row:1 / span 3;justify-self:end}
+}
 .fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
 .fin-card{border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--bg)}
 .fin-card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
@@ -441,11 +478,11 @@ input,select{font-family:inherit;font-size:16px}
   <div class="header">
     <h1>LGF</h1>
     <button class="view-btn active" data-view="dash" id="view-dash">Dashboard</button>
+    <button class="view-btn" data-view="bookings" id="view-bookings">Bookings</button>
+    <button class="view-btn" data-view="guests" id="view-guests">Guests</button>
     <button class="view-btn" data-view="list" id="view-list">Tickets</button>
     <button class="view-btn" data-view="cal" id="view-cal">Calendar</button>
     <button class="view-btn" data-view="fin" id="view-fin">Finances</button>
-    <button class="view-btn" data-view="pricing" id="view-pricing">Pricing</button>
-    <button class="view-btn" data-view="maint" id="view-maint">Maintenance</button>
     <div class="header-right">
     <button class="hamburger" id="hamburger">☰</button>
     <button class="account-btn" id="account-btn" title="Account">👤</button>
@@ -459,11 +496,11 @@ input,select{font-family:inherit;font-size:16px}
     </div>
     <div class="hm-menu" id="hm-menu">
       <button class="view-btn active" data-view="dash" id="hm-view-dash">📊 Dashboard</button>
+      <button class="view-btn" data-view="bookings" id="hm-view-bookings">🗂 Bookings</button>
+      <button class="view-btn" data-view="guests" id="hm-view-guests">👥 Guests</button>
       <button class="view-btn" data-view="list" id="hm-view-list">📋 Tickets</button>
       <button class="view-btn" data-view="cal" id="hm-view-cal">📅 Calendar</button>
       <button class="view-btn" data-view="fin" id="hm-view-fin">💰 Finances</button>
-      <button class="view-btn" data-view="pricing" id="hm-view-pricing">💲 Pricing</button>
-      <button class="view-btn" data-view="maint" id="hm-view-maint">🔧 Maintenance</button>
       <button class="view-btn" id="hm-qb">＋ Quick booking</button>
       <button class="view-btn" id="hm-cl">⛔ Close rooms</button>
       <button class="view-btn" id="hm-fs">⛶ Fullscreen</button>
@@ -483,6 +520,23 @@ input,select{font-family:inherit;font-size:16px}
       <div class="bookings-row" id="booking-cards"></div>
       <div class="catalog-scroll" id="item-grid"></div>
       <div id="dash-view" class="dash-scroll" style="display:none"></div>
+      <div id="crm-bookings-view" class="crm-scroll" style="display:none">
+        <div class="crm-toolbar">
+          <input type="search" id="crm-booking-search" class="crm-search" placeholder="Search guest, booking, room…" autocomplete="off">
+          <select id="crm-booking-scope" class="crm-filter" aria-label="Booking filter">
+            <option value="upcoming">Upcoming</option><option value="in_house">In house</option><option value="past">Past</option><option value="cancelled">Cancelled</option><option value="all">All bookings</option>
+          </select>
+        </div>
+        <div id="crm-booking-results" class="crm-list"></div>
+        <div id="crm-booking-pagination" class="crm-pagination"></div>
+      </div>
+      <div id="crm-guests-view" class="crm-scroll" style="display:none">
+        <div class="crm-toolbar">
+          <input type="search" id="crm-guest-search" class="crm-search" placeholder="Search name, email, phone…" autocomplete="off">
+        </div>
+        <div id="crm-guest-results" class="crm-list"></div>
+        <div id="crm-guest-pagination" class="crm-pagination"></div>
+      </div>
       <div id="cal-navbar" class="cal-nav" style="display:none">
         <div class="cal-nav-between">
           <button id="cal-prev">‹</button>
@@ -799,6 +853,19 @@ input,select{font-family:inherit;font-size:16px}
   </div>
 </div>
 
+<div class="modal-overlay" id="crm-detail-modal">
+  <div class="modal-box" style="max-width:720px">
+    <button class="modal-close" id="crm-detail-close" aria-label="Close">×</button>
+    <h2 id="crm-detail-heading" style="padding-right:36px"></h2>
+    <div id="crm-detail-error" style="display:none;background:var(--error-bg);color:var(--red);padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:13px"></div>
+    <div id="crm-detail-content"></div>
+    <div class="pay-actions" style="margin-top:14px">
+      <button class="btn-pay-confirm" id="crm-detail-primary" style="display:none">Edit booking</button>
+      <button class="btn-pay-cancel" id="crm-detail-secondary">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
 var REST_BASE = 'https://lagrangefleurie.fr/wp-json/simple-hotel-crm/v1/';
@@ -819,7 +886,7 @@ var state = {
     roomNights: [],
     activeBooking: null,
     tempIdCounter: 0,
-    viewMode: localStorage.getItem('shc_viewMode')||'dash',
+    viewMode: (function(){var m=localStorage.getItem('shc_viewMode')||'dash';return ['dash','bookings','guests','list','cal','fin'].indexOf(m)>=0?m:'dash';})(),
     calDate: '',
     calRooms: [],
     calOccupancy: [],
@@ -839,6 +906,25 @@ var state = {
     upcomingBookings: [],
     rooms: [],
     bookingTypes: [],
+    crmBookings: [],
+    crmBookingTotal: 0,
+    crmBookingPage: 1,
+    crmBookingScope: 'upcoming',
+    crmBookingSearch: '',
+    crmBookingLoading: false,
+    crmBookingLoaded: false,
+    crmBookingRequestKey: '',
+    crmGuests: [],
+    crmGuestTotal: 0,
+    crmGuestPage: 1,
+    crmGuestSearch: '',
+    crmGuestLoading: false,
+    crmGuestLoaded: false,
+    crmGuestRequestKey: '',
+    crmDetailType: '',
+    crmDetailData: null,
+    crmDetailRequestId: 0,
+    crmSearchTimer: null,
 };
 
 /* ---- Auth ---- */
@@ -1278,13 +1364,282 @@ function exportTaxeSejourCsv(){
 }
 
 function setViewMode(mode){
+    if(['dash','bookings','guests','list','cal','fin'].indexOf(mode)<0) mode='dash';
+    var previousMode=state.viewMode;
     state.viewMode=mode;
+    if(mode==='bookings'||mode==='guests'){
+        state.activeBookingId=0;state.activeRoomId=0;state.activeBooking=null;
+        state.ticketItems=[];state.savedItems=[];state.bookingRooms=[];state.roomNights=[];
+    }
     if(mode==='cal') state.calDate='';
     try{localStorage.setItem('shc_viewMode',mode);}catch(e){}
     qsa('.view-btn').forEach(function(b){
         b.classList.toggle('active',b.getAttribute('data-view')===mode);
     });
     render();
+    if(previousMode!==mode&&(mode==='dash'||mode==='list')) fetchData();
+}
+
+function crmStatusText(status){
+    var labels={pending:'Pending',confirmed:'Confirmed',checked_in:'Checked in',checked_out:'Checked out',cancelled:'Cancelled',no_show:'No show'};
+    return labels[status]||status||'Unknown';
+}
+function crmPagination(containerId,page,total,perPage,onPage){
+    var root=document.getElementById(containerId);
+    var pages=Math.max(1,Math.ceil((parseInt(total,10)||0)/(parseInt(perPage,10)||20)));
+    root.innerHTML='';
+    var prev=el('button',{type:'button',onClick:function(){onPage(page-1);}},['‹ Previous']);
+    prev.disabled=page<=1;
+    var label=el('span',{},[(parseInt(total,10)||0)?('Page '+page+' of '+pages+' · '+total+' results'):'0 results']);
+    var next=el('button',{type:'button',onClick:function(){onPage(page+1);}},['Next ›']);
+    next.disabled=page>=pages;
+    root.appendChild(prev);root.appendChild(label);root.appendChild(next);
+}
+function crmLoadBookings(){
+    if(state.crmBookingLoading) return;
+    state.crmBookingLoading=true;
+    var root=document.getElementById('crm-booking-results');
+    if(root) root.innerHTML='<div class="crm-empty">Loading bookings…</div>';
+    var requestKey=state.crmBookingScope+'|'+state.crmBookingSearch+'|'+state.crmBookingPage;
+    state.crmBookingRequestKey=requestKey;
+    var query='ticket-bookings?scope='+encodeURIComponent(state.crmBookingScope)+
+        '&q='+encodeURIComponent(state.crmBookingSearch)+
+        '&page='+state.crmBookingPage+'&per_page=20';
+    apiGet(query).then(function(data){
+        state.crmBookingLoading=false;
+        var latestKey=state.crmBookingScope+'|'+state.crmBookingSearch+'|'+state.crmBookingPage;
+        if(requestKey!==latestKey){crmLoadBookings();return;}
+        state.crmBookings=data.bookings||[];
+        state.crmBookingTotal=parseInt(data.total,10)||0;
+        state.crmBookingLoaded=true;
+        renderCrmBookings();
+    }).catch(function(err){
+        state.crmBookingLoading=false;
+        var latestKey=state.crmBookingScope+'|'+state.crmBookingSearch+'|'+state.crmBookingPage;
+        if(requestKey!==latestKey){crmLoadBookings();return;}
+        if(err.message!=='unauthorized'&&root) root.innerHTML='<div class="crm-empty">'+escapeHtml(err.message||'Could not load bookings.')+'</div>';
+    });
+}
+function renderCrmBookings(){
+    var root=document.getElementById('crm-booking-results');
+    if(!root) return;
+    root.innerHTML='';
+    if(!state.crmBookings.length){
+        root.innerHTML='<div class="crm-empty">No bookings found.</div>';
+    }else{
+        root.appendChild(el('div',{className:'crm-row crm-row-head'},[
+            el('div',{},['Guest / booking']),el('div',{},['Dates']),el('div',{},['Rooms / guests']),el('div',{},['Status / total'])
+        ]));
+        state.crmBookings.forEach(function(b){
+            var guest=((b.first_name||'')+' '+(b.last_name||'')).trim()||'Guest';
+            var roomText=b.room_codes||((parseInt(b.room_count,10)||0)+' rooms');
+            var guests=(parseInt(b.adults,10)||0)+' adults · '+(parseInt(b.children,10)||0)+' children'+((parseInt(b.babies,10)||0)?' · '+b.babies+' babies':'');
+            var total=(parseFloat(b.total_amount)||0).toFixed(2)+' €';
+            var row=el('div',{className:'crm-row',onClick:function(){openCrmBookingDetail(parseInt(b.id,10));}},[
+                el('div',{className:'crm-cell'},[
+                    el('div',{className:'crm-primary'},[guest]),
+                    el('div',{className:'crm-secondary'},['#'+b.id+(b.email?' · '+b.email:'')]),
+                ]),
+                el('div',{className:'crm-cell'},[(b.check_in_date||'')+' → '+(b.check_out_date||'')]),
+                el('div',{className:'crm-cell'},[
+                    el('div',{className:'crm-cell'},[roomText]),
+                    el('div',{className:'crm-secondary'},[guests]),
+                ]),
+                el('div',{className:'crm-cell'},[
+                    el('span',{className:'crm-status '+(b.status_code||'')},[crmStatusText(b.status_code)]),
+                    el('div',{className:'crm-secondary'},[total]),
+                ]),
+            ]);
+            root.appendChild(row);
+        });
+    }
+    crmPagination('crm-booking-pagination',state.crmBookingPage,state.crmBookingTotal,20,function(page){
+        state.crmBookingPage=page;crmLoadBookings();
+    });
+}
+function crmLoadGuests(){
+    if(state.crmGuestLoading) return;
+    state.crmGuestLoading=true;
+    var root=document.getElementById('crm-guest-results');
+    if(root) root.innerHTML='<div class="crm-empty">Loading guests…</div>';
+    var requestKey=state.crmGuestSearch+'|'+state.crmGuestPage;
+    state.crmGuestRequestKey=requestKey;
+    var query='ticket-guests?q='+encodeURIComponent(state.crmGuestSearch)+'&page='+state.crmGuestPage+'&per_page=20';
+    apiGet(query).then(function(data){
+        state.crmGuestLoading=false;
+        var latestKey=state.crmGuestSearch+'|'+state.crmGuestPage;
+        if(requestKey!==latestKey){crmLoadGuests();return;}
+        state.crmGuests=data.guests||[];
+        state.crmGuestTotal=parseInt(data.total,10)||0;
+        state.crmGuestLoaded=true;
+        renderCrmGuests();
+    }).catch(function(err){
+        state.crmGuestLoading=false;
+        var latestKey=state.crmGuestSearch+'|'+state.crmGuestPage;
+        if(requestKey!==latestKey){crmLoadGuests();return;}
+        if(err.message!=='unauthorized'&&root) root.innerHTML='<div class="crm-empty">'+escapeHtml(err.message||'Could not load guests.')+'</div>';
+    });
+}
+function renderCrmGuests(){
+    var root=document.getElementById('crm-guest-results');
+    if(!root) return;
+    root.innerHTML='';
+    if(!state.crmGuests.length){
+        root.innerHTML='<div class="crm-empty">No guests found.</div>';
+    }else{
+        root.appendChild(el('div',{className:'crm-row crm-row-head'},[
+            el('div',{},['Guest']),el('div',{},['Contact']),el('div',{},['Bookings / visits']),el('div',{},[''])
+        ]));
+        state.crmGuests.forEach(function(g){
+            var name=((g.first_name||'')+' '+(g.last_name||'')).trim()||('Guest #'+g.id);
+            var contact=[g.phone,g.email].filter(Boolean).join(' · ')||'No contact details';
+            var visits=(parseInt(g.booking_count,10)||0)+' bookings';
+            if(g.next_visit) visits+=' · Next '+g.next_visit;
+            else if(g.last_visit) visits+=' · Last '+g.last_visit;
+            root.appendChild(el('div',{className:'crm-row',onClick:function(){openCrmGuestDetail(parseInt(g.id,10));}},[
+                el('div',{className:'crm-cell'},[
+                    el('div',{className:'crm-primary'},[name]),
+                    el('div',{className:'crm-secondary'},['Guest #'+g.id+(g.city?' · '+g.city:'')]),
+                ]),
+                el('div',{className:'crm-cell'},[contact]),
+                el('div',{className:'crm-cell'},[visits]),
+                el('div',{className:'crm-cell'},[g.country||'']),
+            ]));
+        });
+    }
+    crmPagination('crm-guest-pagination',state.crmGuestPage,state.crmGuestTotal,20,function(page){
+        state.crmGuestPage=page;crmLoadGuests();
+    });
+}
+function crmDetailSection(title,lines){
+    var section=el('div',{className:'crm-detail-section'});
+    section.appendChild(el('div',{className:'crm-detail-title'},[title]));
+    (lines||[]).forEach(function(line){if(line) section.appendChild(el('div',{className:'crm-detail-line'},[line]));});
+    return section;
+}
+function openCrmDetail(type,title,primaryLabel){
+    state.crmDetailType=type;
+    state.crmDetailData=null;
+    var requestId=++state.crmDetailRequestId;
+    document.getElementById('crm-detail-heading').textContent=title;
+    document.getElementById('crm-detail-content').innerHTML='<div class="crm-empty">Loading…</div>';
+    document.getElementById('crm-detail-error').style.display='none';
+    var primary=document.getElementById('crm-detail-primary');
+    primary.textContent=primaryLabel||'';
+    primary.style.display=primaryLabel?'':'none';
+    document.getElementById('crm-detail-modal').classList.add('active');
+    return requestId;
+}
+function closeCrmDetail(){
+    document.getElementById('crm-detail-modal').classList.remove('active');
+    state.crmDetailRequestId++;
+    state.crmDetailType='';state.crmDetailData=null;
+}
+function openCrmBookingDetail(bookingId){
+    var requestId=openCrmDetail('booking','Booking #'+bookingId,'Edit booking');
+    apiGet('ticket-booking/'+bookingId).then(function(data){
+        if(requestId!==state.crmDetailRequestId) return;
+        var b=data.booking;
+        if(!b) throw new Error('Booking not found.');
+        state.crmDetailData=b;
+        var guest=((b.first_name||'')+' '+(b.last_name||'')).trim()||'Guest';
+        var content=document.getElementById('crm-detail-content');
+        content.innerHTML='';
+        content.appendChild(crmDetailSection('Guest',[
+            guest,
+            b.email?('✉ '+b.email):'',b.phone?('☎ '+b.phone):'',
+            [b.address_line_1,b.address_line_2,b.city,b.postcode,b.country].filter(Boolean).join(', ')
+        ]));
+        content.appendChild(crmDetailSection('Stay',[
+            (b.check_in_date||'')+' → '+(b.check_out_date||''),
+            crmStatusText(b.status_code)+' · '+(b.source_channel||'direct'),
+            (parseInt(b.adults,10)||0)+' adults · '+(parseInt(b.children,10)||0)+' children · '+(parseInt(b.babies,10)||0)+' babies',
+            'Total '+(parseFloat(b.total_amount)||0).toFixed(2)+' €'
+        ]));
+        var rooms=el('div',{className:'crm-detail-section'});
+        rooms.appendChild(el('div',{className:'crm-detail-title'},['Rooms']));
+        (b.rooms||[]).forEach(function(r){
+            var occupancy=(parseInt(r.adults,10)||0)+' adults · '+(parseInt(r.children,10)||0)+' children · '+(parseInt(r.babies,10)||0)+' babies';
+            rooms.appendChild(el('div',{className:'crm-history-row'},[
+                el('div',{className:'crm-primary'},[(r.room_code||'Room')+(r.room_name?' · '+r.room_name:'')]),
+                el('div',{className:'crm-secondary'},[occupancy+' · '+(parseFloat(r.total_amount)||0).toFixed(2)+' €']),
+                r.room_note?el('div',{className:'crm-secondary'},['Note: '+r.room_note]):null
+            ]));
+        });
+        if(!(b.rooms||[]).length) rooms.appendChild(el('div',{className:'crm-detail-line'},['No rooms assigned.']));
+        content.appendChild(rooms);
+        if(b.booking_note||b.internal_notes) content.appendChild(crmDetailSection('Notes',[b.booking_note,b.internal_notes]));
+    }).catch(function(err){
+        if(requestId!==state.crmDetailRequestId) return;
+        if(err.message!=='unauthorized'){
+            var e=document.getElementById('crm-detail-error');e.textContent=err.message||'Could not load booking.';e.style.display='block';
+        }
+    });
+}
+function openCrmGuestDetail(guestId){
+    var requestId=openCrmDetail('guest','Guest #'+guestId,'New booking');
+    apiGet('ticket-guest/'+guestId).then(function(data){
+        if(requestId!==state.crmDetailRequestId) return;
+        var g=data.guest;
+        if(!g) throw new Error('Guest not found.');
+        state.crmDetailData=g;
+        document.getElementById('crm-detail-heading').textContent=((g.first_name||'')+' '+(g.last_name||'')).trim()||('Guest #'+guestId);
+        var content=document.getElementById('crm-detail-content');
+        content.innerHTML='';
+        content.appendChild(crmDetailSection('Contact',[
+            g.email?('✉ '+g.email):'',g.phone?('☎ '+g.phone):'',
+            [g.address_line_1,g.address_line_2,g.city,g.postcode,g.country].filter(Boolean).join(', ')
+        ]));
+        if(g.notes) content.appendChild(crmDetailSection('Guest notes',[g.notes]));
+        var preferences=el('div',{className:'crm-detail-section'});
+        preferences.appendChild(el('div',{className:'crm-detail-title'},['Preferences']));
+        if((g.preferences||[]).length){
+            g.preferences.forEach(function(p){preferences.appendChild(el('div',{className:'crm-detail-line'},[(p.pref_key||'Preference')+': '+(p.pref_value||'')]));});
+        }else preferences.appendChild(el('div',{className:'crm-secondary'},['No saved preferences.']));
+        content.appendChild(preferences);
+        var history=el('div',{className:'crm-detail-section'});
+        history.appendChild(el('div',{className:'crm-detail-title'},['Booking history']));
+        if((g.bookings||[]).length){
+            g.bookings.forEach(function(b){
+                history.appendChild(el('div',{className:'crm-history-row',onClick:function(){openCrmBookingDetail(parseInt(b.id,10));}},[
+                    el('div',{className:'crm-primary'},['#'+b.id+' · '+(b.check_in_date||'')+' → '+(b.check_out_date||'')]),
+                    el('div',{className:'crm-secondary'},[(b.room_codes||'No room')+' · '+crmStatusText(b.status_code)+' · '+(parseFloat(b.total_amount)||0).toFixed(2)+' €'])
+                ]));
+            });
+        }else history.appendChild(el('div',{className:'crm-secondary'},['No bookings yet.']));
+        content.appendChild(history);
+    }).catch(function(err){
+        if(requestId!==state.crmDetailRequestId) return;
+        if(err.message!=='unauthorized'){
+            var e=document.getElementById('crm-detail-error');e.textContent=err.message||'Could not load guest.';e.style.display='block';
+        }
+    });
+}
+function editCrmBooking(){
+    var b=state.crmDetailData;
+    if(state.crmDetailType!=='booking'||!b) return;
+    closeCrmDetail();
+    state.activeBookingId=parseInt(b.id,10)||0;
+    state.activeBooking=b;
+    state._beFromCalendar=false;
+    state._beFromCrm=true;
+    openEditModal();
+}
+function quickBookCrmGuest(){
+    var g=state.crmDetailData;
+    if(state.crmDetailType!=='guest'||!g) return;
+    closeCrmDetail();
+    state._qbFromCalendar=false;
+    openQuickBookingModal(0,state.date||today());
+    state._qbFromCrm=true;
+    _qbGuestId=parseInt(g.id,10)||0;
+    document.getElementById('qb-first-name').value=g.first_name||'';
+    document.getElementById('qb-last-name').value=g.last_name||'';
+    document.getElementById('qb-phone').value=g.phone||'';
+    document.getElementById('qb-email').value=g.email||'';
+    document.getElementById('qb-city').value=g.city||'';
+    document.getElementById('qb-country').value=g.country||'';
+    document.getElementById('qb-guest-search').value=((g.first_name||'')+' '+(g.last_name||'')).trim();
 }
 
 /* ---- Dashboard ---- */
@@ -1549,59 +1904,13 @@ function renderDashboard(){
     breadBody.appendChild(breadScroll);
     breadBody.appendChild(el('div',{className:'bd-scroll-hint'},['\u2190 Scroll for more days \u2192']));
 
-    // Card 4: Room turnover and readiness
+    // Finish dashboard cards.
     root.appendChild(grid);
-
-    var turnoverCard=el('div',{className:'dash-card'});
-    turnoverCard.appendChild(el('div',{className:'dash-card-header'},['Room Turnover']));
-    var turnoverBody=el('div',{className:'dash-card-body'});
-    var arrivalsByRoom={},departuresByRoom={};
-    state.bookings.forEach(function(b){
-        var roomsForBooking=state.roomsByBooking[b.id]||[];
-        roomsForBooking.forEach(function(r){
-            var rid=String(r.room_id);
-            if(b.check_in_date===todayStr){if(!arrivalsByRoom[rid]) arrivalsByRoom[rid]=[];arrivalsByRoom[rid].push(guestName(b));}
-            if(b.check_out_date===todayStr){if(!departuresByRoom[rid]) departuresByRoom[rid]=[];departuresByRoom[rid].push(guestName(b));}
-        });
-    });
-    var turnRooms=(state.rooms||[]).filter(function(room){
-        var status=room.room_status||'clean';
-        return arrivalsByRoom[String(room.id)]||departuresByRoom[String(room.id)]||status!=='clean';
-    });
-    var arrivalCount=Object.keys(arrivalsByRoom).length;
-    var departureCount=Object.keys(departuresByRoom).length;
-    var turnCount=turnRooms.filter(function(room){return arrivalsByRoom[String(room.id)]&&departuresByRoom[String(room.id)];}).length;
-    function countLabel(count,singular,plural){return count+' '+(count===1?singular:plural);}
-    turnoverBody.appendChild(el('div',{className:'dash-turnover-summary'},[
-        countLabel(departureCount,'check-out room','check-out rooms')+' · '+
-        countLabel(arrivalCount,'arrival room','arrival rooms')+' · '+
-        countLabel(turnCount,'same-day turn','same-day turns')
-    ]));
-    if(!turnRooms.length){
-        turnoverBody.appendChild(el('div',{className:'dash-empty'},['No room changes today. All rooms marked clean.']));
-    }else{
-        var turnoverList=el('div',{className:'dash-turnover-list'});
-        turnRooms.forEach(function(room){
-            var rid=String(room.id);
-            var status=room.room_status||'clean';
-            var statusLabels={clean:'Clean',dirty:'Needs cleaning',maintenance:'Maintenance'};
-            var turnoverRow=el('div',{className:'dash-turnover-row'},[
-                el('div',{className:'dash-turnover-room'},[room.room_code||room.room_name||'Room']),
-                el('span',{className:'dash-room-status dash-room-status-'+status},[statusLabels[status]||status]),
-                el('div',{className:'dash-turnover-events'},[
-                    departuresByRoom[rid]?el('div',{className:'dash-turnover-event'},['Out: '+departuresByRoom[rid].join(', ')]):null,
-                    arrivalsByRoom[rid]?el('div',{className:'dash-turnover-event'},['In: '+arrivalsByRoom[rid].join(', ')]):null,
-                ]),
-            ]);
-            turnoverList.appendChild(turnoverRow);
-        });
-        turnoverBody.appendChild(turnoverList);
-    }
-    turnoverCard.appendChild(turnoverBody);
-    grid.appendChild(turnoverCard);
 }
 
 function render(){
+    document.getElementById('crm-bookings-view').style.display='none';
+    document.getElementById('crm-guests-view').style.display='none';
     if(state.viewMode==='dash'){
         document.getElementById('booking-cards').style.display='none';
         document.getElementById('item-grid').style.display='none';
@@ -1638,6 +1947,35 @@ function render(){
         document.getElementById('pricing-view').style.display='none';
         document.getElementById('dash-view').style.display='none';
         loadCalendar();
+    }else if(state.viewMode==='bookings'){
+        document.getElementById('booking-cards').style.display='none';
+        document.getElementById('item-grid').style.display='none';
+        document.getElementById('cal-view').style.display='none';
+        document.getElementById('cal-navbar').style.display=document.getElementById('cal-months').style.display='none';
+        document.getElementById('list-date-bar').style.display='none';
+        document.getElementById('maint-view').style.display='none';
+        document.getElementById('fin-view').style.display='none';
+        document.getElementById('pricing-view').style.display='none';
+        document.getElementById('dash-view').style.display='none';
+        document.getElementById('crm-bookings-view').style.display='block';
+        document.getElementById('crm-booking-search').value=state.crmBookingSearch;
+        document.getElementById('crm-booking-scope').value=state.crmBookingScope;
+        if(state.crmBookingLoaded) renderCrmBookings();
+        else if(!state.crmBookingLoading) crmLoadBookings();
+    }else if(state.viewMode==='guests'){
+        document.getElementById('booking-cards').style.display='none';
+        document.getElementById('item-grid').style.display='none';
+        document.getElementById('cal-view').style.display='none';
+        document.getElementById('cal-navbar').style.display=document.getElementById('cal-months').style.display='none';
+        document.getElementById('list-date-bar').style.display='none';
+        document.getElementById('maint-view').style.display='none';
+        document.getElementById('fin-view').style.display='none';
+        document.getElementById('pricing-view').style.display='none';
+        document.getElementById('dash-view').style.display='none';
+        document.getElementById('crm-guests-view').style.display='block';
+        document.getElementById('crm-guest-search').value=state.crmGuestSearch;
+        if(state.crmGuestLoaded) renderCrmGuests();
+        else if(!state.crmGuestLoading) crmLoadGuests();
     }else if(state.viewMode==='maint'){
         document.getElementById('booking-cards').style.display='none';
         document.getElementById('item-grid').style.display='none';
@@ -1746,6 +2084,8 @@ function renderBookings(){
 function doCheckout(bookingId){
     if(!confirm('Check out booking #'+bookingId+'?')) return;
     apiPost('ticket-departure',{booking_id:bookingId}).then(function(){
+        state.crmBookingLoaded=false;
+        state.crmGuestLoaded=false;
         for(var i=0;i<state.bookings.length;i++){
             if(parseInt(state.bookings[i].id,10)===bookingId){
                 state.bookings[i].status_code='checked_out';
@@ -3232,6 +3572,8 @@ function submitCheckin(){
         booking_id:_ciBookingId,
         guest:guestData,
     }).then(function(data){
+        state.crmBookingLoaded=false;
+        state.crmGuestLoaded=false;
         for(var i=0;i<state.bookings.length;i++){
             if(parseInt(state.bookings[i].id,10)===_ciBookingId){
                 state.bookings[i].status_code='checked_in';
@@ -3557,6 +3899,7 @@ function qbLoadRooms(){
     });
 }
 function openQuickBookingModal(roomId,date){
+    state._qbFromCrm=false;
     document.getElementById('qb-error').style.display='none';
     _qbGuestId=0;
     document.getElementById('qb-guest-search').value='';
@@ -3676,6 +4019,10 @@ function submitQuickBooking(){
     }
 
     apiPost('ticket-create-booking',payload).then(function(data){
+        var fromCrm=!!state._qbFromCrm;
+        state._qbFromCrm=false;
+        state.crmBookingLoaded=false;
+        state.crmGuestLoaded=false;
         closeQbModal();
         state.date=checkIn;
         document.getElementById('ticket-date').value=checkIn;
@@ -3686,6 +4033,10 @@ function submitQuickBooking(){
         if(state._qbFromCalendar){
             state._qbFromCalendar=false;
             loadCalendar();
+        }else if(fromCrm){
+            state.crmBookingLoaded=false;
+            state.crmGuestLoaded=false;
+            fetchData();
         }else fetchData().then(function(){
             for(var i=0;i<state.bookings.length;i++){
                 if(parseInt(state.bookings[i].id,10)===data.booking_id){
@@ -4120,13 +4471,21 @@ function submitEditBooking(){
             return apiPost('ticket-room-day-notes',{booking_id:_beBookingId,notes:updatedNotes});
         }
     }).then(function(){
+        var fromCrm=!!state._beFromCrm;
         closeEditModal();
+        state.crmBookingLoaded=false;
+        state.crmGuestLoaded=false;
         if(state._beFromCalendar){
             state.activeBookingId=0;state.activeRoomId=0;state.activeBooking=null;
             state.ticketItems=[];state.savedItems=[];
             state.bookingRooms=[];state.roomNights=[];
         }
         state._beFromCalendar=false;
+        state._beFromCrm=false;
+        if(fromCrm){
+            state.activeBookingId=0;state.activeRoomId=0;state.activeBooking=null;
+            state.ticketItems=[];state.savedItems=[];state.bookingRooms=[];state.roomNights=[];
+        }
         fetchData();
     }).catch(function(err){
         if(err.message!=='unauthorized'){
@@ -4222,20 +4581,42 @@ document.addEventListener('DOMContentLoaded',function(){
     // View switching
     document.getElementById('hamburger').addEventListener('click',function(e){e.stopPropagation();toggleHm();});
     document.getElementById('view-dash').addEventListener('click',function(){closeHm();setViewMode('dash');});
+    document.getElementById('view-bookings').addEventListener('click',function(){closeHm();setViewMode('bookings');});
+    document.getElementById('view-guests').addEventListener('click',function(){closeHm();setViewMode('guests');});
     document.getElementById('view-list').addEventListener('click',function(){closeHm();setViewMode('list');});
     document.getElementById('view-cal').addEventListener('click',function(){closeHm();setViewMode('cal');});
-    document.getElementById('view-maint').addEventListener('click',function(){closeHm();setViewMode('maint');});
     document.getElementById('view-fin').addEventListener('click',function(){closeHm();setViewMode('fin');});
-    document.getElementById('view-pricing').addEventListener('click',function(){closeHm();setViewMode('pricing');});
     document.getElementById('hm-view-dash').addEventListener('click',function(){closeHm();setViewMode('dash');});
+    document.getElementById('hm-view-bookings').addEventListener('click',function(){closeHm();setViewMode('bookings');});
+    document.getElementById('hm-view-guests').addEventListener('click',function(){closeHm();setViewMode('guests');});
     document.getElementById('hm-view-list').addEventListener('click',function(){closeHm();setViewMode('list');});
     document.getElementById('hm-view-cal').addEventListener('click',function(){closeHm();setViewMode('cal');});
-    document.getElementById('hm-view-maint').addEventListener('click',function(){closeHm();setViewMode('maint');});
     document.getElementById('hm-view-fin').addEventListener('click',function(){closeHm();setViewMode('fin');});
-    document.getElementById('hm-view-pricing').addEventListener('click',function(){closeHm();setViewMode('pricing');});
     document.getElementById('hm-qb').addEventListener('click',function(){closeHm();state._qbFromCalendar=false;openQuickBookingModal();});
     document.getElementById('hm-cl').addEventListener('click',function(){closeHm();openClosureModal();});
     document.getElementById('hm-fs').addEventListener('click',function(){closeHm();toggleFullscreen();});
+
+    // CRM lists and detail views
+    document.getElementById('crm-booking-search').addEventListener('input',function(){
+        state.crmBookingSearch=this.value.trim();state.crmBookingPage=1;state.crmBookingLoaded=false;
+        clearTimeout(state.crmSearchTimer);
+        state.crmSearchTimer=setTimeout(crmLoadBookings,250);
+    });
+    document.getElementById('crm-booking-scope').addEventListener('change',function(){
+        state.crmBookingScope=this.value;state.crmBookingPage=1;state.crmBookingLoaded=false;crmLoadBookings();
+    });
+    document.getElementById('crm-guest-search').addEventListener('input',function(){
+        state.crmGuestSearch=this.value.trim();state.crmGuestPage=1;state.crmGuestLoaded=false;
+        clearTimeout(state.crmSearchTimer);
+        state.crmSearchTimer=setTimeout(crmLoadGuests,250);
+    });
+    document.getElementById('crm-detail-close').addEventListener('click',closeCrmDetail);
+    document.getElementById('crm-detail-secondary').addEventListener('click',closeCrmDetail);
+    document.getElementById('crm-detail-primary').addEventListener('click',function(){
+        if(state.crmDetailType==='booking') editCrmBooking();
+        else if(state.crmDetailType==='guest') quickBookCrmGuest();
+    });
+    document.getElementById('crm-detail-modal').addEventListener('click',function(e){if(e.target===this) closeCrmDetail();});
 
     // List date bar
     document.getElementById('ticket-date').addEventListener('change',function(){
@@ -4384,7 +4765,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
     // Booking edit
     var beLines=document.getElementById('be-room-lines');
-    document.getElementById('ticket-edit-btn').addEventListener('click',function(){state._beFromCalendar=false;openEditModal();});
+    document.getElementById('ticket-edit-btn').addEventListener('click',function(){state._beFromCalendar=false;state._beFromCrm=false;openEditModal();});
     document.getElementById('be-confirm').addEventListener('click',function(){submitEditBooking();});
     document.getElementById('be-check-in').addEventListener('change',beDatesChanged);
     document.getElementById('be-check-out').addEventListener('change',beDatesChanged);
