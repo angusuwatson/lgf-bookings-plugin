@@ -1263,7 +1263,6 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
 
     $week_start = date( 'Y-m-d', strtotime( $date . ' -1 day' ) );
     $week_end = date( 'Y-m-d', strtotime( $date . ' +7 days' ) );
-    $upcoming_end = date( 'Y-m-d', strtotime( $date . ' +7 days' ) );
 
     $has_room_status = simple_hotel_crm_table_has_column( $rooms_table, 'room_status' );
     $rooms = $wpdb->get_results( "
@@ -1292,28 +1291,6 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
         ORDER BY brn.stay_date ASC, r.sort_order ASC
     ", $week_start, $week_end ), ARRAY_A );
 
-    $upcoming_bookings = $wpdb->get_results( $wpdb->prepare( "
-        SELECT b.id AS booking_id, b.status_code, b.check_in_date, b.check_out_date,
-               b.source_channel,
-               COALESCE(br.adults, b.adults, 0) AS adults,
-               COALESCE(br.children, b.children, 0) AS children,
-               COALESCE(br.babies, b.babies, 0) AS babies,
-               r.id AS room_id, r.room_code,
-               g.first_name, g.last_name
-        FROM {$bookings_table} b
-        JOIN {$booking_rooms_table} br ON br.booking_id = b.id
-        JOIN {$rooms_table} r ON r.id = br.room_id
-        JOIN {$guests_table} g ON g.id = b.guest_id
-        WHERE b.is_deleted = 0
-          AND (b.internal_notes IS NULL OR b.internal_notes NOT LIKE '%[MERGED_ARCHIVE]%')
-          AND b.status_code IN ('confirmed', 'checked_in')
-          AND (
-              (b.check_in_date >= %s AND b.check_in_date < %s)
-              OR (b.check_out_date >= %s AND b.check_out_date < %s)
-          )
-        ORDER BY LEAST(b.check_in_date, b.check_out_date) ASC, r.sort_order ASC
-    ", $date, $upcoming_end, $date, $upcoming_end ), ARRAY_A );
-
     $booking_types_table = simple_hotel_crm_booking_types_table();
     $booking_types = $wpdb->get_results( "SELECT id, type_key, type_label FROM {$booking_types_table} ORDER BY sort_order ASC", ARRAY_A );
 
@@ -1326,7 +1303,6 @@ function simple_hotel_crm_rest_ticket_data( WP_REST_Request $request ) {
         'room_nights'      => $room_nights,
         'daily_notes'      => $daily_notes,
         'occupancy'        => $occupancy,
-        'upcoming_bookings' => $upcoming_bookings,
         'rooms'            => $rooms,
         'booking_types'    => $booking_types,
     ] );

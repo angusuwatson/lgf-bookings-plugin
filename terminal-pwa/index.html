@@ -506,10 +506,10 @@ input,select{font-family:inherit;font-size:16px}
   <div class="header">
     <h1>LGF</h1>
     <button class="view-btn active" data-view="dash" id="view-dash">Dashboard</button>
+    <button class="view-btn" data-view="cal" id="view-cal">Calendar</button>
     <button class="view-btn" data-view="bookings" id="view-bookings">Bookings</button>
     <button class="view-btn" data-view="guests" id="view-guests">Guests</button>
     <button class="view-btn" data-view="list" id="view-list">Tickets</button>
-    <button class="view-btn" data-view="cal" id="view-cal">Calendar</button>
     <button class="view-btn" data-view="fin" id="view-fin">Finances</button>
     <div class="header-right">
     <button class="hamburger" id="hamburger">☰</button>
@@ -524,10 +524,10 @@ input,select{font-family:inherit;font-size:16px}
     </div>
     <div class="hm-menu" id="hm-menu">
       <button class="view-btn active" data-view="dash" id="hm-view-dash">📊 Dashboard</button>
+      <button class="view-btn" data-view="cal" id="hm-view-cal">📅 Calendar</button>
       <button class="view-btn" data-view="bookings" id="hm-view-bookings">🗂 Bookings</button>
       <button class="view-btn" data-view="guests" id="hm-view-guests">👥 Guests</button>
       <button class="view-btn" data-view="list" id="hm-view-list">📋 Tickets</button>
-      <button class="view-btn" data-view="cal" id="hm-view-cal">📅 Calendar</button>
       <button class="view-btn" data-view="fin" id="hm-view-fin">💰 Finances</button>
       <button class="view-btn" id="hm-qb">＋ Quick booking</button>
       <button class="view-btn" id="hm-cl">⛔ Close rooms</button>
@@ -954,7 +954,6 @@ var state = {
     pricingTab: 'calendar',
     maintNotes: [],
     occupancy: [],
-    upcomingBookings: [],
     rooms: [],
     bookingTypes: [],
     crmBookings: [],
@@ -1190,7 +1189,6 @@ function fetchData(){
         if(data.catalog) state.catalog=data.catalog;
         state.roomsByBooking=data.rooms_by_booking||{};
         state.occupancy=data.occupancy||[];
-        state.upcomingBookings=data.upcoming_bookings||[];
         state.rooms=data.rooms||[];
         state.bookingTypes=data.booking_types||[];
         if(state.activeBookingId>0){
@@ -1859,11 +1857,6 @@ function renderDashboard(){
         if(b.check_in_date===todayStr) return {text:'In',cls:'label-in'};
         return {text:'Stay',cls:'label-stay'};
     }
-    function channelBadge(b){
-        if(!b.source_channel||b.source_channel==='direct') return null;
-        return el('span',{className:'ch-badge'},[b.source_channel]);
-    }
-
     root.innerHTML='';
     var grid=el('div',{className:'dash-grid'});
 
@@ -1966,77 +1959,12 @@ function renderDashboard(){
     occCard.appendChild(occBody);
     grid.appendChild(occCard);
 
-    // Card 2: Upcoming arrivals and departures
-    var upcomingCard=el('div',{className:'dash-card'});
-    upcomingCard.appendChild(el('div',{className:'dash-card-header'},['Upcoming Arrivals & Departures']));
-    var upcomingBody=el('div',{className:'dash-card-body'});
-    var upcomingEvents=[];
-    var upcomingEnd=new Date(todayStr+'T12:00:00');
-    upcomingEnd.setDate(upcomingEnd.getDate()+7);
-    var upcomingEndStr=upcomingEnd.getFullYear()+'-'+String(upcomingEnd.getMonth()+1).padStart(2,'0')+'-'+String(upcomingEnd.getDate()).padStart(2,'0');
-    (state.upcomingBookings||[]).forEach(function(b){
-        var name=guestName(b);
-        var guestCount=(parseInt(b.adults,10)||0)+(parseInt(b.children,10)||0)+(parseInt(b.babies,10)||0);
-        var guestLabel=guestCount?guestCount+' guests':'';
-        if(b.check_in_date>=todayStr&&b.check_in_date<upcomingEndStr){
-            upcomingEvents.push({date:b.check_in_date,type:'In',bookingId:parseInt(b.booking_id,10),name:name,room:b.room_code||'',guests:guestLabel,channel:(b.source_channel||'').replace(/_/g,' ')});
-        }
-        if(b.check_out_date>=todayStr&&b.check_out_date<upcomingEndStr){
-            upcomingEvents.push({date:b.check_out_date,type:'Out',bookingId:parseInt(b.booking_id,10),name:name,room:b.room_code||'',guests:guestLabel,channel:(b.source_channel||'').replace(/_/g,' ')});
-        }
-    });
-    upcomingEvents.sort(function(a,b){
-        if(a.date!==b.date) return a.date<b.date?-1:1;
-        if(a.type!==b.type) return a.type==='Out'?-1:1;
-        return a.name.localeCompare(b.name);
-    });
-    function upcomingDateLabel(ds){
-        if(ds===todayStr) return 'Today';
-        var tomorrow=new Date(todayStr+'T12:00:00');
-        tomorrow.setDate(tomorrow.getDate()+1);
-        var tomorrowStr=tomorrow.getFullYear()+'-'+String(tomorrow.getMonth()+1).padStart(2,'0')+'-'+String(tomorrow.getDate()).padStart(2,'0');
-        if(ds===tomorrowStr) return 'Tomorrow';
-        return fmtDate(ds);
-    }
-    if(!upcomingEvents.length){
-        upcomingBody.appendChild(el('div',{className:'dash-empty'},['No arrivals or departures in the next 7 days.']));
-    }else{
-        var movementList=el('div',{className:'dash-movement-list'});
-        var movementDate='';
-        upcomingEvents.forEach(function(event){
-            if(event.date!==movementDate){
-                movementDate=event.date;
-                movementList.appendChild(el('div',{className:'dash-movement-date'},[upcomingDateLabel(event.date)]));
-            }
-            movementList.appendChild(el('div',{
-                className:'dash-movement',
-                onClick:function(){
-                    state.date=event.date;
-                    state.activeBookingId=0;
-                    state.activeBooking=null;
-                    document.getElementById('ticket-date').value=event.date;
-                    setViewMode('list');
-                    fetchData().then(function(){selectBooking(event.bookingId);});
-                }
-            },[
-                el('span',{className:'dash-movement-type '+(event.type==='In'?'dash-movement-in':'dash-movement-out')},[event.type]),
-                el('span',{className:'dash-movement-name'},[event.name]),
-                el('span',{className:'dash-movement-room'},[event.room]),
-                el('span',{className:'dash-movement-guests'},[event.guests]),
-                event.channel&&event.channel!=='direct'?el('span',{className:'dash-movement-channel'},[event.channel]):null,
-            ]));
-        });
-        upcomingBody.appendChild(movementList);
-    }
-    upcomingCard.appendChild(upcomingBody);
-
     // Card 3: Bread Order (matching standalone dashboard)
     var breadCard=el('div',{className:'dash-card'});
     breadCard.appendChild(el('div',{className:'dash-card-header'},['Bread Order']));
     var breadBody=el('div',{className:'dash-card-body'});
     breadCard.appendChild(breadBody);
     grid.appendChild(breadCard);
-    grid.appendChild(upcomingCard);
 
     // Aggregate guest counts per day from occupancy
     var guestByDate={};
