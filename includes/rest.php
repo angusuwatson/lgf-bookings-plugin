@@ -3004,6 +3004,7 @@ function simple_hotel_crm_rest_ticket_guests( WP_REST_Request $request ) {
     $sortable = [
         'name' => 'g.last_name',
         'email' => 'g.email',
+        'phone' => 'g.phone',
         'bookings' => 'booking_count',
         'last_visit' => 'last_visit',
         'next_visit' => 'next_visit',

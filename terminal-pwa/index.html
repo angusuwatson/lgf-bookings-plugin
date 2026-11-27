@@ -212,17 +212,26 @@ input,select{font-family:inherit;font-size:16px}
 .crm-scroll{flex:1;overflow-y:auto;padding:12px;background:var(--card);-webkit-overflow-scrolling:touch}
 .crm-toolbar{display:flex;gap:8px;align-items:center;position:sticky;top:0;padding:4px 0 10px;background:var(--card);z-index:2}
 .crm-search{flex:1;min-width:120px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:15px}
-.crm-filter{padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;max-width:150px}
+.crm-per-page{padding:8px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px}
+.crm-filter-tabs{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;white-space:nowrap;-webkit-overflow-scrolling:touch}
+.crm-filter-tab{border:1px solid var(--border);border-radius:999px;padding:7px 12px;background:var(--bg);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.crm-filter-tab.active{border-color:var(--accent);background:rgba(59,130,246,.2);color:#bfdbfe}
 .crm-bulkbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 0 10px;font-size:12px;color:var(--muted)}
 .crm-bulkbar label{display:flex;align-items:center;gap:6px;white-space:nowrap}
-.crm-bulkbar input[type=checkbox],.crm-row-select{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0}
+.crm-checkbox{appearance:none;-webkit-appearance:none;width:18px;height:18px;border:2px solid var(--muted);border-radius:5px;background:var(--bg);display:inline-grid;place-content:center;cursor:pointer;flex-shrink:0;vertical-align:middle}
+.crm-checkbox:checked{background:var(--accent);border-color:var(--accent)}
+.crm-checkbox:checked:after{content:"";width:8px;height:4px;border:solid #fff;border-width:0 0 2px 2px;transform:rotate(-45deg);margin-top:-2px}
+.crm-checkbox:indeterminate{background:var(--accent);border-color:var(--accent)}
+.crm-checkbox:indeterminate:after{content:"";width:8px;height:2px;background:#fff}
+.crm-checkbox:focus-visible{outline:2px solid #93c5fd;outline-offset:2px}
 .crm-bulkbar select{padding:7px 8px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:13px;min-height:34px}
 .crm-bulkbar button{padding:7px 12px;border:0;border-radius:7px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;min-height:34px}
 .crm-bulkbar button:disabled{opacity:.4;cursor:default}
 .crm-select-cell{display:flex;align-items:center;gap:8px;min-width:0}
 .crm-select-cell>div{min-width:0;flex:1}
 .crm-list{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg)}
-.crm-row{display:grid;grid-template-columns:minmax(150px,1.5fr) minmax(150px,1fr) minmax(110px,.8fr) minmax(90px,.7fr);gap:8px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--border);cursor:pointer;min-width:0}
+.crm-row{display:grid;grid-template-columns:minmax(150px,1.35fr) minmax(140px,1fr) minmax(100px,.85fr) minmax(95px,.7fr) minmax(90px,.7fr);gap:8px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--border);cursor:pointer;min-width:0}
+.crm-row.crm-guest-row{grid-template-columns:minmax(150px,1.3fr) minmax(150px,1.2fr) minmax(120px,1fr) minmax(90px,.75fr) minmax(105px,.9fr) minmax(105px,.9fr)}
 .crm-row:last-child{border-bottom:none}
 .crm-row:hover,.crm-row:active{background:var(--hover-bg)}
 .crm-primary{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -230,6 +239,9 @@ input,select{font-family:inherit;font-size:16px}
 .crm-cell{font-size:12px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .crm-row-head{background:var(--hover-bg);cursor:default;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .crm-row-head:hover{background:var(--hover-bg)}
+.crm-sort-button{display:inline-flex;align-items:center;gap:5px;border:0;background:none;color:var(--muted);font:inherit;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;padding:4px 0;text-align:left;white-space:nowrap}
+.crm-sort-button:hover,.crm-sort-button.active{color:var(--text)}
+.crm-sort-indicator{font-size:10px;color:var(--accent)}
 .crm-status{display:inline-block;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:700;text-transform:capitalize;background:rgba(59,130,246,.18);color:#93c5fd;white-space:nowrap}
 .crm-status.checked_in{background:rgba(34,197,94,.2);color:#4ade80}
 .crm-status.cancelled,.crm-status.no_show{background:rgba(239,68,68,.18);color:#f87171}
@@ -247,13 +259,20 @@ input,select{font-family:inherit;font-size:16px}
   .crm-scroll{padding:9px}
   .crm-toolbar{flex-wrap:wrap}
   .crm-search{flex-basis:100%}
-  .crm-filter{max-width:none;flex:1}
   .crm-bulkbar select{flex:1;min-width:100px}
   .crm-row{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px}
+  .crm-row.crm-guest-row{grid-template-columns:minmax(0,1fr) auto}
   .crm-row-head{display:none}
   .crm-row .crm-cell:nth-child(2){grid-column:1;grid-row:2}
   .crm-row .crm-cell:nth-child(3){grid-column:1;grid-row:3}
   .crm-row .crm-cell:nth-child(4){grid-column:2;grid-row:1 / span 3;justify-self:end}
+  .crm-booking-row .crm-cell:nth-child(4){grid-column:2;grid-row:1;justify-self:end}
+  .crm-booking-row .crm-cell:nth-child(5){grid-column:2;grid-row:2;justify-self:end}
+  .crm-guest-row .crm-cell:nth-child(2){grid-column:1;grid-row:2}
+  .crm-guest-row .crm-cell:nth-child(3){grid-column:1;grid-row:3}
+  .crm-guest-row .crm-cell:nth-child(4){grid-column:2;grid-row:1;justify-self:end}
+  .crm-guest-row .crm-cell:nth-child(5){grid-column:2;grid-row:2;justify-self:end}
+  .crm-guest-row .crm-cell:nth-child(6){grid-column:2;grid-row:3;justify-self:end}
 }
 .fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
 .fin-card{border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--bg)}
@@ -532,17 +551,18 @@ input,select{font-family:inherit;font-size:16px}
       <div id="crm-bookings-view" class="crm-scroll" style="display:none">
         <div class="crm-toolbar">
           <input type="search" id="crm-booking-search" class="crm-search" placeholder="Search guest, booking, room…" autocomplete="off">
-          <select id="crm-booking-scope" class="crm-filter" aria-label="Booking filter">
-            <option value="upcoming">Upcoming</option><option value="in_house">In house</option><option value="past">Past</option><option value="cancelled">Cancelled / no-show</option><option value="all">All active</option><option value="trash">Trash</option>
-          </select>
-          <select id="crm-booking-sort" class="crm-filter" aria-label="Sort bookings">
-            <option value="date">Check-in date</option><option value="guest">Guest name</option><option value="status">Status</option><option value="total">Total</option><option value="rooms">Room count</option><option value="channel">Channel</option>
-          </select>
-          <select id="crm-booking-order" class="crm-filter" aria-label="Sort direction"><option value="asc">Ascending</option><option value="desc">Descending</option></select>
-          <select id="crm-booking-per-page" class="crm-filter" aria-label="Results per page"><option value="10">10 / page</option><option value="20">20 / page</option><option value="50">50 / page</option><option value="100">100 / page</option></select>
+          <select id="crm-booking-per-page" class="crm-per-page" aria-label="Results per page"><option value="10">10 / page</option><option value="20">20 / page</option><option value="50">50 / page</option><option value="100">100 / page</option></select>
+        </div>
+        <div class="crm-filter-tabs" id="crm-booking-tabs" role="tablist" aria-label="Filter bookings">
+          <button type="button" class="crm-filter-tab" data-scope="upcoming">Upcoming</button>
+          <button type="button" class="crm-filter-tab" data-scope="in_house">In house</button>
+          <button type="button" class="crm-filter-tab" data-scope="past">Past</button>
+          <button type="button" class="crm-filter-tab" data-scope="cancelled">Cancelled / no-show</button>
+          <button type="button" class="crm-filter-tab" data-scope="all">All active</button>
+          <button type="button" class="crm-filter-tab" data-scope="trash">Trash</button>
         </div>
         <div class="crm-bulkbar" id="crm-booking-bulkbar">
-          <label><input type="checkbox" id="crm-booking-select-page"> Select page</label>
+          <label><input type="checkbox" class="crm-checkbox" id="crm-booking-select-page"> Select page</label>
           <span id="crm-booking-selected-count">0 selected</span>
           <select id="crm-booking-action" aria-label="Bulk booking action"><option value="">Choose action…</option></select>
           <button type="button" id="crm-booking-apply" disabled>Apply</button>
@@ -553,13 +573,14 @@ input,select{font-family:inherit;font-size:16px}
       <div id="crm-guests-view" class="crm-scroll" style="display:none">
         <div class="crm-toolbar">
           <input type="search" id="crm-guest-search" class="crm-search" placeholder="Search name, email, phone…" autocomplete="off">
-          <select id="crm-guest-scope" class="crm-filter" aria-label="Guest filter"><option value="active">Active guests</option><option value="trash">Trash</option></select>
-          <select id="crm-guest-sort" class="crm-filter" aria-label="Sort guests"><option value="name">Name</option><option value="bookings">Booking count</option><option value="last_visit">Last visit</option><option value="next_visit">Next visit</option><option value="email">Email</option></select>
-          <select id="crm-guest-order" class="crm-filter" aria-label="Sort direction"><option value="asc">Ascending</option><option value="desc">Descending</option></select>
-          <select id="crm-guest-per-page" class="crm-filter" aria-label="Results per page"><option value="10">10 / page</option><option value="20">20 / page</option><option value="50">50 / page</option><option value="100">100 / page</option></select>
+          <select id="crm-guest-per-page" class="crm-per-page" aria-label="Results per page"><option value="10">10 / page</option><option value="20">20 / page</option><option value="50">50 / page</option><option value="100">100 / page</option></select>
+        </div>
+        <div class="crm-filter-tabs" id="crm-guest-tabs" role="tablist" aria-label="Filter guests">
+          <button type="button" class="crm-filter-tab" data-scope="active">Active guests</button>
+          <button type="button" class="crm-filter-tab" data-scope="trash">Trash</button>
         </div>
         <div class="crm-bulkbar" id="crm-guest-bulkbar">
-          <label><input type="checkbox" id="crm-guest-select-page"> Select page</label>
+          <label><input type="checkbox" class="crm-checkbox" id="crm-guest-select-page"> Select page</label>
           <span id="crm-guest-selected-count">0 selected</span>
           <select id="crm-guest-action" aria-label="Bulk guest action"><option value="">Choose action…</option></select>
           <button type="button" id="crm-guest-apply" disabled>Apply</button>
@@ -1423,6 +1444,40 @@ function crmStatusText(status){
     var labels={pending:'Pending',confirmed:'Confirmed',checked_in:'Checked in',checked_out:'Checked out',cancelled:'Cancelled',no_show:'No show'};
     return labels[status]||status||'Unknown';
 }
+function crmRenderFilterTabs(type){
+    var booking=type==='booking';
+    var root=document.getElementById(booking?'crm-booking-tabs':'crm-guest-tabs');
+    var scope=booking?state.crmBookingScope:state.crmGuestScope;
+    if(!root) return;
+    root.querySelectorAll('[data-scope]').forEach(function(tab){
+        var active=tab.getAttribute('data-scope')===scope;
+        tab.classList.toggle('active',active);
+        tab.setAttribute('aria-selected',active?'true':'false');
+    });
+}
+function crmSortButton(type,label,key){
+    var booking=type==='booking';
+    var currentSort=booking?state.crmBookingSort:state.crmGuestSort;
+    var currentOrder=booking?state.crmBookingOrder:state.crmGuestOrder;
+    var active=currentSort===key;
+    var indicator=active?(currentOrder==='asc'?'↑':'↓'):'↕';
+    return el('button',{
+        type:'button',
+        className:'crm-sort-button'+(active?' active':''),
+        'aria-label':'Sort by '+label+(active?(', '+(currentOrder==='asc'?'ascending':'descending')):''),
+        onClick:function(e){
+            e.stopPropagation();
+            var nextOrder=active?(currentOrder==='asc'?'desc':'asc'):'asc';
+            if(booking){
+                state.crmBookingSort=key;state.crmBookingOrder=nextOrder;state.crmBookingPage=1;
+                state.crmBookingSelected={};state.crmBookingLoaded=false;crmLoadBookings();
+            }else{
+                state.crmGuestSort=key;state.crmGuestOrder=nextOrder;state.crmGuestPage=1;
+                state.crmGuestSelected={};state.crmGuestLoaded=false;crmLoadGuests();
+            }
+        }
+    },[label,el('span',{className:'crm-sort-indicator'},[indicator])]);
+}
 function crmPagination(containerId,page,total,perPage,onPage){
     var root=document.getElementById(containerId);
     var pages=Math.max(1,Math.ceil((parseInt(total,10)||0)/(parseInt(perPage,10)||20)));
@@ -1467,18 +1522,19 @@ function renderCrmBookings(){
     if(!state.crmBookings.length){
         root.innerHTML='<div class="crm-empty">No bookings found.</div>';
     }else{
-        root.appendChild(el('div',{className:'crm-row crm-row-head'},[
+        root.appendChild(el('div',{className:'crm-row crm-row-head crm-booking-row'},[
             el('div',{className:'crm-select-cell'},[
-                el('input',{type:'checkbox',id:'crm-booking-select-page-row','aria-label':'Select all bookings on this page'}),
-                el('div',{},['Guest / booking'])
-            ]),el('div',{},['Dates']),el('div',{},['Rooms / guests']),el('div',{},['Status / total'])
+                el('input',{type:'checkbox',className:'crm-checkbox',id:'crm-booking-select-page-row','aria-label':'Select all bookings on this page'}),
+                crmSortButton('booking','Guest','guest')
+            ]),crmSortButton('booking','Dates','date'),crmSortButton('booking','Rooms','rooms'),
+            crmSortButton('booking','Status','status'),crmSortButton('booking','Total','total')
         ]));
         state.crmBookings.forEach(function(b){
             var guest=((b.first_name||'')+' '+(b.last_name||'')).trim()||'Guest';
             var roomText=b.room_codes||((parseInt(b.room_count,10)||0)+' rooms');
             var guests=(parseInt(b.adults,10)||0)+' adults · '+(parseInt(b.children,10)||0)+' children'+((parseInt(b.babies,10)||0)?' · '+b.babies+' babies':'');
             var total=(parseFloat(b.total_amount)||0).toFixed(2)+' €';
-            var select=el('input',{type:'checkbox',className:'crm-row-select',value:String(b.id),'aria-label':'Select booking '+b.id});
+            var select=el('input',{type:'checkbox',className:'crm-checkbox crm-row-select',value:String(b.id),'aria-label':'Select booking '+b.id});
             select.checked=!!state.crmBookingSelected[String(b.id)];
             select.addEventListener('click',function(e){e.stopPropagation();});
             select.addEventListener('change',function(){
@@ -1486,7 +1542,7 @@ function renderCrmBookings(){
                 else delete state.crmBookingSelected[String(b.id)];
                 crmRenderBulkBar('booking');
             });
-            var row=el('div',{className:'crm-row',onClick:function(){openCrmBookingDetail(parseInt(b.id,10),parseInt(b.is_deleted,10)===1);}},[
+            var row=el('div',{className:'crm-row crm-booking-row',onClick:function(){openCrmBookingDetail(parseInt(b.id,10),parseInt(b.is_deleted,10)===1);}},[
                 el('div',{className:'crm-cell crm-select-cell'},[
                     select,
                     el('div',{},[
@@ -1496,13 +1552,13 @@ function renderCrmBookings(){
                 ]),
                 el('div',{className:'crm-cell'},[(b.check_in_date||'')+' → '+(b.check_out_date||'')]),
                 el('div',{className:'crm-cell'},[
-                    el('div',{className:'crm-cell'},[roomText]),
-                    el('div',{className:'crm-secondary'},[guests]),
+                    el('div',{className:'crm-primary'},[roomText]),
+                    el('div',{className:'crm-secondary'},[guests+' · '+(b.source_channel||'direct')]),
                 ]),
                 el('div',{className:'crm-cell'},[
                     el('span',{className:'crm-status '+(b.status_code||'')},[crmStatusText(b.status_code)]),
-                    el('div',{className:'crm-secondary'},[total]),
                 ]),
+                el('div',{className:'crm-cell'},[total]),
             ]);
             root.appendChild(row);
         });
@@ -1544,19 +1600,16 @@ function renderCrmGuests(){
     if(!state.crmGuests.length){
         root.innerHTML='<div class="crm-empty">No guests found.</div>';
     }else{
-        root.appendChild(el('div',{className:'crm-row crm-row-head'},[
+        root.appendChild(el('div',{className:'crm-row crm-row-head crm-guest-row'},[
             el('div',{className:'crm-select-cell'},[
-                el('input',{type:'checkbox',id:'crm-guest-select-page-row','aria-label':'Select all guests on this page'}),
-                el('div',{},['Guest'])
-            ]),el('div',{},['Contact']),el('div',{},['Bookings / visits']),el('div',{},[''])
+                el('input',{type:'checkbox',className:'crm-checkbox',id:'crm-guest-select-page-row','aria-label':'Select all guests on this page'}),
+                crmSortButton('guest','Guest','name')
+            ]),crmSortButton('guest','Email','email'),crmSortButton('guest','Phone','phone'),
+            crmSortButton('guest','Bookings','bookings'),crmSortButton('guest','Last visit','last_visit'),crmSortButton('guest','Next visit','next_visit')
         ]));
         state.crmGuests.forEach(function(g){
             var name=((g.first_name||'')+' '+(g.last_name||'')).trim()||('Guest #'+g.id);
-            var contact=[g.phone,g.email].filter(Boolean).join(' · ')||'No contact details';
-            var visits=(parseInt(g.booking_count,10)||0)+' bookings';
-            if(g.next_visit) visits+=' · Next '+g.next_visit;
-            else if(g.last_visit) visits+=' · Last '+g.last_visit;
-            var select=el('input',{type:'checkbox',className:'crm-row-select',value:String(g.id),'aria-label':'Select guest '+g.id});
+            var select=el('input',{type:'checkbox',className:'crm-checkbox crm-row-select',value:String(g.id),'aria-label':'Select guest '+g.id});
             select.checked=!!state.crmGuestSelected[String(g.id)];
             select.addEventListener('click',function(e){e.stopPropagation();});
             select.addEventListener('change',function(){
@@ -1564,17 +1617,19 @@ function renderCrmGuests(){
                 else delete state.crmGuestSelected[String(g.id)];
                 crmRenderBulkBar('guest');
             });
-            root.appendChild(el('div',{className:'crm-row',onClick:function(){openCrmGuestDetail(parseInt(g.id,10),parseInt(g.is_deleted,10)===1);}},[
+            root.appendChild(el('div',{className:'crm-row crm-guest-row',onClick:function(){openCrmGuestDetail(parseInt(g.id,10),parseInt(g.is_deleted,10)===1);}},[
                 el('div',{className:'crm-cell crm-select-cell'},[
                     select,
                     el('div',{},[
                         el('div',{className:'crm-primary'},[name]),
-                        el('div',{className:'crm-secondary'},['Guest #'+g.id+(g.city?' · '+g.city:'')]),
+                        el('div',{className:'crm-secondary'},['#'+g.id+([g.city,g.country].filter(Boolean).length?' · '+[g.city,g.country].filter(Boolean).join(', '):'')]),
                     ])
                 ]),
-                el('div',{className:'crm-cell'},[contact]),
-                el('div',{className:'crm-cell'},[visits]),
-                el('div',{className:'crm-cell'},[g.country||'']),
+                el('div',{className:'crm-cell'},[g.email||'—']),
+                el('div',{className:'crm-cell'},[g.phone||'—']),
+                el('div',{className:'crm-cell'},[(parseInt(g.booking_count,10)||0)+'']),
+                el('div',{className:'crm-cell'},[g.last_visit||'—']),
+                el('div',{className:'crm-cell'},[g.next_visit||'—']),
             ]));
         });
     }
@@ -2104,10 +2159,8 @@ function render(){
         document.getElementById('dash-view').style.display='none';
         document.getElementById('crm-bookings-view').style.display='block';
         document.getElementById('crm-booking-search').value=state.crmBookingSearch;
-        document.getElementById('crm-booking-scope').value=state.crmBookingScope;
-        document.getElementById('crm-booking-sort').value=state.crmBookingSort;
-        document.getElementById('crm-booking-order').value=state.crmBookingOrder;
         document.getElementById('crm-booking-per-page').value=String(state.crmBookingPerPage);
+        crmRenderFilterTabs('booking');
         if(state.crmBookingLoaded) renderCrmBookings();
         else if(!state.crmBookingLoading) crmLoadBookings();
     }else if(state.viewMode==='guests'){
@@ -2122,10 +2175,8 @@ function render(){
         document.getElementById('dash-view').style.display='none';
         document.getElementById('crm-guests-view').style.display='block';
         document.getElementById('crm-guest-search').value=state.crmGuestSearch;
-        document.getElementById('crm-guest-scope').value=state.crmGuestScope;
-        document.getElementById('crm-guest-sort').value=state.crmGuestSort;
-        document.getElementById('crm-guest-order').value=state.crmGuestOrder;
         document.getElementById('crm-guest-per-page').value=String(state.crmGuestPerPage);
+        crmRenderFilterTabs('guest');
         if(state.crmGuestLoaded) renderCrmGuests();
         else if(!state.crmGuestLoading) crmLoadGuests();
     }else if(state.viewMode==='maint'){
@@ -4754,20 +4805,22 @@ document.addEventListener('DOMContentLoaded',function(){
         clearTimeout(state.crmSearchTimer);
         state.crmSearchTimer=setTimeout(crmLoadBookings,250);
     });
-    document.getElementById('crm-booking-scope').addEventListener('change',function(){
-        state.crmBookingScope=this.value;state.crmBookingPage=1;state.crmBookingLoaded=false;state.crmBookingSelected={};crmLoadBookings();
+    document.getElementById('crm-booking-tabs').addEventListener('click',function(e){
+        var tab=e.target.closest('[data-scope]');if(!tab) return;
+        state.crmBookingScope=tab.getAttribute('data-scope');state.crmBookingPage=1;state.crmBookingLoaded=false;state.crmBookingSelected={};
+        crmRenderFilterTabs('booking');crmLoadBookings();
     });
-    document.getElementById('crm-booking-sort').addEventListener('change',function(){state.crmBookingSort=this.value;state.crmBookingPage=1;state.crmBookingLoaded=false;state.crmBookingSelected={};crmLoadBookings();});
-    document.getElementById('crm-booking-order').addEventListener('change',function(){state.crmBookingOrder=this.value;state.crmBookingPage=1;state.crmBookingLoaded=false;state.crmBookingSelected={};crmLoadBookings();});
     document.getElementById('crm-booking-per-page').addEventListener('change',function(){state.crmBookingPerPage=parseInt(this.value,10)||20;state.crmBookingPage=1;state.crmBookingLoaded=false;state.crmBookingSelected={};try{localStorage.setItem('lgf_crm_booking_per_page',String(state.crmBookingPerPage));}catch(e){}crmLoadBookings();});
     document.getElementById('crm-guest-search').addEventListener('input',function(){
         state.crmGuestSearch=this.value.trim();state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};
         clearTimeout(state.crmSearchTimer);
         state.crmSearchTimer=setTimeout(crmLoadGuests,250);
     });
-    document.getElementById('crm-guest-scope').addEventListener('change',function(){state.crmGuestScope=this.value;state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};crmLoadGuests();});
-    document.getElementById('crm-guest-sort').addEventListener('change',function(){state.crmGuestSort=this.value;state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};crmLoadGuests();});
-    document.getElementById('crm-guest-order').addEventListener('change',function(){state.crmGuestOrder=this.value;state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};crmLoadGuests();});
+    document.getElementById('crm-guest-tabs').addEventListener('click',function(e){
+        var tab=e.target.closest('[data-scope]');if(!tab) return;
+        state.crmGuestScope=tab.getAttribute('data-scope');state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};
+        crmRenderFilterTabs('guest');crmLoadGuests();
+    });
     document.getElementById('crm-guest-per-page').addEventListener('change',function(){state.crmGuestPerPage=parseInt(this.value,10)||20;state.crmGuestPage=1;state.crmGuestLoaded=false;state.crmGuestSelected={};try{localStorage.setItem('lgf_crm_guest_per_page',String(state.crmGuestPerPage));}catch(e){}crmLoadGuests();});
     document.getElementById('crm-booking-select-page').addEventListener('change',function(){crmTogglePageSelection('booking',this.checked);});
     document.getElementById('crm-guest-select-page').addEventListener('change',function(){crmTogglePageSelection('guest',this.checked);});
